@@ -65,6 +65,7 @@ import type {
   CreateRequirementPayload,
   UpsertMappingPayload,
 } from '@/api/compliance';
+import { useServiceDescriptions } from '@/api/services';
 
 // =============================================================================
 // Constants
@@ -1125,10 +1126,11 @@ function MatrixTab({
     (RegulatoryRequirement & { mappings: RequirementMapping[] }) | null
   >(null);
 
-  // Placeholder for service descriptions — in production, import useServiceDescriptions
-  // from '@/api/services' once that module exists. For now we provide an empty list
-  // so the matrix renders correctly without an external dependency that does not yet exist.
-  const serviceDescriptions: Array<{ id: string; code: string; title: string }> = [];
+  const { data: svcData } = useServiceDescriptions({ status: 'published' });
+  const serviceDescriptions = useMemo(
+    () => (svcData?.data ?? []).map((s) => ({ id: s.id, code: s.code, title: s.title })),
+    [svcData],
+  );
 
   const { data: matrixData, isLoading } = useMatrix(selectedFrameworkId);
 
