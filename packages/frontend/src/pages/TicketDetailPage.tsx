@@ -42,7 +42,10 @@ import {
   useTicketHistory,
   useUpdateTicketStatus,
   useUpdateTicketPriority,
+  useAssignTicket,
   useAddComment,
+  useGroups,
+  useUsers,
 } from '@/api/tickets';
 import type { TicketCommentWithAuthor, HistoryWithUser } from '@/api/tickets';
 import type { TicketStatus, TicketPriority } from '@opsweave/shared';
@@ -366,10 +369,44 @@ export function TicketDetailPage() {
 
   const updateStatus = useUpdateTicketStatus();
   const updatePriority = useUpdateTicketPriority();
+  const assignTicket = useAssignTicket();
+  const { data: groupsData } = useGroups();
+  const { data: usersData } = useUsers();
+
+  const groups = groupsData?.data ?? [];
+  const users = usersData?.data ?? [];
 
   const ticket = ticketData;
   const comments = commentsData ?? [];
   const history = historyData ?? [];
+
+  const handleAssigneeChange = useCallback(async (userId: string) => {
+    if (!id) return;
+    try {
+      await assignTicket.mutateAsync({
+        id,
+        assignee_id: userId === '__none__' ? null : userId,
+        assignee_group_id: ticket?.assignee_group_id ?? null,
+      });
+      toast.success(t('update_success'));
+    } catch {
+      toast.error(t('update_error'));
+    }
+  }, [id, assignTicket, ticket?.assignee_group_id, t]);
+
+  const handleGroupChange = useCallback(async (groupId: string) => {
+    if (!id) return;
+    try {
+      await assignTicket.mutateAsync({
+        id,
+        assignee_id: ticket?.assignee_id ?? null,
+        assignee_group_id: groupId === '__none__' ? null : groupId,
+      });
+      toast.success(t('update_success'));
+    } catch {
+      toast.error(t('update_error'));
+    }
+  }, [id, assignTicket, ticket?.assignee_id, t]);
 
   const handleStatusChange = useCallback(async (newStatus: string) => {
     if (!id) return;
@@ -646,20 +683,46 @@ export function TicketDetailPage() {
 
               {/* Assignee */}
               <SidebarField label={t('fields.assignee')}>
-                <span className="text-sm">
-                  {ticket.assignee?.display_name ?? (
-                    <span className="text-muted-foreground italic">{t('unassigned')}</span>
-                  )}
-                </span>
+                <Select
+                  value={ticket.assignee_id ?? '__none__'}
+                  onValueChange={handleAssigneeChange}
+                >
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder={t('unassigned')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">
+                      <span className="text-muted-foreground italic">{t('unassigned')}</span>
+                    </SelectItem>
+                    {users.map((u) => (
+                      <SelectItem key={u.id} value={u.id}>
+                        {u.display_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </SidebarField>
 
               {/* Group */}
               <SidebarField label={t('fields.group')}>
-                <span className="text-sm">
-                  {ticket.assignee_group?.name ?? (
-                    <span className="text-muted-foreground">-</span>
-                  )}
-                </span>
+                <Select
+                  value={ticket.assignee_group_id ?? '__none__'}
+                  onValueChange={handleGroupChange}
+                >
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="-" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">
+                      <span className="text-muted-foreground">-</span>
+                    </SelectItem>
+                    {groups.map((g) => (
+                      <SelectItem key={g.id} value={g.id}>
+                        {g.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </SidebarField>
 
               {/* Reporter */}

@@ -121,6 +121,17 @@ export interface GroupsResponse {
   meta: PaginationMeta;
 }
 
+export interface UserSummary {
+  id: string;
+  email: string;
+  display_name: string;
+}
+
+export interface UsersResponse {
+  data: UserSummary[];
+  meta: PaginationMeta;
+}
+
 // ---------------------------------------------------------------------------
 // Query Keys
 // ---------------------------------------------------------------------------
@@ -140,6 +151,11 @@ export const ticketKeys = {
 export const groupKeys = {
   all: ['groups'] as const,
   list: () => [...groupKeys.all, 'list'] as const,
+};
+
+export const userKeys = {
+  all: ['users'] as const,
+  list: () => [...userKeys.all, 'list'] as const,
 };
 
 // ---------------------------------------------------------------------------
@@ -216,6 +232,15 @@ export function useGroups() {
     queryKey: groupKeys.list(),
     queryFn: async () => {
       return apiClient.get<GroupsResponse>('/groups');
+    },
+  });
+}
+
+export function useUsers() {
+  return useQuery({
+    queryKey: userKeys.list(),
+    queryFn: async () => {
+      return apiClient.get<UsersResponse>('/users', { params: { limit: 100 } });
     },
   });
 }
