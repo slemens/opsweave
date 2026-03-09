@@ -270,7 +270,7 @@ function AccountTab() {
   const { t } = useTranslation(['settings', 'common']);
   const user = useAuthStore((s) => s.user);
 
-  const [displayName, setDisplayName] = useState(user?.display_name ?? '');
+  const [displayName, setDisplayName] = useState(user?.displayName ?? '');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');

@@ -50,40 +50,28 @@ export interface TicketWithRelations extends Ticket {
   customer?: { id: string; name: string } | null;
 }
 
-export interface TicketResponse {
-  data: TicketWithRelations;
-}
+// Single ticket responses are auto-unwrapped by the API client
+// (the { data: T } envelope is stripped), so hooks receive TicketWithRelations directly.
 
 export interface TicketCommentWithAuthor extends TicketComment {
   author?: { id: string; display_name: string; email: string } | null;
-}
-
-export interface CommentsResponse {
-  data: TicketCommentWithAuthor[];
-  meta: PaginationMeta;
 }
 
 export interface HistoryWithUser extends TicketHistory {
   changed_by_user?: { id: string; display_name: string } | null;
 }
 
-export interface HistoryResponse {
-  data: HistoryWithUser[];
-  meta: PaginationMeta;
-}
-
 export interface TicketStats {
-  open: number;
-  in_progress: number;
-  pending: number;
-  resolved: number;
-  closed: number;
+  by_status: {
+    open: number;
+    in_progress: number;
+    pending: number;
+    resolved: number;
+    closed: number;
+  };
+  by_type: Record<string, number>;
   sla_breached: number;
   total: number;
-}
-
-export interface TicketStatsResponse {
-  data: TicketStats;
 }
 
 export interface BoardColumn {
@@ -93,7 +81,7 @@ export interface BoardColumn {
 }
 
 export interface BoardDataResponse {
-  data: BoardColumn[];
+  columns: BoardColumn[];
 }
 
 export interface CreateTicketPayload {
@@ -179,7 +167,7 @@ export function useTicket(id: string) {
   return useQuery({
     queryKey: ticketKeys.detail(id),
     queryFn: async () => {
-      return apiClient.get<TicketResponse>(`/tickets/${id}`);
+      return apiClient.get<TicketWithRelations>(`/tickets/${id}`);
     },
     enabled: !!id,
   });
@@ -189,7 +177,7 @@ export function useTicketComments(ticketId: string) {
   return useQuery({
     queryKey: ticketKeys.comments(ticketId),
     queryFn: async () => {
-      return apiClient.get<CommentsResponse>(`/tickets/${ticketId}/comments`);
+      return apiClient.get<TicketCommentWithAuthor[]>(`/tickets/${ticketId}/comments`);
     },
     enabled: !!ticketId,
   });
@@ -199,7 +187,7 @@ export function useTicketHistory(ticketId: string) {
   return useQuery({
     queryKey: ticketKeys.history(ticketId),
     queryFn: async () => {
-      return apiClient.get<HistoryResponse>(`/tickets/${ticketId}/history`);
+      return apiClient.get<HistoryWithUser[]>(`/tickets/${ticketId}/history`);
     },
     enabled: !!ticketId,
   });
@@ -209,7 +197,7 @@ export function useTicketStats() {
   return useQuery({
     queryKey: ticketKeys.stats(),
     queryFn: async () => {
-      return apiClient.get<TicketStatsResponse>('/tickets/stats');
+      return apiClient.get<TicketStats>('/tickets/stats');
     },
   });
 }
@@ -241,7 +229,7 @@ export function useCreateTicket() {
 
   return useMutation({
     mutationFn: async (payload: CreateTicketPayload) => {
-      return apiClient.post<TicketResponse>('/tickets', payload);
+      return apiClient.post<TicketWithRelations>('/tickets', payload);
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ticketKeys.all });
@@ -254,7 +242,7 @@ export function useUpdateTicket() {
 
   return useMutation({
     mutationFn: async ({ id, ...payload }: UpdateTicketPayload & { id: string }) => {
-      return apiClient.put<TicketResponse>(`/tickets/${id}`, payload);
+      return apiClient.put<TicketWithRelations>(`/tickets/${id}`, payload);
     },
     onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({ queryKey: ticketKeys.detail(variables.id) });
@@ -270,7 +258,7 @@ export function useUpdateTicketStatus() {
 
   return useMutation({
     mutationFn: async ({ id, status }: { id: string; status: TicketStatus }) => {
-      return apiClient.patch<TicketResponse>(`/tickets/${id}/status`, { status });
+      return apiClient.patch<TicketWithRelations>(`/tickets/${id}/status`, { status });
     },
     onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({ queryKey: ticketKeys.detail(variables.id) });
@@ -286,7 +274,7 @@ export function useUpdateTicketPriority() {
 
   return useMutation({
     mutationFn: async ({ id, priority }: { id: string; priority: TicketPriority }) => {
-      return apiClient.patch<TicketResponse>(`/tickets/${id}/priority`, { priority });
+      return apiClient.patch<TicketWithRelations>(`/tickets/${id}/priority`, { priority });
     },
     onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({ queryKey: ticketKeys.detail(variables.id) });
@@ -309,7 +297,7 @@ export function useAssignTicket() {
       assignee_id?: string | null;
       assignee_group_id?: string | null;
     }) => {
-      return apiClient.patch<TicketResponse>(`/tickets/${id}/assign`, {
+      return apiClient.patch<TicketWithRelations>(`/tickets/${id}/assign`, {
         assignee_id,
         assignee_group_id,
       });

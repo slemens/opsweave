@@ -367,9 +367,9 @@ export function TicketDetailPage() {
   const updateStatus = useUpdateTicketStatus();
   const updatePriority = useUpdateTicketPriority();
 
-  const ticket = ticketData?.data;
-  const comments = commentsData?.data ?? [];
-  const history = historyData?.data ?? [];
+  const ticket = ticketData;
+  const comments = commentsData ?? [];
+  const history = historyData ?? [];
 
   const handleStatusChange = useCallback(async (newStatus: string) => {
     if (!id) return;

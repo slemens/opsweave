@@ -1,25 +1,28 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { User, TenantRole } from '@opsweave/shared';
 import { authApi } from '@/api/auth';
 
 export interface AuthUser {
   id: string;
   email: string;
-  display_name: string;
-  language: 'de' | 'en';
-  is_superadmin: boolean;
-  tenants: Array<{
-    id: string;
-    name: string;
-    slug: string;
-    role: TenantRole;
-    is_default: boolean;
-  }>;
+  displayName: string;
+  language: string;
+  isSuperAdmin: boolean;
+  activeTenantId: string;
+  role: string;
+}
+
+export interface TenantInfo {
+  id: string;
+  name: string;
+  slug: string;
+  role: string;
+  isDefault: boolean;
 }
 
 interface AuthState {
   user: AuthUser | null;
+  tenants: TenantInfo[];
   tenantId: string | null;
   token: string | null;
   isLoading: boolean;
@@ -38,6 +41,7 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
       user: null,
+      tenants: [],
       tenantId: null,
       token: null,
       isLoading: false,
@@ -47,15 +51,13 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
         try {
           const response = await authApi.login(email, password);
-          const { user, token } = response;
-
-          const defaultTenant = user.tenants.find((t) => t.is_default);
-          const tenantId = defaultTenant?.id ?? user.tenants[0]?.id ?? null;
+          const { user, token, tenants } = response;
 
           set({
             user,
             token,
-            tenantId,
+            tenants,
+            tenantId: user.activeTenantId,
             isLoading: false,
             error: null,
           });
@@ -76,6 +78,7 @@ export const useAuthStore = create<AuthState>()(
           set({
             user: null,
             token: null,
+            tenants: [],
             tenantId: null,
             error: null,
           });
@@ -106,8 +109,10 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'opsweave_auth',
       partialize: (state) => ({
+        user: state.user,
         token: state.token,
         tenantId: state.tenantId,
+        tenants: state.tenants,
       }),
     },
   ),

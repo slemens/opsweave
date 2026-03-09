@@ -74,8 +74,8 @@ export function Header() {
 
   const pageTitle = getPageTitle(location.pathname, t);
 
-  const userInitials = user?.display_name
-    ? user.display_name
+  const userInitials = user?.displayName
+    ? user.displayName
         .split(' ')
         .map((n) => n[0])
         .join('')
@@ -195,7 +195,7 @@ export function Header() {
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-medium leading-none">
-                  {user?.display_name}
+                  {user?.displayName}
                 </p>
                 <p className="text-xs leading-none text-muted-foreground">
                   {user?.email}

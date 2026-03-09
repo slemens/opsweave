@@ -115,7 +115,21 @@ async function request<T>(
     return undefined as T;
   }
 
-  return response.json() as Promise<T>;
+  const json = await response.json() as Record<string, unknown>;
+
+  // API responses use two envelopes:
+  // - Success:    { data: T }           → unwrap to T
+  // - Paginated:  { data: T[], meta: {} } → keep as-is (caller expects { data, meta })
+  if ('data' in json && 'meta' in json) {
+    // Paginated response — return full shape
+    return json as T;
+  }
+  if ('data' in json) {
+    // Simple success envelope — unwrap
+    return json.data as T;
+  }
+
+  return json as T;
 }
 
 export const apiClient = {

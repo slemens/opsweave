@@ -506,7 +506,7 @@ export function TicketBoardPage() {
 
   // Build column data from API response
   const columns = BOARD_COLUMNS.map((status) => {
-    const column = boardData?.data?.find((c) => c.status === status);
+    const column = boardData?.columns?.find((c) => c.status === status);
     let tickets = column?.tickets ?? [];
 
     // Apply client-side filters

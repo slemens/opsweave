@@ -52,8 +52,8 @@ export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const user = useAuthStore((s) => s.user);
 
-  const userInitials = user?.display_name
-    ? user.display_name
+  const userInitials = user?.displayName
+    ? user.displayName
         .split(' ')
         .map((n) => n[0])
         .join('')
@@ -180,7 +180,7 @@ export function Sidebar() {
           {!collapsed && (
             <div className="flex-1 overflow-hidden">
               <p className="truncate text-sm font-medium">
-                {user?.display_name}
+                {user?.displayName}
               </p>
               <p className="truncate text-xs text-muted-foreground">
                 {user?.email}

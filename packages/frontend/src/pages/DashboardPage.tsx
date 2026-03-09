@@ -97,8 +97,7 @@ export function DashboardPage() {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
 
-  const { data: statsData, isLoading, isError, refetch } = useTicketStats();
-  const stats = statsData?.data;
+  const { data: stats, isLoading, isError, refetch } = useTicketStats();
 
   return (
     <div className="space-y-6">
@@ -106,7 +105,7 @@ export function DashboardPage() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">
-            {t('dashboard.welcome')}, {user?.display_name}
+            {t('dashboard.welcome')}, {user?.displayName}
           </h2>
           <p className="text-muted-foreground">
             {t('app.claim')}
@@ -145,7 +144,7 @@ export function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           titleKey="dashboard.open_tickets"
-          value={stats?.open ?? 0}
+          value={stats?.by_status?.open ?? 0}
           icon={Ticket}
           isLoading={isLoading}
           onClick={() => navigate('/tickets')}
@@ -167,10 +166,10 @@ export function DashboardPage() {
         />
         <StatCard
           titleKey="dashboard.pending_changes"
-          value={stats?.pending ?? 0}
+          value={stats?.by_status?.pending ?? 0}
           icon={GitPullRequest}
           isLoading={isLoading}
-          variant={stats && stats.pending > 0 ? 'warning' : 'default'}
+          variant={stats && (stats.by_status?.pending ?? 0) > 0 ? 'warning' : 'default'}
           onClick={() => navigate('/tickets')}
         />
       </div>
@@ -201,7 +200,7 @@ export function DashboardPage() {
             ) : stats ? (
               <div className="space-y-2">
                 {(['open', 'in_progress', 'pending', 'resolved', 'closed'] as const).map((status) => {
-                  const count = stats[status] ?? 0;
+                  const count = stats.by_status?.[status] ?? 0;
                   const total = stats.total || 1;
                   const pct = Math.round((count / total) * 100);
 

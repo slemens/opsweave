@@ -18,13 +18,14 @@ const MOCK_USAGE = {
 export function LicenseBanner() {
   const { t } = useTranslation('settings');
   const user = useAuthStore((s) => s.user);
+  const tenants = useAuthStore((s) => s.tenants);
   const tenantId = useAuthStore((s) => s.tenantId);
   const [dismissed, setDismissed] = useState(false);
 
   // Only show to admins
-  const activeTenant = user?.tenants.find((tenant) => tenant.id === tenantId);
+  const activeTenant = tenants.find((tenant) => tenant.id === tenantId);
   const isAdmin =
-    activeTenant?.role === 'admin' || user?.is_superadmin === true;
+    activeTenant?.role === 'admin' || user?.isSuperAdmin === true;
 
   if (!isAdmin || dismissed) {
     return null;

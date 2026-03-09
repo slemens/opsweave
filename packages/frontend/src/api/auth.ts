@@ -1,13 +1,15 @@
 import { apiClient } from './client';
-import type { AuthUser } from '@/stores/auth-store';
+import type { AuthUser, TenantInfo } from '@/stores/auth-store';
 
 interface LoginResponse {
   user: AuthUser;
   token: string;
+  tenants: TenantInfo[];
 }
 
 interface MeResponse {
   user: AuthUser;
+  tenants: TenantInfo[];
 }
 
 export const authApi = {
