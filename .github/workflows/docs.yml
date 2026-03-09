@@ -1,11 +1,15 @@
 name: Deploy Docs
 
+# Disabled: requires GitHub Pages enabled (public repo or GitHub Enterprise)
+# Re-enable when repo goes public: uncomment the 'on' block below
+# on:
+#   push:
+#     branches: [main]
+#     paths:
+#       - 'docs/**'
+#       - '.github/workflows/docs.yml'
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'docs/**'
-      - '.github/workflows/docs.yml'
+  workflow_dispatch: # Manual trigger only
 
 permissions:
   contents: read
