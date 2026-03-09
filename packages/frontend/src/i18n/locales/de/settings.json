@@ -9,7 +9,8 @@
     "email": "E-Mail-Eingang",
     "groups": "Gruppen",
     "customers": "Kunden",
-    "categories": "Kategorien"
+    "categories": "Kategorien",
+    "system": "System"
   },
   "general": {
     "title": "Allgemeine Einstellungen",
@@ -61,7 +62,20 @@
     "monitoring": "Monitoring-Quellen",
     "of": "von",
     "unlimited": "Unbegrenzt",
-    "upgrade_hint": "Upgrade auf Enterprise für unbegrenzte Nutzung"
+    "upgrade_hint": "Upgrade auf Enterprise für unbegrenzte Nutzung",
+    "licensed_to": "Lizenziert für",
+    "activated_success": "Lizenz erfolgreich aktiviert",
+    "activated_error": "Ungültiger oder abgelaufener Lizenzschlüssel",
+    "deactivated_success": "Lizenz deaktiviert — Community Edition aktiv",
+    "deactivate": "Lizenz deaktivieren",
+    "update_license": "Lizenz aktualisieren",
+    "features": "Enterprise-Features",
+    "feature_oidcAuth": "OIDC-Authentifizierung",
+    "feature_samlAuth": "SAML-Authentifizierung",
+    "feature_verticalCatalogs": "Vertikale Kataloge",
+    "feature_advancedReporting": "Erweitertes Reporting",
+    "feature_customerPortal": "Kundenportal",
+    "feature_emailInbound": "E-Mail-Eingang"
   },
   "tenant": {
     "title": "Organisation",
@@ -117,6 +131,21 @@
       "problem": "Problem",
       "change": "Change"
     }
+  },
+  "system": {
+    "title": "Systemkonfiguration",
+    "description": "Aktuelle Server-Konfiguration (nur lesend). Diese Werte werden aus der Umgebungskonfiguration geladen.",
+    "node_env": "Umgebung",
+    "port": "Port",
+    "db_driver": "Datenbank-Treiber",
+    "queue_driver": "Queue-Treiber",
+    "default_language": "Standardsprache",
+    "cors_origin": "CORS Origin",
+    "serve_static": "Statische Dateien",
+    "oidc_enabled": "OIDC aktiviert",
+    "jwt_expires_in": "JWT Gültigkeit",
+    "yes": "Ja",
+    "no": "Nein"
   },
   "saved": "Einstellungen gespeichert",
   "save_error": "Fehler beim Speichern",

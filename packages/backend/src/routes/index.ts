@@ -16,6 +16,7 @@ import { complianceRouter } from '../modules/compliance/compliance.routes.js';
 import { kbRouter } from '../modules/knowledge-base/kb.routes.js';
 import { emailRouter } from '../modules/email-inbound/email.routes.js';
 import { portalRouter } from '../modules/portal/portal.routes.js';
+import { settingsRouter, licenseRouter } from '../modules/settings/settings.routes.js';
 
 // ─── Central API Router ────────────────────────────────────
 const apiRouter = Router();
@@ -51,10 +52,11 @@ protectedRouter.use('/email', emailRouter);
 // Portal has its own auth — mounted at API level, not inside protectedRouter
 apiRouter.use('/portal', portalRouter);
 
+protectedRouter.use('/settings', settingsRouter);
+protectedRouter.use('/license', licenseRouter);
+
 // TODO: mount remaining module routes as they are implemented
 // protectedRouter.use('/monitoring', monitoringRouter);
-// protectedRouter.use('/settings', settingsRouter);
-// protectedRouter.use('/license', licenseRouter);
 
 apiRouter.use(protectedRouter);
 

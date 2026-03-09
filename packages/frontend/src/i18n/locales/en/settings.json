@@ -9,7 +9,8 @@
     "email": "Email Inbound",
     "groups": "Groups",
     "customers": "Customers",
-    "categories": "Categories"
+    "categories": "Categories",
+    "system": "System"
   },
   "general": {
     "title": "General Settings",
@@ -61,7 +62,20 @@
     "monitoring": "Monitoring Sources",
     "of": "of",
     "unlimited": "Unlimited",
-    "upgrade_hint": "Upgrade to Enterprise for unlimited usage"
+    "upgrade_hint": "Upgrade to Enterprise for unlimited usage",
+    "licensed_to": "Licensed to",
+    "activated_success": "License activated successfully",
+    "activated_error": "Invalid or expired license key",
+    "deactivated_success": "License deactivated — Community Edition active",
+    "deactivate": "Deactivate License",
+    "update_license": "Update License",
+    "features": "Enterprise Features",
+    "feature_oidcAuth": "OIDC Authentication",
+    "feature_samlAuth": "SAML Authentication",
+    "feature_verticalCatalogs": "Vertical Catalogs",
+    "feature_advancedReporting": "Advanced Reporting",
+    "feature_customerPortal": "Customer Portal",
+    "feature_emailInbound": "Email Inbound"
   },
   "tenant": {
     "title": "Organization",
@@ -117,6 +131,21 @@
       "problem": "Problem",
       "change": "Change"
     }
+  },
+  "system": {
+    "title": "System Configuration",
+    "description": "Current server configuration (read-only). These values are loaded from environment configuration.",
+    "node_env": "Environment",
+    "port": "Port",
+    "db_driver": "Database Driver",
+    "queue_driver": "Queue Driver",
+    "default_language": "Default Language",
+    "cors_origin": "CORS Origin",
+    "serve_static": "Serve Static Files",
+    "oidc_enabled": "OIDC Enabled",
+    "jwt_expires_in": "JWT Expiry",
+    "yes": "Yes",
+    "no": "No"
   },
   "saved": "Settings saved",
   "save_error": "Error saving settings",
