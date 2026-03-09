@@ -1,0 +1,105 @@
+{
+  "nav": {
+    "tickets": "My Tickets",
+    "kb": "Knowledge Base",
+    "profile": "Profile",
+    "logout": "Sign Out",
+    "badge": "Customer Portal"
+  },
+  "footer": "OpsWeave Customer Portal — For questions, please contact your IT service provider.",
+  "auth": {
+    "title": "Sign In",
+    "subtitle": "Sign in with your credentials to view your tickets.",
+    "org_id": "Organisation ID",
+    "org_id_hint": "The organisation ID was provided to you by your IT service provider.",
+    "org_id_placeholder": "e.g. acme-corp",
+    "email": "Email Address",
+    "password": "Password",
+    "submit": "Sign In",
+    "submitting": "Signing in…",
+    "help": "Having trouble? Please contact your IT service provider.",
+    "error_invalid": "Invalid credentials. Please check your inputs.",
+    "error_generic": "Sign in failed. Please try again."
+  },
+  "tickets": {
+    "title": "My Tickets",
+    "subtitle": "All your support requests at a glance.",
+    "create_button": "New Ticket",
+    "count_one": "{{count}} ticket total",
+    "count_other": "{{count}} tickets total",
+    "empty_title": "No tickets yet",
+    "empty_text": "You haven't submitted any support requests yet. Create your first ticket to get help.",
+    "empty_cta": "Create First Ticket",
+    "error_load": "Failed to load tickets.",
+    "col_number": "Ticket No.",
+    "col_title": "Title",
+    "col_status": "Status",
+    "col_priority": "Priority",
+    "col_created": "Created"
+  },
+  "ticket": {
+    "back": "Back to overview",
+    "field_status": "Status",
+    "field_priority": "Priority",
+    "field_type": "Type",
+    "field_created": "Created",
+    "description": "Description",
+    "comments_title": "Communication",
+    "comments_empty": "No messages yet. Write your notes below.",
+    "comment_placeholder": "Your message to the support team…",
+    "comment_send": "Send Message",
+    "comment_sending": "Sending…",
+    "comment_error": "Failed to send comment.",
+    "comments_error": "Failed to load comments.",
+    "error_load": "Failed to load ticket.",
+    "closed_note": "This ticket is closed. Please create a new ticket for further enquiries.",
+    "author_you": "You",
+    "author_support": "Support Team"
+  },
+  "create": {
+    "title": "Create New Ticket",
+    "description": "Describe your issue. Our support team will handle it as quickly as possible.",
+    "field_title": "Title",
+    "field_title_placeholder": "Brief description of the issue",
+    "field_description": "Description",
+    "field_description_placeholder": "Detailed description, error messages, affected systems…",
+    "field_type": "Ticket Type",
+    "field_priority": "Priority",
+    "type_incident": "Incident / Outage",
+    "type_change": "Change Request",
+    "submit": "Create Ticket",
+    "submitting": "Creating…",
+    "error": "Failed to create ticket."
+  },
+  "status": {
+    "open": "Open",
+    "in_progress": "In Progress",
+    "pending": "Pending",
+    "resolved": "Resolved",
+    "closed": "Closed"
+  },
+  "priority": {
+    "low": "Low",
+    "medium": "Medium",
+    "high": "High",
+    "critical": "Critical"
+  },
+  "ticket_type": {
+    "incident": "Incident",
+    "change": "Change Request",
+    "problem": "Problem"
+  },
+  "kb": {
+    "title": "Knowledge Base",
+    "subtitle": "Browse our documentation and frequently asked questions.",
+    "search_placeholder": "Search articles…",
+    "empty_title": "No articles found",
+    "empty_text": "No published articles are available at this time.",
+    "empty_search": "No articles found for your search.",
+    "error_load": "Failed to load articles.",
+    "category": "Category",
+    "read_more": "Read Article",
+    "close": "Close",
+    "published": "Published"
+  }
+}

@@ -33,6 +33,7 @@ export interface KbFilterParams {
   status?: string;
   visibility?: string;
   category?: string;
+  linked_ticket_id?: string;
 }
 
 // ─── Query Keys ───────────────────────────────────────────
@@ -100,6 +101,7 @@ export function useLinkArticleToTicket() {
     mutationFn: ({ articleId, ticketId }: { articleId: string; ticketId: string }) =>
       apiClient.post(`/kb/articles/${articleId}/link/${ticketId}`),
     onSuccess: (_d, { articleId }) => {
+      qc.invalidateQueries({ queryKey: kbKeys.all });
       qc.invalidateQueries({ queryKey: kbKeys.detail(articleId) });
     },
   });
@@ -111,6 +113,7 @@ export function useUnlinkArticleFromTicket() {
     mutationFn: ({ articleId, ticketId }: { articleId: string; ticketId: string }) =>
       apiClient.delete(`/kb/articles/${articleId}/link/${ticketId}`),
     onSuccess: (_d, { articleId }) => {
+      qc.invalidateQueries({ queryKey: kbKeys.all });
       qc.invalidateQueries({ queryKey: kbKeys.detail(articleId) });
     },
   });

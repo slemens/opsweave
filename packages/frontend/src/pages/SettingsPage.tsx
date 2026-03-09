@@ -695,7 +695,7 @@ function EmailTab() {
       name: form.name,
       provider: form.provider,
       default_ticket_type: form.default_ticket_type,
-      is_active: form.is_active,
+      is_active: form.is_active ? 1 : 0,
       config,
     };
     try {

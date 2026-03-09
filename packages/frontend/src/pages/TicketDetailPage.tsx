@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -16,6 +16,10 @@ import {
   ExternalLink,
   CheckCircle2,
   XCircle,
+  BookOpen,
+  Link2,
+  Unlink,
+  Search,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -75,6 +79,9 @@ import {
   useCancelWorkflowInstance,
 } from '@/api/workflows';
 import type { WorkflowInstanceFull } from '@/api/workflows';
+import { useKbArticles, useLinkArticleToTicket, useUnlinkArticleFromTicket } from '@/api/kb';
+import type { KbArticle } from '@/api/kb';
+import { Input } from '@/components/ui/input';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -503,6 +510,7 @@ export function TicketDetailPage() {
   const { t, i18n } = useTranslation('tickets');
   const { t: tCommon } = useTranslation();
   const { t: tWf } = useTranslation('workflows');
+  const { t: tKb } = useTranslation('kb');
   const navigate = useNavigate();
   const locale = i18n.language?.startsWith('de') ? 'de-DE' : 'en-US';
 
@@ -531,6 +539,49 @@ export function TicketDetailPage() {
   const categories = (categoriesData?.data ?? []).filter(
     (c) => c.is_active && (c.applies_to === 'all' || c.applies_to === ticket?.ticket_type),
   );
+
+  // ── Knowledge Base ─────────────────────────────────────────
+  const [kbSearch, setKbSearch] = useState('');
+  const [kbDebouncedSearch, setKbDebouncedSearch] = useState('');
+
+  useEffect(() => {
+    const timer = setTimeout(() => setKbDebouncedSearch(kbSearch), 400);
+    return () => clearTimeout(timer);
+  }, [kbSearch]);
+
+  // Articles linked to this ticket
+  const { data: linkedArticlesData, isLoading: linkedArticlesLoading } = useKbArticles(
+    id ? { linked_ticket_id: id, limit: 50 } : undefined,
+  );
+  const linkedArticles: KbArticle[] = linkedArticlesData?.data ?? [];
+
+  // Search results for linking (only when query given)
+  const { data: searchArticlesData, isLoading: searchLoading } = useKbArticles(
+    kbDebouncedSearch ? { q: kbDebouncedSearch, status: 'published', limit: 10 } : undefined,
+  );
+  const searchArticles: KbArticle[] = searchArticlesData?.data ?? [];
+
+  const linkArticleMutation = useLinkArticleToTicket();
+  const unlinkArticleMutation = useUnlinkArticleFromTicket();
+
+  const handleLinkArticle = useCallback(async (articleId: string) => {
+    if (!id) return;
+    try {
+      await linkArticleMutation.mutateAsync({ articleId, ticketId: id });
+      toast.success(tKb('link_ticket'));
+    } catch {
+      toast.error(tKb('ticket_tab.link_error'));
+    }
+  }, [id, linkArticleMutation, tKb]);
+
+  const handleUnlinkArticle = useCallback(async (articleId: string) => {
+    if (!id) return;
+    try {
+      await unlinkArticleMutation.mutateAsync({ articleId, ticketId: id });
+    } catch {
+      toast.error(tKb('ticket_tab.unlink_error'));
+    }
+  }, [id, unlinkArticleMutation, tKb]);
 
   // ── Workflow ───────────────────────────────────────────────
   const { data: workflowInstance, isLoading: workflowLoading } = useTicketWorkflow(id);
@@ -862,9 +913,9 @@ export function TicketDetailPage() {
             </Button>
           )}
 
-          {/* Tabs: Comments / History / Workflow */}
+          {/* Tabs: Comments / History / Workflow / KB */}
           <Tabs defaultValue="comments" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 max-w-[450px]">
+            <TabsList className="grid w-full grid-cols-4 max-w-[600px]">
               <TabsTrigger value="comments" className="gap-1.5">
                 <MessageSquare className="h-3.5 w-3.5" />
                 {t('comments.title')}
@@ -891,6 +942,10 @@ export function TicketDetailPage() {
                     {tWf('instance_statuses.active')}
                   </Badge>
                 )}
+              </TabsTrigger>
+              <TabsTrigger value="kb" className="gap-1.5">
+                <BookOpen className="h-3.5 w-3.5" />
+                {tKb('ticket_tab.title')}
               </TabsTrigger>
             </TabsList>
 
@@ -1003,6 +1058,121 @@ export function TicketDetailPage() {
                       tWf={tWf}
                     />
                   )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* KB Tab */}
+            <TabsContent value="kb">
+              <Card>
+                <CardContent className="pt-4 space-y-5">
+                  {/* Linked articles */}
+                  <div>
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+                      {tKb('ticket_tab.linked_articles')}
+                    </h3>
+                    {linkedArticlesLoading ? (
+                      <div className="space-y-2">
+                        {[1, 2].map((i) => <Skeleton key={i} className="h-10 w-full" />)}
+                      </div>
+                    ) : linkedArticles.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-6 text-center">
+                        <BookOpen className="h-7 w-7 text-muted-foreground/30 mb-2" />
+                        <p className="text-sm text-muted-foreground">{tKb('ticket_tab.no_linked_articles')}</p>
+                        <p className="text-xs text-muted-foreground/70 mt-0.5">{tKb('ticket_tab.no_linked_hint')}</p>
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-border rounded-lg border border-border">
+                        {linkedArticles.map((article) => (
+                          <div key={article.id} className="flex items-center gap-3 px-3 py-2.5">
+                            <BookOpen className="h-4 w-4 shrink-0 text-muted-foreground" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">{article.title}</p>
+                              {article.category && (
+                                <p className="text-xs text-muted-foreground">{article.category}</p>
+                              )}
+                            </div>
+                            <Badge variant={article.visibility === 'public' ? 'default' : 'secondary'} className="text-xs shrink-0">
+                              {tKb(`visibility.${article.visibility}`)}
+                            </Badge>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                              title={tKb('ticket_tab.unlink')}
+                              onClick={() => void handleUnlinkArticle(article.id)}
+                              disabled={unlinkArticleMutation.isPending}
+                            >
+                              <Unlink className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <Separator />
+
+                  {/* Search to link articles */}
+                  <div>
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+                      {tKb('ticket_tab.search_to_link')}
+                    </h3>
+                    <div className="relative mb-3">
+                      <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        value={kbSearch}
+                        onChange={(e) => setKbSearch(e.target.value)}
+                        placeholder={tKb('ticket_tab.search_placeholder')}
+                        className="pl-8 h-8 text-sm"
+                      />
+                    </div>
+
+                    {kbDebouncedSearch && (
+                      searchLoading ? (
+                        <div className="space-y-2">
+                          {[1, 2].map((i) => <Skeleton key={i} className="h-9 w-full" />)}
+                        </div>
+                      ) : searchArticles.length === 0 ? (
+                        <p className="text-sm text-muted-foreground text-center py-4">
+                          {tKb('no_articles')}
+                        </p>
+                      ) : (
+                        <div className="divide-y divide-border rounded-lg border border-border">
+                          {searchArticles.map((article) => {
+                            const isLinked = linkedArticles.some((a) => a.id === article.id);
+                            return (
+                              <div key={article.id} className="flex items-center gap-3 px-3 py-2.5">
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium truncate">{article.title}</p>
+                                  {article.category && (
+                                    <p className="text-xs text-muted-foreground">{article.category}</p>
+                                  )}
+                                </div>
+                                {isLinked ? (
+                                  <Badge variant="secondary" className="text-xs shrink-0">
+                                    <CheckCircle2 className="mr-1 h-3 w-3" />
+                                    Linked
+                                  </Badge>
+                                ) : (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-7 text-xs shrink-0"
+                                    onClick={() => void handleLinkArticle(article.id)}
+                                    disabled={linkArticleMutation.isPending}
+                                  >
+                                    <Link2 className="mr-1 h-3 w-3" />
+                                    {tKb('ticket_tab.link')}
+                                  </Button>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>

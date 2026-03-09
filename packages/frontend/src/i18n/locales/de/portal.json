@@ -1,0 +1,105 @@
+{
+  "nav": {
+    "tickets": "Meine Tickets",
+    "kb": "Wissensdatenbank",
+    "profile": "Profil",
+    "logout": "Abmelden",
+    "badge": "Kundenportal"
+  },
+  "footer": "OpsWeave Kundenportal — Bei Fragen wenden Sie sich an Ihren IT-Dienstleister.",
+  "auth": {
+    "title": "Anmelden",
+    "subtitle": "Melden Sie sich mit Ihren Zugangsdaten an, um Ihre Tickets einzusehen.",
+    "org_id": "Organisations-ID",
+    "org_id_hint": "Die Organisations-ID wurde Ihnen von Ihrem IT-Dienstleister mitgeteilt.",
+    "org_id_placeholder": "z.B. acme-corp",
+    "email": "E-Mail-Adresse",
+    "password": "Passwort",
+    "submit": "Anmelden",
+    "submitting": "Wird angemeldet…",
+    "help": "Bei Problemen wenden Sie sich bitte an Ihren IT-Dienstleister.",
+    "error_invalid": "Ungültige Anmeldedaten. Bitte überprüfen Sie Ihre Eingaben.",
+    "error_generic": "Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut."
+  },
+  "tickets": {
+    "title": "Meine Tickets",
+    "subtitle": "Alle Ihre Support-Anfragen auf einen Blick.",
+    "create_button": "Neues Ticket erstellen",
+    "count_one": "{{count}} Ticket gesamt",
+    "count_other": "{{count}} Tickets gesamt",
+    "empty_title": "Keine Tickets vorhanden",
+    "empty_text": "Sie haben noch keine Support-Anfragen gestellt. Erstellen Sie Ihr erstes Ticket, um Unterstützung zu erhalten.",
+    "empty_cta": "Erstes Ticket erstellen",
+    "error_load": "Tickets konnten nicht geladen werden.",
+    "col_number": "Ticket-Nr.",
+    "col_title": "Titel",
+    "col_status": "Status",
+    "col_priority": "Priorität",
+    "col_created": "Erstellt"
+  },
+  "ticket": {
+    "back": "Zurück zur Übersicht",
+    "field_status": "Status",
+    "field_priority": "Priorität",
+    "field_type": "Typ",
+    "field_created": "Erstellt",
+    "description": "Beschreibung",
+    "comments_title": "Kommunikation",
+    "comments_empty": "Noch keine Nachrichten. Schreiben Sie uns Ihre Anmerkungen unten.",
+    "comment_placeholder": "Ihre Nachricht an das Support-Team…",
+    "comment_send": "Nachricht senden",
+    "comment_sending": "Senden…",
+    "comment_error": "Kommentar konnte nicht gesendet werden.",
+    "comments_error": "Kommentare konnten nicht geladen werden.",
+    "error_load": "Ticket konnte nicht geladen werden.",
+    "closed_note": "Dieses Ticket ist geschlossen. Für weitere Anliegen erstellen Sie bitte ein neues Ticket.",
+    "author_you": "Sie",
+    "author_support": "Support-Team"
+  },
+  "create": {
+    "title": "Neues Ticket erstellen",
+    "description": "Beschreiben Sie Ihr Anliegen. Unser Support-Team wird es so schnell wie möglich bearbeiten.",
+    "field_title": "Titel",
+    "field_title_placeholder": "Kurze Beschreibung des Problems",
+    "field_description": "Beschreibung",
+    "field_description_placeholder": "Detaillierte Beschreibung, Fehlermeldungen, betroffene Systeme…",
+    "field_type": "Ticket-Typ",
+    "field_priority": "Priorität",
+    "type_incident": "Störung / Incident",
+    "type_change": "Änderungsanfrage",
+    "submit": "Ticket erstellen",
+    "submitting": "Wird erstellt…",
+    "error": "Ticket konnte nicht erstellt werden."
+  },
+  "status": {
+    "open": "Offen",
+    "in_progress": "In Bearbeitung",
+    "pending": "Ausstehend",
+    "resolved": "Gelöst",
+    "closed": "Geschlossen"
+  },
+  "priority": {
+    "low": "Niedrig",
+    "medium": "Mittel",
+    "high": "Hoch",
+    "critical": "Kritisch"
+  },
+  "ticket_type": {
+    "incident": "Störung",
+    "change": "Änderungsanfrage",
+    "problem": "Problem"
+  },
+  "kb": {
+    "title": "Wissensdatenbank",
+    "subtitle": "Durchsuchen Sie unsere Dokumentation und häufig gestellten Fragen.",
+    "search_placeholder": "Artikel suchen…",
+    "empty_title": "Keine Artikel gefunden",
+    "empty_text": "Aktuell sind keine veröffentlichten Artikel vorhanden.",
+    "empty_search": "Keine Artikel für Ihre Suche gefunden.",
+    "error_load": "Artikel konnten nicht geladen werden.",
+    "category": "Kategorie",
+    "read_more": "Artikel lesen",
+    "close": "Schließen",
+    "published": "Veröffentlicht"
+  }
+}

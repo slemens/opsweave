@@ -1,5 +1,6 @@
 import { useState, useEffect, type FormEvent } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   ArrowLeft,
   AlertCircle,
@@ -33,28 +34,8 @@ import { formatDate, formatRelativeTime } from '@/lib/utils';
 type TicketStatus = PortalTicket['status'];
 type TicketPriority = PortalTicket['priority'];
 
-const STATUS_LABELS: Record<TicketStatus, string> = {
-  open: 'Offen',
-  in_progress: 'In Bearbeitung',
-  pending: 'Ausstehend',
-  resolved: 'Gelöst',
-  closed: 'Geschlossen',
-};
-
-const PRIORITY_LABELS: Record<TicketPriority, string> = {
-  low: 'Niedrig',
-  medium: 'Mittel',
-  high: 'Hoch',
-  critical: 'Kritisch',
-};
-
-const TICKET_TYPE_LABELS: Record<PortalTicket['ticketType'], string> = {
-  incident: 'Störung',
-  change: 'Änderungsanfrage',
-  problem: 'Problem',
-};
-
 function StatusBadge({ status }: { status: TicketStatus }) {
+  const { t } = useTranslation('portal');
   const variantMap: Record<TicketStatus, 'default' | 'warning' | 'secondary' | 'success' | 'outline'> = {
     open: 'default',
     in_progress: 'warning',
@@ -62,17 +43,18 @@ function StatusBadge({ status }: { status: TicketStatus }) {
     resolved: 'success',
     closed: 'outline',
   };
-  return <Badge variant={variantMap[status]}>{STATUS_LABELS[status]}</Badge>;
+  return <Badge variant={variantMap[status]}>{t(`status.${status}`)}</Badge>;
 }
 
 function PriorityBadge({ priority }: { priority: TicketPriority }) {
+  const { t } = useTranslation('portal');
   const variantMap: Record<TicketPriority, 'secondary' | 'warning' | 'destructive' | 'outline'> = {
     low: 'secondary',
     medium: 'outline',
     high: 'warning',
     critical: 'destructive',
   };
-  return <Badge variant={variantMap[priority]}>{PRIORITY_LABELS[priority]}</Badge>;
+  return <Badge variant={variantMap[priority]}>{t(`priority.${priority}`)}</Badge>;
 }
 
 // ---------------------------------------------------------------------------
@@ -108,10 +90,13 @@ interface CommentItemProps {
 }
 
 function CommentItem({ comment }: CommentItemProps) {
+  const { t } = useTranslation('portal');
   const isCustomer = comment.source === 'customer';
   const isSystem = comment.source === 'system';
 
-  const authorName = comment.author?.displayName ?? (isCustomer ? 'Sie' : 'Support-Team');
+  const authorName =
+    comment.author?.displayName ??
+    (isCustomer ? t('ticket.author_you') : t('ticket.author_support'));
   const initials = authorName
     .split(' ')
     .map((p) => p[0])
@@ -180,6 +165,7 @@ function CommentItem({ comment }: CommentItemProps) {
 export function PortalTicketDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { t } = useTranslation('portal');
 
   const [ticket, setTicket] = useState<PortalTicket | null>(null);
   const [comments, setComments] = useState<PortalComment[]>([]);
@@ -200,7 +186,7 @@ export function PortalTicketDetailPage() {
       const data = await portalApi.getTicket(id);
       setTicket(data);
     } catch (err) {
-      setTicketError(err instanceof Error ? err.message : 'Ticket konnte nicht geladen werden.');
+      setTicketError(err instanceof Error ? err.message : t('ticket.error_load'));
     } finally {
       setIsLoadingTicket(false);
     }
@@ -214,7 +200,7 @@ export function PortalTicketDetailPage() {
       const data = await portalApi.listComments(id);
       setComments(data);
     } catch (err) {
-      setCommentsError(err instanceof Error ? err.message : 'Kommentare konnten nicht geladen werden.');
+      setCommentsError(err instanceof Error ? err.message : t('ticket.comments_error'));
     } finally {
       setIsLoadingComments(false);
     }
@@ -237,7 +223,7 @@ export function PortalTicketDetailPage() {
       setComments((prev) => [...prev, comment]);
       setNewComment('');
     } catch (err) {
-      setCommentError(err instanceof Error ? err.message : 'Kommentar konnte nicht gesendet werden.');
+      setCommentError(err instanceof Error ? err.message : t('ticket.comment_error'));
     } finally {
       setIsSubmittingComment(false);
     }
@@ -257,7 +243,7 @@ export function PortalTicketDetailPage() {
           onClick={() => navigate('/portal/tickets')}
         >
           <ArrowLeft className="mr-1.5 h-4 w-4" />
-          Zurück zur Übersicht
+          {t('ticket.back')}
         </Button>
         <Card className="border-destructive/30 bg-destructive/5">
           <CardContent className="flex items-center gap-3 py-6">
@@ -267,7 +253,6 @@ export function PortalTicketDetailPage() {
             </div>
             <Button variant="outline" size="sm" onClick={() => void loadTicket()}>
               <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
-              Erneut versuchen
             </Button>
           </CardContent>
         </Card>
@@ -289,7 +274,7 @@ export function PortalTicketDetailPage() {
         onClick={() => navigate('/portal/tickets')}
       >
         <ArrowLeft className="mr-1.5 h-4 w-4" />
-        Zurück zur Übersicht
+        {t('ticket.back')}
       </Button>
 
       {/* ------------------------------------------------------------------ */}
@@ -312,19 +297,19 @@ export function PortalTicketDetailPage() {
               {/* Meta badges */}
               <div className="mt-3 flex flex-wrap gap-3">
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-xs font-medium text-muted-foreground">Status</span>
+                  <span className="text-xs font-medium text-muted-foreground">{t('ticket.field_status')}</span>
                   <StatusBadge status={ticket.status} />
                 </div>
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-xs font-medium text-muted-foreground">Priorität</span>
+                  <span className="text-xs font-medium text-muted-foreground">{t('ticket.field_priority')}</span>
                   <PriorityBadge priority={ticket.priority} />
                 </div>
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-xs font-medium text-muted-foreground">Typ</span>
-                  <Badge variant="secondary">{TICKET_TYPE_LABELS[ticket.ticketType]}</Badge>
+                  <span className="text-xs font-medium text-muted-foreground">{t('ticket.field_type')}</span>
+                  <Badge variant="secondary">{t(`ticket_type.${ticket.ticketType}`)}</Badge>
                 </div>
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-xs font-medium text-muted-foreground">Erstellt</span>
+                  <span className="text-xs font-medium text-muted-foreground">{t('ticket.field_created')}</span>
                   <span className="text-sm text-foreground" title={formatDate(ticket.createdAt)}>
                     {formatDate(ticket.createdAt, 'de-DE', {
                       year: 'numeric',
@@ -346,7 +331,7 @@ export function PortalTicketDetailPage() {
             <CardContent className="pt-4">
               <div className="space-y-1.5">
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Beschreibung
+                  {t('ticket.description')}
                 </h3>
                 <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
                   {ticket.description}
@@ -364,7 +349,7 @@ export function PortalTicketDetailPage() {
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
             <MessageSquare className="h-4 w-4 text-muted-foreground" />
-            Kommunikation
+            {t('ticket.comments_title')}
           </CardTitle>
         </CardHeader>
 
@@ -395,9 +380,7 @@ export function PortalTicketDetailPage() {
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
                 <MessageSquare className="h-5 w-5 text-muted-foreground" />
               </div>
-              <p className="text-sm text-muted-foreground">
-                Noch keine Nachrichten. Schreiben Sie uns Ihre Anmerkungen unten.
-              </p>
+              <p className="text-sm text-muted-foreground">{t('ticket.comments_empty')}</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -418,7 +401,7 @@ export function PortalTicketDetailPage() {
                   </div>
                 )}
                 <Textarea
-                  placeholder="Ihre Nachricht an das Support-Team…"
+                  placeholder={t('ticket.comment_placeholder')}
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
                   disabled={isSubmittingComment}
@@ -434,12 +417,12 @@ export function PortalTicketDetailPage() {
                     {isSubmittingComment ? (
                       <>
                         <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
-                        Senden…
+                        {t('ticket.comment_sending')}
                       </>
                     ) : (
                       <>
                         <Send className="mr-2 h-3.5 w-3.5" />
-                        Nachricht senden
+                        {t('ticket.comment_send')}
                       </>
                     )}
                   </Button>
@@ -451,7 +434,7 @@ export function PortalTicketDetailPage() {
           {/* Closed ticket note */}
           {ticket?.status === 'closed' && (
             <div className="rounded-md border border-border bg-muted/40 px-4 py-3 text-center text-sm text-muted-foreground">
-              Dieses Ticket ist geschlossen. Für weitere Anliegen erstellen Sie bitte ein neues Ticket.
+              {t('ticket.closed_note')}
             </div>
           )}
         </CardContent>

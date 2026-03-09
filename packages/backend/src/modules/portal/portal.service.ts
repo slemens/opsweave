@@ -421,7 +421,7 @@ export async function addPortalComment(
 export async function listPublicKb(
   tenantId: string,
   q?: string,
-): Promise<typeof kbArticles.$inferSelect[]> {
+): Promise<(Omit<typeof kbArticles.$inferSelect, 'tags'> & { tags: string[] })[]> {
   const d = db();
 
   const conditions = [
@@ -445,5 +445,16 @@ export async function listPublicKb(
     .where(and(...conditions))
     .orderBy(desc(kbArticles.published_at));
 
-  return rows;
+  // Parse tags from JSON string to string[] (SQLite stores as text)
+  return rows.map((row) => ({
+    ...row,
+    tags: (() => {
+      try {
+        const parsed: unknown = JSON.parse(row.tags as unknown as string);
+        return Array.isArray(parsed) ? (parsed as string[]) : [];
+      } catch {
+        return [];
+      }
+    })(),
+  }));
 }

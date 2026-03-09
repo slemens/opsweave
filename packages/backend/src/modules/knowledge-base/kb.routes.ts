@@ -3,6 +3,7 @@ import { Router } from 'express';
 import { validate, validateQuery, validateParams } from '../../middleware/validate.js';
 import {
   idParamSchema,
+  idAndTicketIdParamSchema,
   kbFilterSchema,
   createKbArticleSchema,
   updateKbArticleSchema,
@@ -86,7 +87,7 @@ kbRouter.delete(
  */
 kbRouter.post(
   '/:id/link/:ticketId',
-  validateParams(idParamSchema),
+  validateParams(idAndTicketIdParamSchema),
   linkToTicket,
 );
 
@@ -96,7 +97,7 @@ kbRouter.post(
  */
 kbRouter.delete(
   '/:id/link/:ticketId',
-  validateParams(idParamSchema),
+  validateParams(idAndTicketIdParamSchema),
   unlinkFromTicket,
 );
 

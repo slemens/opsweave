@@ -41,6 +41,16 @@ export interface PortalComment {
   };
 }
 
+export interface PortalKbArticle {
+  id: string;
+  title: string;
+  slug: string;
+  content: string;
+  category: string | null;
+  tags: string[];
+  publishedAt: string | null;
+}
+
 export interface CreatePortalTicketPayload {
   title: string;
   description: string;
@@ -175,5 +185,11 @@ export const portalApi = {
       method: 'POST',
       body: JSON.stringify({ content }),
     });
+  },
+
+  // Knowledge Base (public articles only)
+  listKb(q?: string): Promise<PortalKbArticle[]> {
+    const params = q ? `?q=${encodeURIComponent(q)}` : '';
+    return portalRequest<PortalKbArticle[]>(`/portal/kb${params}`);
   },
 };

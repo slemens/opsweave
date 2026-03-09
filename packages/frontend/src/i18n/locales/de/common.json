@@ -85,7 +85,9 @@
     "open_tickets": "Offene Tickets",
     "sla_breaches": "SLA-Verletzungen",
     "assets_total": "Assets gesamt",
-    "pending_changes": "Ausstehende Changes"
+    "pending_changes": "Ausstehende Changes",
+    "kb_articles": "KB-Artikel",
+    "recent_tickets": "Neueste Tickets"
   },
   "not_found": {
     "title": "Seite nicht gefunden",

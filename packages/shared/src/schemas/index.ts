@@ -50,6 +50,12 @@ export const idParamSchema = z.object({
   id: uuidSchema,
 });
 
+/** Validates two UUID parameters: id + ticketId (used for KB link/unlink routes) */
+export const idAndTicketIdParamSchema = z.object({
+  id: uuidSchema,
+  ticketId: uuidSchema,
+});
+
 // ---------------------------------------------------------------------------
 // Pagination & List Params
 // ---------------------------------------------------------------------------
@@ -539,6 +545,7 @@ export const kbFilterSchema = paginationSchema.extend({
   status: z.enum(KB_ARTICLE_STATUSES).optional(),
   visibility: z.enum(KB_VISIBILITIES).optional(),
   category: z.string().optional(),
+  linked_ticket_id: z.string().uuid().optional(),
 });
 export type KbFilterParams = z.infer<typeof kbFilterSchema>;
 

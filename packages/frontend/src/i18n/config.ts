@@ -20,6 +20,8 @@ import kbDe from './locales/de/kb.json';
 import kbEn from './locales/en/kb.json';
 import emailDe from './locales/de/email.json';
 import emailEn from './locales/en/email.json';
+import portalDe from './locales/de/portal.json';
+import portalEn from './locales/en/portal.json';
 
 const resources = {
   de: {
@@ -32,6 +34,7 @@ const resources = {
     compliance: complianceDe,
     kb: kbDe,
     email: emailDe,
+    portal: portalDe,
   },
   en: {
     common: commonEn,
@@ -43,6 +46,7 @@ const resources = {
     compliance: complianceEn,
     kb: kbEn,
     email: emailEn,
+    portal: portalEn,
   },
 };
 
@@ -53,7 +57,7 @@ i18n
     resources,
     fallbackLng: 'de',
     defaultNS: 'common',
-    ns: ['common', 'tickets', 'settings', 'cmdb', 'workflows', 'catalog', 'compliance', 'kb', 'email'],
+    ns: ['common', 'tickets', 'settings', 'cmdb', 'workflows', 'catalog', 'compliance', 'kb', 'email', 'portal'],
     interpolation: {
       escapeValue: false,
     },

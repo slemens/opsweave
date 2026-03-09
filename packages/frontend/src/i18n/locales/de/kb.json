@@ -46,5 +46,17 @@
     "edit": "Bearbeiten"
   },
   "link_ticket": "Mit Ticket verknüpfen",
-  "linked_tickets": "Verknüpfte Tickets"
+  "linked_tickets": "Verknüpfte Tickets",
+  "ticket_tab": {
+    "title": "Wissensdatenbank",
+    "linked_articles": "Verknüpfte Artikel",
+    "no_linked_articles": "Keine KB-Artikel verknüpft",
+    "no_linked_hint": "Verknüpfen Sie relevante KB-Artikel mit diesem Ticket.",
+    "search_to_link": "Artikel suchen und verknüpfen",
+    "search_placeholder": "Artikel suchen…",
+    "link": "Verknüpfen",
+    "unlink": "Verknüpfung entfernen",
+    "link_error": "Verknüpfung fehlgeschlagen.",
+    "unlink_error": "Verknüpfung konnte nicht entfernt werden."
+  }
 }

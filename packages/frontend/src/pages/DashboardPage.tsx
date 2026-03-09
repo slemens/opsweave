@@ -6,9 +6,9 @@ import {
   Server,
   GitPullRequest,
   ArrowRight,
-  Clock,
   RefreshCw,
   AlertCircle,
+  BookOpen,
 } from 'lucide-react';
 import {
   Card,
@@ -20,8 +20,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuthStore } from '@/stores/auth-store';
-import { useTicketStats } from '@/api/tickets';
-import { cn } from '@/lib/utils';
+import { useTicketStats, useTickets } from '@/api/tickets';
+import { useAssetStats } from '@/api/assets';
+import { cn, formatRelativeTime } from '@/lib/utils';
 
 // ---------------------------------------------------------------------------
 // Stat Card Component
@@ -89,6 +90,21 @@ function StatCard({
 }
 
 // ---------------------------------------------------------------------------
+// Status badge variant helper
+// ---------------------------------------------------------------------------
+
+function getStatusVariant(status: string): 'default' | 'warning' | 'secondary' | 'success' | 'outline' {
+  const map: Record<string, 'default' | 'warning' | 'secondary' | 'success' | 'outline'> = {
+    open: 'default',
+    in_progress: 'warning',
+    pending: 'secondary',
+    resolved: 'success',
+    closed: 'outline',
+  };
+  return map[status] ?? 'secondary';
+}
+
+// ---------------------------------------------------------------------------
 // Main Dashboard Page
 // ---------------------------------------------------------------------------
 
@@ -98,6 +114,14 @@ export function DashboardPage() {
   const user = useAuthStore((s) => s.user);
 
   const { data: stats, isLoading, isError, refetch } = useTicketStats();
+  const { data: assetStats, isLoading: isLoadingAssets } = useAssetStats();
+  const { data: recentTicketsData, isLoading: isLoadingRecent } = useTickets({
+    limit: 5,
+    sort: 'created_at',
+    order: 'desc',
+  });
+
+  const recentTickets = recentTicketsData?.data ?? [];
 
   return (
     <div className="space-y-6">
@@ -159,9 +183,9 @@ export function DashboardPage() {
         />
         <StatCard
           titleKey="dashboard.assets_total"
-          value="--"
+          value={assetStats?.total ?? '--'}
           icon={Server}
-          isLoading={false}
+          isLoading={isLoadingAssets}
           onClick={() => navigate('/assets')}
         />
         <StatCard
@@ -176,7 +200,7 @@ export function DashboardPage() {
 
       {/* Quick overview cards */}
       <div className="grid gap-4 md:grid-cols-2">
-        {/* Ticket overview */}
+        {/* Ticket status overview */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-base">{t('nav.tickets')}</CardTitle>
@@ -231,21 +255,21 @@ export function DashboardPage() {
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-6 text-center">
-                <Clock className="h-8 w-8 text-muted-foreground/30 mb-2" />
+                <Ticket className="h-8 w-8 text-muted-foreground/30 mb-2" />
                 <p className="text-sm text-muted-foreground">{t('status.empty')}</p>
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Quick actions / Assets placeholder */}
+        {/* Recent tickets */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-base">{t('nav.assets')}</CardTitle>
+            <CardTitle className="text-base">{t('dashboard.recent_tickets')}</CardTitle>
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate('/assets')}
+              onClick={() => navigate('/tickets')}
               className="text-xs gap-1"
             >
               {t('actions.view')}
@@ -253,10 +277,41 @@ export function DashboardPage() {
             </Button>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col items-center justify-center py-6 text-center">
-              <Server className="h-8 w-8 text-muted-foreground/30 mb-2" />
-              <p className="text-sm text-muted-foreground">{t('status.empty')}</p>
-            </div>
+            {isLoadingRecent ? (
+              <div className="space-y-3">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <Skeleton key={i} className="h-10 w-full" />
+                ))}
+              </div>
+            ) : recentTickets.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-6 text-center">
+                <BookOpen className="h-8 w-8 text-muted-foreground/30 mb-2" />
+                <p className="text-sm text-muted-foreground">{t('status.empty')}</p>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {recentTickets.map((ticket) => (
+                  <button
+                    key={ticket.id}
+                    className="w-full flex items-center gap-3 rounded-md px-2 py-2 text-left hover:bg-muted/50 transition-colors group"
+                    onClick={() => navigate(`/tickets/${ticket.id}`)}
+                  >
+                    <span className="font-mono text-xs text-muted-foreground shrink-0 w-28 truncate">
+                      {ticket.ticket_number}
+                    </span>
+                    <span className="flex-1 text-sm font-medium truncate group-hover:text-primary transition-colors">
+                      {ticket.title}
+                    </span>
+                    <Badge variant={getStatusVariant(ticket.status)} className="text-xs shrink-0">
+                      {t(`tickets:statuses.${ticket.status}`, { defaultValue: ticket.status })}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground shrink-0 hidden sm:block">
+                      {formatRelativeTime(ticket.created_at)}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

@@ -46,5 +46,17 @@
     "edit": "Edit"
   },
   "link_ticket": "Link to ticket",
-  "linked_tickets": "Linked tickets"
+  "linked_tickets": "Linked tickets",
+  "ticket_tab": {
+    "title": "Knowledge Base",
+    "linked_articles": "Linked Articles",
+    "no_linked_articles": "No KB articles linked",
+    "no_linked_hint": "Link relevant KB articles to this ticket.",
+    "search_to_link": "Search and link articles",
+    "search_placeholder": "Search articles…",
+    "link": "Link",
+    "unlink": "Remove link",
+    "link_error": "Failed to link article.",
+    "unlink_error": "Failed to remove link."
+  }
 }

@@ -19,6 +19,7 @@ import { PortalLoginPage } from '@/pages/portal/PortalLoginPage';
 import { PortalLayout } from '@/pages/portal/PortalLayout';
 import { PortalTicketsPage } from '@/pages/portal/PortalTicketsPage';
 import { PortalTicketDetailPage } from '@/pages/portal/PortalTicketDetailPage';
+import { PortalKbPage } from '@/pages/portal/PortalKbPage';
 
 export function App() {
   return (
@@ -48,6 +49,7 @@ export function App() {
           <Route path="/portal" element={<PortalLayout />}>
             <Route path="tickets" element={<PortalTicketsPage />} />
             <Route path="tickets/:id" element={<PortalTicketDetailPage />} />
+            <Route path="kb" element={<PortalKbPage />} />
           </Route>
 
           {/* 404 */}

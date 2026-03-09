@@ -1,4 +1,4 @@
-import { eq, and, count, like, or, desc, asc } from 'drizzle-orm';
+import { eq, and, count, like, or, desc, asc, sql } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 
 import { getDb, type TypedDb } from '../../config/database.js';
@@ -172,7 +172,7 @@ export async function listKbArticles(
   params: KbFilterParams,
 ): Promise<{ articles: KbArticleRow[]; total: number }> {
   const d = db();
-  const { page, limit, q, status, visibility, category, order } = params;
+  const { page, limit, q, status, visibility, category, order, linked_ticket_id } = params;
   const offset = (page - 1) * limit;
 
   const conditions = [eq(kbArticles.tenant_id, tenantId)];
@@ -196,6 +196,17 @@ export async function listKbArticles(
 
   if (category) {
     conditions.push(eq(kbArticles.category, category));
+  }
+
+  if (linked_ticket_id) {
+    conditions.push(
+      sql`EXISTS (
+        SELECT 1 FROM ${kbArticleLinks}
+        WHERE ${kbArticleLinks.article_id} = ${kbArticles.id}
+          AND ${kbArticleLinks.ticket_id} = ${linked_ticket_id}
+          AND ${kbArticleLinks.tenant_id} = ${tenantId}
+      )`,
+    );
   }
 
   const [totalResult] = await d

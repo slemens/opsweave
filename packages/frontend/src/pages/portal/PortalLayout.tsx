@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
-import { LogOut, Building2, ChevronDown, User } from 'lucide-react';
+import { Outlet, useNavigate, NavLink } from 'react-router-dom';
+import { LogOut, Building2, ChevronDown, User, Ticket as TicketIcon, BookOpen } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -15,6 +16,7 @@ import type { PortalUser } from '@/api/portal';
 
 export function PortalLayout() {
   const navigate = useNavigate();
+  const { t } = useTranslation('portal');
   const [user, setUser] = useState<PortalUser | null>(null);
 
   // Check auth on mount — redirect to login if no valid session exists
@@ -51,18 +53,48 @@ export function PortalLayout() {
       {/* ------------------------------------------------------------------ */}
       <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          {/* Left: Logo + badge */}
-          <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <span className="text-xs font-bold leading-none">OW</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-foreground">OpsWeave</span>
-              <div className="hidden items-center gap-1 rounded-full border border-border bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground sm:flex">
-                <Building2 className="h-3 w-3" />
-                Kundenportal
+          {/* Left: Logo + badge + nav */}
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                <span className="text-xs font-bold leading-none">OW</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-foreground">OpsWeave</span>
+                <div className="hidden items-center gap-1 rounded-full border border-border bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground sm:flex">
+                  <Building2 className="h-3 w-3" />
+                  {t('nav.badge')}
+                </div>
               </div>
             </div>
+            <nav className="hidden sm:flex items-center gap-1">
+              <NavLink
+                to="/portal/tickets"
+                className={({ isActive }) =>
+                  `flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                    isActive
+                      ? 'bg-primary/10 text-primary'
+                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  }`
+                }
+              >
+                <TicketIcon className="h-3.5 w-3.5" />
+                {t('nav.tickets')}
+              </NavLink>
+              <NavLink
+                to="/portal/kb"
+                className={({ isActive }) =>
+                  `flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                    isActive
+                      ? 'bg-primary/10 text-primary'
+                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  }`
+                }
+              >
+                <BookOpen className="h-3.5 w-3.5" />
+                {t('nav.kb')}
+              </NavLink>
+            </nav>
           </div>
 
           {/* Right: User menu */}
@@ -92,7 +124,7 @@ export function PortalLayout() {
               <DropdownMenuSeparator />
               <DropdownMenuItem className="cursor-pointer text-muted-foreground" disabled>
                 <User className="mr-2 h-4 w-4" />
-                Profil
+                {t('nav.profile')}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -100,7 +132,7 @@ export function PortalLayout() {
                 onClick={handleLogout}
               >
                 <LogOut className="mr-2 h-4 w-4" />
-                Abmelden
+                {t('nav.logout')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -120,7 +152,7 @@ export function PortalLayout() {
       <footer className="border-t border-border py-4">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <p className="text-center text-xs text-muted-foreground">
-            OpsWeave Kundenportal — Bei Fragen wenden Sie sich an Ihren IT-Dienstleister.
+            {t('footer')}
           </p>
         </div>
       </footer>

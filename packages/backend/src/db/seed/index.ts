@@ -26,6 +26,8 @@ import {
   assetRelations,
   workflowTemplates,
   workflowSteps,
+  kbArticles,
+  kbArticleLinks,
 } from '../schema/index.js';
 
 const now = new Date().toISOString();
@@ -900,6 +902,100 @@ async function seed() {
   ]);
 
   console.log('  ✓ Workflows: 2 templates + 10 steps');
+
+  // ─── Knowledge Base ──────────────────────────────────────
+  const kb1Id = uuidv4();
+  const kb2Id = uuidv4();
+  const kb3Id = uuidv4();
+  const kb4Id = uuidv4();
+  const kb5Id = uuidv4();
+
+  await db.insert(kbArticles).values([
+    {
+      id: kb1Id,
+      tenant_id: tenantId,
+      title: 'Exchange Server — Schnelldiagnose bei Ausfällen',
+      slug: 'exchange-server-schnelldiagnose',
+      content: `# Exchange Server Diagnose\n\nBei einem Ausfall des Exchange-Servers folgende Schritte durchführen:\n\n## 1. Dienste prüfen\n\`\`\`powershell\nGet-Service *Exchange* | Where-Object {$_.Status -ne "Running"}\n\`\`\`\n\n## 2. Ereignisprotokoll\n\`\`\`powershell\nGet-EventLog -LogName Application -Source *MSExchange* -EntryType Error -Newest 20\n\`\`\`\n\n## 3. Datenbanken prüfen\n\`\`\`powershell\nGet-MailboxDatabase -Status | Select Name, Mounted\n\`\`\`\n\n## Eskalation\nBei weiterhin nicht erreichbarem Server → Ticket erstellen + Eskalation an Senior Admin.`,
+      category: 'E-Mail',
+      tags: JSON.stringify(['exchange', 'e-mail', 'diagnose', 'ausfall']),
+      visibility: 'internal',
+      status: 'published',
+      author_id: adminId,
+      created_at: now,
+      updated_at: now,
+      published_at: now,
+    },
+    {
+      id: kb2Id,
+      tenant_id: tenantId,
+      title: 'VPN-Verbindung einrichten (Windows)',
+      slug: 'vpn-verbindung-einrichten-windows',
+      content: `# VPN-Verbindung einrichten\n\nSchritt-für-Schritt-Anleitung für Windows 10/11.\n\n## Voraussetzungen\n- VPN-Client (GlobalProtect oder Cisco AnyConnect)\n- Zugangsdaten vom IT-Administrator\n\n## Einrichtung\n1. VPN-Client öffnen\n2. Server-Adresse eingeben: vpn.firma.de\n3. Benutzername + Passwort eingeben\n4. Verbinden klicken\n\n## Fehlersuche\n- Firewall prüfen (Port 443 muss offen sein)\n- DNS-Auflösung testen`,
+      category: 'Netzwerk',
+      tags: JSON.stringify(['vpn', 'netzwerk', 'remote', 'windows']),
+      visibility: 'public',
+      status: 'published',
+      author_id: adminId,
+      created_at: now,
+      updated_at: now,
+      published_at: now,
+    },
+    {
+      id: kb3Id,
+      tenant_id: tenantId,
+      title: 'Passwort zurücksetzen — Self-Service Portal',
+      slug: 'passwort-zuruecksetzen-self-service',
+      content: `# Passwort zurücksetzen\n\nNutzer können ihr Passwort selbst zurücksetzen ohne den Helpdesk.\n\n## Vorgehensweise\n1. https://selfservice.firma.de aufrufen\n2. Auf "Passwort vergessen?" klicken\n3. E-Mail-Adresse eingeben\n4. Bestätigungs-E-Mail abwarten (max. 5 Minuten)\n5. Link anklicken und neues Passwort setzen\n\n## Passwort-Anforderungen\n- Mindestens 12 Zeichen\n- Groß- und Kleinbuchstaben\n- Mindestens eine Zahl\n- Mindestens ein Sonderzeichen`,
+      category: 'Benutzerverwaltung',
+      tags: JSON.stringify(['passwort', 'self-service', 'sicherheit']),
+      visibility: 'public',
+      status: 'published',
+      author_id: agentId,
+      created_at: now,
+      updated_at: now,
+      published_at: now,
+    },
+    {
+      id: kb4Id,
+      tenant_id: tenantId,
+      title: 'Druckerproblem beheben — Standardlösung',
+      slug: 'druckerproblem-behebenstandard',
+      content: `# Druckerprobleme lösen\n\n## Häufige Ursachen und Lösungen\n\n### Drucker offline\n1. Drucker aus- und einschalten\n2. Druckerwarteschlange leeren\n3. Druckertreiber neu installieren\n\n### Druckerwarteschlange hängt\n\`\`\`cmd\nnet stop spooler\ndel /Q /F /S "%systemroot%\\System32\\spool\\PRINTERS\\*.*"\nnet start spooler\n\`\`\`\n\n### Drucker nicht gefunden\n- Netzwerkverbindung prüfen\n- IP-Adresse des Druckers anpingen`,
+      category: 'Hardware',
+      tags: JSON.stringify(['drucker', 'hardware', 'drucken']),
+      visibility: 'internal',
+      status: 'published',
+      author_id: agentId,
+      created_at: now,
+      updated_at: now,
+      published_at: now,
+    },
+    {
+      id: kb5Id,
+      tenant_id: tenantId,
+      title: 'SLA-Definitionen und Reaktionszeiten',
+      slug: 'sla-definitionen-reaktionszeiten',
+      content: `# SLA-Definitionen\n\n## Prioritätsstufen\n\n| Priorität | Reaktionszeit | Lösungszeit |\n|-----------|--------------|-------------|\n| Kritisch  | 15 Minuten   | 4 Stunden   |\n| Hoch      | 1 Stunde     | 8 Stunden   |\n| Mittel    | 4 Stunden    | 2 Werktage  |\n| Niedrig   | 8 Stunden    | 5 Werktage  |\n\n## Eskalationspfad\n1. Level 1: Helpdesk-Techniker\n2. Level 2: Senior Administrator\n3. Level 3: Vendor-Eskalation\n\n## Ausnahmen\n- Geplante Wartungsfenster: Samstag 22:00–02:00 Uhr\n- SLA gilt nicht für Wartungsfenster`,
+      category: 'Betrieb',
+      tags: JSON.stringify(['sla', 'reaktionszeiten', 'eskalation', 'betrieb']),
+      visibility: 'internal',
+      status: 'published',
+      author_id: managerId,
+      created_at: now,
+      updated_at: now,
+      published_at: now,
+    },
+  ]);
+
+  // Link first KB article to the major incident (INC-2026-00001)
+  await db.insert(kbArticleLinks).values({
+    article_id: kb1Id,
+    ticket_id: majorIncidentId,
+    tenant_id: tenantId,
+  });
+
+  console.log('  ✓ Knowledge Base: 5 articles + 1 ticket link');
 
   console.log('\n✅ Seed completed successfully!');
   console.log('\n📋 Login credentials:');

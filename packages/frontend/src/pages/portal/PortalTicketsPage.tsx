@@ -1,5 +1,6 @@
 import { useState, useEffect, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Plus,
   Ticket as TicketIcon,
@@ -49,22 +50,8 @@ import { formatDate, formatRelativeTime } from '@/lib/utils';
 type TicketStatus = PortalTicket['status'];
 type TicketPriority = PortalTicket['priority'];
 
-const STATUS_LABELS: Record<TicketStatus, string> = {
-  open: 'Offen',
-  in_progress: 'In Bearbeitung',
-  pending: 'Ausstehend',
-  resolved: 'Gelöst',
-  closed: 'Geschlossen',
-};
-
-const PRIORITY_LABELS: Record<TicketPriority, string> = {
-  low: 'Niedrig',
-  medium: 'Mittel',
-  high: 'Hoch',
-  critical: 'Kritisch',
-};
-
 function StatusBadge({ status }: { status: TicketStatus }) {
+  const { t } = useTranslation('portal');
   const variantMap: Record<TicketStatus, 'default' | 'warning' | 'secondary' | 'success' | 'outline'> = {
     open: 'default',
     in_progress: 'warning',
@@ -74,12 +61,13 @@ function StatusBadge({ status }: { status: TicketStatus }) {
   };
   return (
     <Badge variant={variantMap[status]}>
-      {STATUS_LABELS[status]}
+      {t(`status.${status}`)}
     </Badge>
   );
 }
 
 function PriorityBadge({ priority }: { priority: TicketPriority }) {
+  const { t } = useTranslation('portal');
   const variantMap: Record<TicketPriority, 'secondary' | 'warning' | 'destructive' | 'outline'> = {
     low: 'secondary',
     medium: 'outline',
@@ -88,7 +76,7 @@ function PriorityBadge({ priority }: { priority: TicketPriority }) {
   };
   return (
     <Badge variant={variantMap[priority]}>
-      {PRIORITY_LABELS[priority]}
+      {t(`priority.${priority}`)}
     </Badge>
   );
 }
@@ -104,6 +92,7 @@ interface CreateTicketDialogProps {
 }
 
 function CreateTicketDialog({ open, onOpenChange, onCreated }: CreateTicketDialogProps) {
+  const { t } = useTranslation('portal');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [ticketType, setTicketType] = useState<'incident' | 'change'>('incident');
@@ -141,7 +130,7 @@ function CreateTicketDialog({ open, onOpenChange, onCreated }: CreateTicketDialo
       onCreated(ticket);
       handleOpenChange(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ticket konnte nicht erstellt werden.');
+      setError(err instanceof Error ? err.message : t('create.error'));
     } finally {
       setIsSubmitting(false);
     }
@@ -151,10 +140,8 @@ function CreateTicketDialog({ open, onOpenChange, onCreated }: CreateTicketDialo
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Neues Ticket erstellen</DialogTitle>
-          <DialogDescription>
-            Beschreiben Sie Ihr Anliegen. Unser Support-Team wird es so schnell wie möglich bearbeiten.
-          </DialogDescription>
+          <DialogTitle>{t('create.title')}</DialogTitle>
+          <DialogDescription>{t('create.description')}</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -167,11 +154,11 @@ function CreateTicketDialog({ open, onOpenChange, onCreated }: CreateTicketDialo
           {/* Title */}
           <div className="space-y-2">
             <Label htmlFor="ct-title">
-              Titel <span className="text-destructive">*</span>
+              {t('create.field_title')} <span className="text-destructive">*</span>
             </Label>
             <Input
               id="ct-title"
-              placeholder="Kurze Beschreibung des Problems"
+              placeholder={t('create.field_title_placeholder')}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
@@ -182,10 +169,10 @@ function CreateTicketDialog({ open, onOpenChange, onCreated }: CreateTicketDialo
 
           {/* Description */}
           <div className="space-y-2">
-            <Label htmlFor="ct-description">Beschreibung</Label>
+            <Label htmlFor="ct-description">{t('create.field_description')}</Label>
             <Textarea
               id="ct-description"
-              placeholder="Detaillierte Beschreibung, Fehlermeldungen, betroffene Systeme…"
+              placeholder={t('create.field_description_placeholder')}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               disabled={isSubmitting}
@@ -197,7 +184,7 @@ function CreateTicketDialog({ open, onOpenChange, onCreated }: CreateTicketDialo
           {/* Type + Priority */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="ct-type">Ticket-Typ</Label>
+              <Label htmlFor="ct-type">{t('create.field_type')}</Label>
               <Select
                 value={ticketType}
                 onValueChange={(v) => setTicketType(v as 'incident' | 'change')}
@@ -207,14 +194,14 @@ function CreateTicketDialog({ open, onOpenChange, onCreated }: CreateTicketDialo
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="incident">Störung / Incident</SelectItem>
-                  <SelectItem value="change">Änderungsanfrage</SelectItem>
+                  <SelectItem value="incident">{t('create.type_incident')}</SelectItem>
+                  <SelectItem value="change">{t('create.type_change')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="ct-priority">Priorität</Label>
+              <Label htmlFor="ct-priority">{t('create.field_priority')}</Label>
               <Select
                 value={priority}
                 onValueChange={(v) => setPriority(v as TicketPriority)}
@@ -224,10 +211,10 @@ function CreateTicketDialog({ open, onOpenChange, onCreated }: CreateTicketDialo
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="low">Niedrig</SelectItem>
-                  <SelectItem value="medium">Mittel</SelectItem>
-                  <SelectItem value="high">Hoch</SelectItem>
-                  <SelectItem value="critical">Kritisch</SelectItem>
+                  <SelectItem value="low">{t('priority.low')}</SelectItem>
+                  <SelectItem value="medium">{t('priority.medium')}</SelectItem>
+                  <SelectItem value="high">{t('priority.high')}</SelectItem>
+                  <SelectItem value="critical">{t('priority.critical')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -246,10 +233,10 @@ function CreateTicketDialog({ open, onOpenChange, onCreated }: CreateTicketDialo
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Wird erstellt…
+                  {t('create.submitting')}
                 </>
               ) : (
-                'Ticket erstellen'
+                t('create.submit')
               )}
             </Button>
           </DialogFooter>
@@ -284,18 +271,17 @@ function TicketsTableSkeleton() {
 // ---------------------------------------------------------------------------
 
 function EmptyState({ onCreateClick }: { onCreateClick: () => void }) {
+  const { t } = useTranslation('portal');
   return (
     <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/30 py-16 text-center">
       <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-muted">
         <TicketIcon className="h-7 w-7 text-muted-foreground" />
       </div>
-      <h3 className="mb-1 text-base font-semibold text-foreground">Keine Tickets vorhanden</h3>
-      <p className="mb-6 max-w-xs text-sm text-muted-foreground">
-        Sie haben noch keine Support-Anfragen gestellt. Erstellen Sie Ihr erstes Ticket, um Unterstützung zu erhalten.
-      </p>
+      <h3 className="mb-1 text-base font-semibold text-foreground">{t('tickets.empty_title')}</h3>
+      <p className="mb-6 max-w-xs text-sm text-muted-foreground">{t('tickets.empty_text')}</p>
       <Button onClick={onCreateClick} size="sm">
         <Plus className="mr-2 h-4 w-4" />
-        Erstes Ticket erstellen
+        {t('tickets.empty_cta')}
       </Button>
     </div>
   );
@@ -306,6 +292,7 @@ function EmptyState({ onCreateClick }: { onCreateClick: () => void }) {
 // ---------------------------------------------------------------------------
 
 export function PortalTicketsPage() {
+  const { t } = useTranslation('portal');
   const navigate = useNavigate();
   const [tickets, setTickets] = useState<PortalTicket[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -319,7 +306,7 @@ export function PortalTicketsPage() {
       const data = await portalApi.listTickets();
       setTickets(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Tickets konnten nicht geladen werden.');
+      setError(err instanceof Error ? err.message : t('tickets.error_load'));
     } finally {
       setIsLoading(false);
     }
@@ -342,14 +329,12 @@ export function PortalTicketsPage() {
       {/* Page header */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Meine Tickets</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">
-            Alle Ihre Support-Anfragen auf einen Blick.
-          </p>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">{t('tickets.title')}</h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">{t('tickets.subtitle')}</p>
         </div>
         <Button onClick={() => setCreateOpen(true)} className="sm:shrink-0">
           <Plus className="mr-2 h-4 w-4" />
-          Neues Ticket erstellen
+          {t('tickets.create_button')}
         </Button>
       </div>
 
@@ -363,7 +348,6 @@ export function PortalTicketsPage() {
             </div>
             <Button variant="outline" size="sm" onClick={() => void loadTickets()}>
               <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
-              Erneut versuchen
             </Button>
           </CardContent>
         </Card>
@@ -379,11 +363,11 @@ export function PortalTicketsPage() {
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
-                <TableHead className="w-36 font-semibold">Ticket-Nr.</TableHead>
-                <TableHead className="font-semibold">Titel</TableHead>
-                <TableHead className="w-36 font-semibold">Status</TableHead>
-                <TableHead className="w-28 font-semibold">Priorität</TableHead>
-                <TableHead className="w-36 font-semibold">Erstellt</TableHead>
+                <TableHead className="w-36 font-semibold">{t('tickets.col_number')}</TableHead>
+                <TableHead className="font-semibold">{t('tickets.col_title')}</TableHead>
+                <TableHead className="w-36 font-semibold">{t('tickets.col_status')}</TableHead>
+                <TableHead className="w-28 font-semibold">{t('tickets.col_priority')}</TableHead>
+                <TableHead className="w-36 font-semibold">{t('tickets.col_created')}</TableHead>
                 <TableHead className="w-8" />
               </TableRow>
             </TableHeader>
@@ -427,7 +411,7 @@ export function PortalTicketsPage() {
       {/* Summary line */}
       {!isLoading && tickets.length > 0 && (
         <p className="mt-3 text-xs text-muted-foreground">
-          {tickets.length} {tickets.length === 1 ? 'Ticket' : 'Tickets'} gesamt
+          {t('tickets.count_other', { count: tickets.length })}
         </p>
       )}
 
