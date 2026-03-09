@@ -68,13 +68,25 @@ jobs:
         run: npx playwright install --with-deps chromium
         working-directory: packages/frontend
 
+      - name: Create database tables
+        run: npx tsx packages/backend/src/db/setup.ts
+        env:
+          DB_DRIVER: sqlite
+          DATABASE_URL: "file:${{ github.workspace }}/opsweave-test.db"
+
+      - name: Seed demo data
+        run: npx tsx packages/backend/src/db/seed/index.ts
+        env:
+          DB_DRIVER: sqlite
+          DATABASE_URL: "file:${{ github.workspace }}/opsweave-test.db"
+
       - name: Start backend server
         run: node dist/server.js &
         working-directory: packages/backend
         env:
           NODE_ENV: test
           DB_DRIVER: sqlite
-          DATABASE_URL: "file:../../opsweave.db"
+          DATABASE_URL: "file:${{ github.workspace }}/opsweave-test.db"
           QUEUE_DRIVER: better-queue
           JWT_SECRET: test-secret
           SESSION_SECRET: test-secret
