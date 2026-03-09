@@ -29,6 +29,12 @@ import {
   workflowSteps,
   kbArticles,
   kbArticleLinks,
+  regulatoryFrameworks,
+  regulatoryRequirements,
+  requirementServiceMappings,
+  serviceDescriptions,
+  horizontalCatalog,
+  horizontalCatalogItems,
 } from '../schema/index.js';
 import { DEMO_LICENSE_KEY } from './demo-license.js';
 
@@ -1017,6 +1023,383 @@ async function seed() {
   });
 
   console.log('  ✓ Knowledge Base: 5 articles + 1 ticket link');
+
+  // ─── Service Descriptions ─────────────────────────────
+  const svcEmailId = uuidv4();
+  const svcDatabaseId = uuidv4();
+  const svcNetworkId = uuidv4();
+  const svcWebHostingId = uuidv4();
+  const svcBackupId = uuidv4();
+  const svcMonitoringId = uuidv4();
+  const svcSecurityId = uuidv4();
+  const svcWorkplaceId = uuidv4();
+
+  await db.insert(serviceDescriptions).values([
+    {
+      id: svcEmailId,
+      tenant_id: tenantId,
+      code: 'SVC-EMAIL',
+      title: 'E-Mail Service',
+      description: 'Bereitstellung und Betrieb des E-Mail-Systems inkl. Exchange/IMAP, Spam-Filter und Archivierung.',
+      scope_included: 'E-Mail-Server Betrieb, Spam-/Virenschutz, Postfach-Verwaltung bis 50 GB, Mobile-Sync',
+      scope_excluded: 'E-Mail-Migration von Drittanbietern, Marketing-Mails, Newsletter-Versand',
+      compliance_tags: '["dsgvo","iso27001"]',
+      version: 1,
+      status: 'published',
+      created_at: now,
+      updated_at: now,
+    },
+    {
+      id: svcDatabaseId,
+      tenant_id: tenantId,
+      code: 'SVC-DB',
+      title: 'Datenbank Service',
+      description: 'Betrieb und Wartung von relationalen Datenbanksystemen (MySQL, PostgreSQL) inkl. Backup und Replikation.',
+      scope_included: 'DB-Installation, Konfiguration, Patch-Management, tägliche Backups, Performance-Monitoring',
+      scope_excluded: 'Applikationsspezifische Datenbankoptimierung, Schema-Design, Datenmigration',
+      compliance_tags: '["dsgvo","iso27001","bsi"]',
+      version: 1,
+      status: 'published',
+      created_at: now,
+      updated_at: now,
+    },
+    {
+      id: svcNetworkId,
+      tenant_id: tenantId,
+      code: 'SVC-NET',
+      title: 'Netzwerk & Konnektivität',
+      description: 'Bereitstellung und Betrieb der Netzwerk-Infrastruktur inkl. LAN, WAN, VPN und Firewall.',
+      scope_included: 'Switching, Routing, Firewall-Management, VPN-Zugänge, WLAN, DNS/DHCP',
+      scope_excluded: 'ISP-Leitungen, Mobilfunkverträge, Standortvernetzung über Drittanbieter',
+      compliance_tags: '["iso27001","bsi"]',
+      version: 1,
+      status: 'published',
+      created_at: now,
+      updated_at: now,
+    },
+    {
+      id: svcWebHostingId,
+      tenant_id: tenantId,
+      code: 'SVC-WEB',
+      title: 'Web-Hosting & Applikationsbetrieb',
+      description: 'Hosting und Betrieb von Web-Applikationen auf virtuellen Servern inkl. Load Balancing und SSL.',
+      scope_included: 'VM-Bereitstellung, Webserver-Konfiguration, SSL-Zertifikate, Load Balancing, Deployment-Support',
+      scope_excluded: 'Applikationsentwicklung, Content-Management, SEO-Optimierung',
+      compliance_tags: '["dsgvo","iso27001"]',
+      version: 1,
+      status: 'published',
+      created_at: now,
+      updated_at: now,
+    },
+    {
+      id: svcBackupId,
+      tenant_id: tenantId,
+      code: 'SVC-BKP',
+      title: 'Backup & Recovery',
+      description: 'Datensicherung und Wiederherstellung für Server, Datenbanken und Applikationen.',
+      scope_included: 'Tägliche Backups, 30-Tage-Retention, Restore-Tests, Off-Site-Kopie, Backup-Monitoring',
+      scope_excluded: 'Langzeitarchivierung (>1 Jahr), Backup von Client-Geräten, Cloud-Backup',
+      compliance_tags: '["iso27001","bsi"]',
+      version: 1,
+      status: 'published',
+      created_at: now,
+      updated_at: now,
+    },
+    {
+      id: svcMonitoringId,
+      tenant_id: tenantId,
+      code: 'SVC-MON',
+      title: 'Monitoring & Alerting',
+      description: 'Überwachung der IT-Infrastruktur und Applikationen mit automatischer Alarmierung bei Störungen.',
+      scope_included: 'Server-Monitoring, Netzwerk-Monitoring, Applikations-Checks, Alert-Routing, Dashboards',
+      scope_excluded: 'Application Performance Monitoring (APM), Log-Analyse, Business-KPIs',
+      compliance_tags: '["iso27001"]',
+      version: 1,
+      status: 'published',
+      created_at: now,
+      updated_at: now,
+    },
+    {
+      id: svcSecurityId,
+      tenant_id: tenantId,
+      code: 'SVC-SEC',
+      title: 'IT-Sicherheit & Compliance',
+      description: 'Sicherheitsmaßnahmen zum Schutz der IT-Infrastruktur inkl. Vulnerability-Management und Patch-Prozess.',
+      scope_included: 'Patch-Management, Vulnerability-Scans, Firewall-Regeln, Endpoint-Security, Security-Audits',
+      scope_excluded: 'Penetration-Testing, SOC-Dienste, Forensische Analysen',
+      compliance_tags: '["dsgvo","iso27001","bsi","kritis"]',
+      version: 1,
+      status: 'published',
+      created_at: now,
+      updated_at: now,
+    },
+    {
+      id: svcWorkplaceId,
+      tenant_id: tenantId,
+      code: 'SVC-WKP',
+      title: 'Arbeitsplatz & Endgeräte',
+      description: 'Bereitstellung und Support von Arbeitsplatz-IT inkl. Laptops, Drucker und Peripherie.',
+      scope_included: 'Hardware-Bereitstellung, Software-Installation, Helpdesk-Support, Drucker-Management',
+      scope_excluded: 'Privat genutzte Geräte, Spezial-Hardware, Software-Lizenzbeschaffung',
+      compliance_tags: '["dsgvo"]',
+      version: 1,
+      status: 'draft',
+      created_at: now,
+      updated_at: now,
+    },
+  ]);
+  console.log('  ✓ Service Descriptions: 8 service descriptions');
+
+  // ─── Horizontal Catalog ────────────────────────────────
+  const catalogStandardId = uuidv4();
+  const catalogPremiumId = uuidv4();
+
+  await db.insert(horizontalCatalog).values([
+    {
+      id: catalogStandardId,
+      tenant_id: tenantId,
+      name: 'Standard IT-Services',
+      description: 'Basiskatalog mit allen Standard-IT-Dienstleistungen für interne Kunden.',
+      status: 'active',
+      created_at: now,
+    },
+    {
+      id: catalogPremiumId,
+      tenant_id: tenantId,
+      name: 'Premium IT-Services',
+      description: 'Erweiterter Katalog mit zusätzlichen Leistungen für Premium-Kunden (SLA Gold/Platinum).',
+      status: 'active',
+      created_at: now,
+    },
+  ]);
+
+  // Standard catalog: Email, Network, Backup, Workplace, Monitoring
+  await db.insert(horizontalCatalogItems).values([
+    { catalog_id: catalogStandardId, service_desc_id: svcEmailId },
+    { catalog_id: catalogStandardId, service_desc_id: svcNetworkId },
+    { catalog_id: catalogStandardId, service_desc_id: svcBackupId },
+    { catalog_id: catalogStandardId, service_desc_id: svcMonitoringId },
+  ]);
+
+  // Premium catalog: All standard + Database, WebHosting, Security
+  await db.insert(horizontalCatalogItems).values([
+    { catalog_id: catalogPremiumId, service_desc_id: svcEmailId },
+    { catalog_id: catalogPremiumId, service_desc_id: svcDatabaseId },
+    { catalog_id: catalogPremiumId, service_desc_id: svcNetworkId },
+    { catalog_id: catalogPremiumId, service_desc_id: svcWebHostingId },
+    { catalog_id: catalogPremiumId, service_desc_id: svcBackupId },
+    { catalog_id: catalogPremiumId, service_desc_id: svcMonitoringId },
+    { catalog_id: catalogPremiumId, service_desc_id: svcSecurityId },
+  ]);
+  console.log('  ✓ Horizontal Catalogs: 2 catalogs (Standard + Premium) with items');
+
+  // ─── Compliance Frameworks ─────────────────────────────
+  const fwIso27001Id = uuidv4();
+  const fwDsgvoId = uuidv4();
+
+  await db.insert(regulatoryFrameworks).values([
+    {
+      id: fwIso27001Id,
+      tenant_id: tenantId,
+      name: 'ISO 27001:2022',
+      version: '2022',
+      description: 'Informationssicherheits-Managementsystem (ISMS) — Internationale Norm für Informationssicherheit. Definiert Anforderungen an Aufbau, Umsetzung, Aufrechterhaltung und Verbesserung eines ISMS.',
+      effective_date: '2022-10-25',
+      created_at: now,
+    },
+    {
+      id: fwDsgvoId,
+      tenant_id: tenantId,
+      name: 'DSGVO / GDPR',
+      version: 'EU 2016/679',
+      description: 'Datenschutz-Grundverordnung der Europäischen Union — Regelt den Umgang mit personenbezogenen Daten und die Rechte betroffener Personen.',
+      effective_date: '2018-05-25',
+      created_at: now,
+    },
+  ]);
+  console.log('  ✓ Compliance Frameworks: ISO 27001:2022, DSGVO/GDPR');
+
+  // ─── Regulatory Requirements ───────────────────────────
+  // ISO 27001 Requirements (Annex A controls — representative selection)
+  const reqA5_1Id = uuidv4();
+  const reqA5_2Id = uuidv4();
+  const reqA6_1Id = uuidv4();
+  const reqA8_1Id = uuidv4();
+  const reqA8_2Id = uuidv4();
+  const reqA8_3Id = uuidv4();
+  const reqA12_1Id = uuidv4();
+  const reqA12_3Id = uuidv4();
+
+  await db.insert(regulatoryRequirements).values([
+    {
+      id: reqA5_1Id,
+      framework_id: fwIso27001Id,
+      code: 'A.5.1',
+      title: 'Informationssicherheitsrichtlinien',
+      description: 'Ein Satz von Richtlinien für die Informationssicherheit muss definiert, von der Leitung genehmigt, veröffentlicht und den Mitarbeitern kommuniziert werden.',
+      category: 'Organisatorische Kontrollen',
+      created_at: now,
+    },
+    {
+      id: reqA5_2Id,
+      framework_id: fwIso27001Id,
+      code: 'A.5.2',
+      title: 'Rollen und Verantwortlichkeiten',
+      description: 'Verantwortlichkeiten und Zuständigkeiten für die Informationssicherheit müssen zugewiesen und kommuniziert werden.',
+      category: 'Organisatorische Kontrollen',
+      created_at: now,
+    },
+    {
+      id: reqA6_1Id,
+      framework_id: fwIso27001Id,
+      code: 'A.6.1',
+      title: 'Screening',
+      description: 'Hintergrundüberprüfungen aller Bewerber müssen vor der Einstellung durchgeführt werden.',
+      category: 'Personenbezogene Kontrollen',
+      created_at: now,
+    },
+    {
+      id: reqA8_1Id,
+      framework_id: fwIso27001Id,
+      code: 'A.8.1',
+      title: 'Endgeräte der Benutzer',
+      description: 'Informationen, die auf Endgeräten der Benutzer gespeichert oder verarbeitet werden, müssen geschützt werden.',
+      category: 'Technologische Kontrollen',
+      created_at: now,
+    },
+    {
+      id: reqA8_2Id,
+      framework_id: fwIso27001Id,
+      code: 'A.8.2',
+      title: 'Privilegierte Zugriffsrechte',
+      description: 'Die Zuweisung und Nutzung von privilegierten Zugriffsrechten muss eingeschränkt und gesteuert werden.',
+      category: 'Technologische Kontrollen',
+      created_at: now,
+    },
+    {
+      id: reqA8_3Id,
+      framework_id: fwIso27001Id,
+      code: 'A.8.3',
+      title: 'Einschränkung des Informationszugangs',
+      description: 'Der Zugang zu Informationen und Einrichtungen der Informationsverarbeitung muss gemäß der Zugangssteuerungspolitik eingeschränkt werden.',
+      category: 'Technologische Kontrollen',
+      created_at: now,
+    },
+    {
+      id: reqA12_1Id,
+      framework_id: fwIso27001Id,
+      code: 'A.8.13',
+      title: 'Datensicherung (Backup)',
+      description: 'Sicherungskopien von Informationen, Software und Systemabbildern müssen regelmäßig erstellt und geprüft werden.',
+      category: 'Technologische Kontrollen',
+      created_at: now,
+    },
+    {
+      id: reqA12_3Id,
+      framework_id: fwIso27001Id,
+      code: 'A.8.16',
+      title: 'Überwachung von Aktivitäten',
+      description: 'Netzwerke, Systeme und Anwendungen müssen auf anomales Verhalten überwacht und bei Erkennung geeignete Maßnahmen ergriffen werden.',
+      category: 'Technologische Kontrollen',
+      created_at: now,
+    },
+  ]);
+
+  // DSGVO Requirements
+  const reqDsgvo5Id = uuidv4();
+  const reqDsgvo25Id = uuidv4();
+  const reqDsgvo30Id = uuidv4();
+  const reqDsgvo32Id = uuidv4();
+  const reqDsgvo33Id = uuidv4();
+  const reqDsgvo35Id = uuidv4();
+
+  await db.insert(regulatoryRequirements).values([
+    {
+      id: reqDsgvo5Id,
+      framework_id: fwDsgvoId,
+      code: 'Art. 5',
+      title: 'Grundsätze der Verarbeitung',
+      description: 'Personenbezogene Daten müssen rechtmäßig, nach Treu und Glauben, transparent, zweckgebunden, datenminimiert, richtig, speicherbegrenzt und integer/vertraulich verarbeitet werden.',
+      category: 'Grundsätze',
+      created_at: now,
+    },
+    {
+      id: reqDsgvo25Id,
+      framework_id: fwDsgvoId,
+      code: 'Art. 25',
+      title: 'Datenschutz durch Technikgestaltung (Privacy by Design)',
+      description: 'Der Verantwortliche muss geeignete technische und organisatorische Maßnahmen treffen, die darauf ausgelegt sind, Datenschutzgrundsätze wirksam umzusetzen.',
+      category: 'Pflichten des Verantwortlichen',
+      created_at: now,
+    },
+    {
+      id: reqDsgvo30Id,
+      framework_id: fwDsgvoId,
+      code: 'Art. 30',
+      title: 'Verzeichnis der Verarbeitungstätigkeiten',
+      description: 'Jeder Verantwortliche und sein Vertreter führen ein Verzeichnis aller Verarbeitungstätigkeiten mit personenbezogenen Daten.',
+      category: 'Pflichten des Verantwortlichen',
+      created_at: now,
+    },
+    {
+      id: reqDsgvo32Id,
+      framework_id: fwDsgvoId,
+      code: 'Art. 32',
+      title: 'Sicherheit der Verarbeitung',
+      description: 'Der Verantwortliche muss geeignete technische und organisatorische Maßnahmen treffen, um ein dem Risiko angemessenes Schutzniveau zu gewährleisten (Verschlüsselung, Pseudonymisierung, etc.).',
+      category: 'Sicherheit',
+      created_at: now,
+    },
+    {
+      id: reqDsgvo33Id,
+      framework_id: fwDsgvoId,
+      code: 'Art. 33',
+      title: 'Meldung von Datenschutzverletzungen',
+      description: 'Datenschutzverletzungen sind unverzüglich, möglichst binnen 72 Stunden, der Aufsichtsbehörde zu melden.',
+      category: 'Sicherheit',
+      created_at: now,
+    },
+    {
+      id: reqDsgvo35Id,
+      framework_id: fwDsgvoId,
+      code: 'Art. 35',
+      title: 'Datenschutz-Folgenabschätzung',
+      description: 'Bei voraussichtlich hohem Risiko für die Rechte und Freiheiten natürlicher Personen muss vorab eine Abschätzung der Folgen der vorgesehenen Verarbeitungsvorgänge durchgeführt werden.',
+      category: 'Pflichten des Verantwortlichen',
+      created_at: now,
+    },
+  ]);
+  console.log('  ✓ Regulatory Requirements: 8 ISO 27001 + 6 DSGVO requirements');
+
+  // ─── Requirement ↔ Service Mappings (Compliance Matrix) ──
+  await db.insert(requirementServiceMappings).values([
+    // ISO 27001 A.5.1 — Security policy covers all services
+    { requirement_id: reqA5_1Id, service_desc_id: svcSecurityId, tenant_id: tenantId, coverage_level: 'full', evidence_notes: 'ISMS-Richtlinie v2.1 verabschiedet und kommuniziert', reviewed_at: now, reviewed_by: adminId },
+    { requirement_id: reqA5_1Id, service_desc_id: svcNetworkId, tenant_id: tenantId, coverage_level: 'full', evidence_notes: 'Netzwerk-Sicherheitsrichtlinie liegt vor', reviewed_at: now, reviewed_by: adminId },
+    // ISO 27001 A.8.1 — Endpoint security
+    { requirement_id: reqA8_1Id, service_desc_id: svcWorkplaceId, tenant_id: tenantId, coverage_level: 'partial', evidence_notes: 'Endpoint-Protection aktiv, Mobile-Device-Management ausstehend', reviewed_at: now, reviewed_by: managerId },
+    { requirement_id: reqA8_1Id, service_desc_id: svcSecurityId, tenant_id: tenantId, coverage_level: 'full', evidence_notes: 'Vollständige Endpoint-Security-Policy umgesetzt', reviewed_at: now, reviewed_by: adminId },
+    // ISO 27001 A.8.2 — Privileged access
+    { requirement_id: reqA8_2Id, service_desc_id: svcDatabaseId, tenant_id: tenantId, coverage_level: 'full', evidence_notes: 'PAM für DB-Zugriffe implementiert', reviewed_at: now, reviewed_by: adminId },
+    { requirement_id: reqA8_2Id, service_desc_id: svcNetworkId, tenant_id: tenantId, coverage_level: 'partial', evidence_notes: 'Firewall-Admin-Zugriffe noch nicht PAM-gesichert', reviewed_at: null, reviewed_by: null },
+    // ISO 27001 A.8.13 — Backup
+    { requirement_id: reqA12_1Id, service_desc_id: svcBackupId, tenant_id: tenantId, coverage_level: 'full', evidence_notes: 'Tägliche Backups + wöchentliche Restore-Tests dokumentiert', reviewed_at: now, reviewed_by: adminId },
+    { requirement_id: reqA12_1Id, service_desc_id: svcDatabaseId, tenant_id: tenantId, coverage_level: 'full', evidence_notes: 'DB-Backups mit Point-in-Time Recovery', reviewed_at: now, reviewed_by: adminId },
+    // ISO 27001 A.8.16 — Monitoring
+    { requirement_id: reqA12_3Id, service_desc_id: svcMonitoringId, tenant_id: tenantId, coverage_level: 'full', evidence_notes: 'Checkmk Monitoring mit Anomalie-Erkennung aktiv', reviewed_at: now, reviewed_by: adminId },
+    { requirement_id: reqA12_3Id, service_desc_id: svcNetworkId, tenant_id: tenantId, coverage_level: 'partial', evidence_notes: 'Netzwerk-Monitoring vorhanden, Deep Packet Inspection fehlt', reviewed_at: now, reviewed_by: managerId },
+    // DSGVO Art. 32 — Security of processing
+    { requirement_id: reqDsgvo32Id, service_desc_id: svcEmailId, tenant_id: tenantId, coverage_level: 'full', evidence_notes: 'TLS-Verschlüsselung für alle E-Mail-Verbindungen, Spam-Filter aktiv', reviewed_at: now, reviewed_by: adminId },
+    { requirement_id: reqDsgvo32Id, service_desc_id: svcDatabaseId, tenant_id: tenantId, coverage_level: 'full', evidence_notes: 'Verschlüsselung at-rest und in-transit, Zugriffssteuerung via RBAC', reviewed_at: now, reviewed_by: adminId },
+    { requirement_id: reqDsgvo32Id, service_desc_id: svcSecurityId, tenant_id: tenantId, coverage_level: 'full', evidence_notes: 'Umfassende TOM dokumentiert und umgesetzt', reviewed_at: now, reviewed_by: adminId },
+    // DSGVO Art. 33 — Breach notification
+    { requirement_id: reqDsgvo33Id, service_desc_id: svcSecurityId, tenant_id: tenantId, coverage_level: 'full', evidence_notes: 'Incident-Response-Plan mit 72h-Meldefrist definiert', reviewed_at: now, reviewed_by: adminId },
+    { requirement_id: reqDsgvo33Id, service_desc_id: svcMonitoringId, tenant_id: tenantId, coverage_level: 'partial', evidence_notes: 'Alerting vorhanden, automatische Meldekette in Umsetzung', reviewed_at: null, reviewed_by: null },
+    // DSGVO Art. 25 — Privacy by Design
+    { requirement_id: reqDsgvo25Id, service_desc_id: svcWebHostingId, tenant_id: tenantId, coverage_level: 'partial', evidence_notes: 'SSL/TLS per Default, Cookie-Consent ausstehend', reviewed_at: now, reviewed_by: managerId },
+    { requirement_id: reqDsgvo25Id, service_desc_id: svcEmailId, tenant_id: tenantId, coverage_level: 'full', evidence_notes: 'Datensparsamkeit bei E-Mail-Logging umgesetzt', reviewed_at: now, reviewed_by: adminId },
+  ]);
+  console.log('  ✓ Compliance Mappings: 17 requirement-service mappings');
 
   console.log('\n✅ Seed completed successfully!');
   console.log('\n📋 Login credentials:');
