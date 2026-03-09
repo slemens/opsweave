@@ -114,6 +114,13 @@ export const updateTenantSchema = z.object({
 
 export type UpdateTenantInput = z.infer<typeof updateTenantSchema>;
 
+export const addTenantMemberSchema = z.object({
+  user_id: uuidSchema,
+  role: z.enum(USER_ROLES).default('viewer'),
+});
+
+export type AddTenantMemberInput = z.infer<typeof addTenantMemberSchema>;
+
 // ---------------------------------------------------------------------------
 // User Schemas
 // ---------------------------------------------------------------------------

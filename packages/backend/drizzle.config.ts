@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { defineConfig } from 'drizzle-kit';
 
-const dbDriver = process.env['DB_DRIVER'] ?? 'pg';
+const dbDriver = process.env['DB_DRIVER'] ?? 'sqlite';
 
 const pgConfig = defineConfig({
   dialect: 'postgresql',

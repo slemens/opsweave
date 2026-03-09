@@ -6,6 +6,17 @@ import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 // ─── Types ─────────────────────────────────────────────────
 export type DbInstance = PostgresJsDatabase | BetterSQLite3Database;
 
+/**
+ * Type alias for use in service files.
+ * At runtime both drivers expose the same query API surface.
+ * We cast to BetterSQLite3Database because the schema tables use sqliteTable,
+ * which ensures full type-safety for column references, where clauses, etc.
+ *
+ * This is safe because Drizzle's query builder methods have the same
+ * runtime signatures regardless of the underlying driver.
+ */
+export type TypedDb = BetterSQLite3Database;
+
 let _db: DbInstance | null = null;
 
 // ─── Connection ────────────────────────────────────────────
