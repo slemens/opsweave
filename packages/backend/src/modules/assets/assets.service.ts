@@ -592,34 +592,20 @@ export async function getAssetStats(
 }
 
 /**
- * Get a 1-hop graph (nodes + edges) centred on a given asset.
+ * Get the full connected component (BFS) graph centred on a given asset.
  */
 export async function getAssetGraph(
   tenantId: string,
   assetId: string,
 ): Promise<{
-  nodes: Array<{ id: string; display_name: string; asset_type: string; status: string }>;
+  nodes: Array<{ id: string; display_name: string; asset_type: string; status: string; name: string }>;
   edges: Array<{ id: string; source_asset_id: string; target_asset_id: string; relation_type: string }>;
+  centerAssetId: string;
 }> {
   const d = db();
 
-  // Central asset
-  const centerRows = await d
-    .select({
-      id: assets.id,
-      display_name: assets.display_name,
-      asset_type: assets.asset_type,
-      status: assets.status,
-    })
-    .from(assets)
-    .where(and(eq(assets.id, assetId), eq(assets.tenant_id, tenantId)))
-    .limit(1);
-
-  const centerAsset = centerRows[0];
-  if (!centerAsset) return { nodes: [], edges: [] };
-
-  // All relations where this asset is source or target (1 hop)
-  const relations = await d
+  // Load ALL relations for this tenant once
+  const allRelations = await d
     .select({
       id: assetRelations.id,
       source_asset_id: assetRelations.source_asset_id,
@@ -627,42 +613,79 @@ export async function getAssetGraph(
       relation_type: assetRelations.relation_type,
     })
     .from(assetRelations)
-    .where(
-      and(
-        eq(assetRelations.tenant_id, tenantId),
-        or(
-          eq(assetRelations.source_asset_id, assetId),
-          eq(assetRelations.target_asset_id, assetId),
-        ),
-      ),
-    );
+    .where(eq(assetRelations.tenant_id, tenantId));
 
-  // Collect all neighbour IDs
-  const relatedIds = new Set<string>();
-  for (const rel of relations) {
-    if (rel.source_asset_id !== assetId) relatedIds.add(rel.source_asset_id);
-    if (rel.target_asset_id !== assetId) relatedIds.add(rel.target_asset_id);
+  // BFS to find full connected component starting from assetId
+  const visited = new Set<string>([assetId]);
+  const queue = [assetId];
+  const relevantEdges: typeof allRelations = [];
+
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    for (const rel of allRelations) {
+      if (rel.source_asset_id === current || rel.target_asset_id === current) {
+        relevantEdges.push(rel);
+        const neighbor = rel.source_asset_id === current ? rel.target_asset_id : rel.source_asset_id;
+        if (!visited.has(neighbor)) {
+          visited.add(neighbor);
+          queue.push(neighbor);
+        }
+      }
+    }
   }
 
-  // Load neighbour assets
-  const relatedIdsList = [...relatedIds];
-  const relatedAssets =
-    relatedIdsList.length > 0
-      ? await d
-          .select({
-            id: assets.id,
-            display_name: assets.display_name,
-            asset_type: assets.asset_type,
-            status: assets.status,
-          })
-          .from(assets)
-          .where(and(eq(assets.tenant_id, tenantId), inArray(assets.id, relatedIdsList)))
-      : [];
+  // Deduplicate edges
+  const edgeMap = new Map<string, (typeof allRelations)[0]>();
+  for (const e of relevantEdges) edgeMap.set(e.id, e);
+  const uniqueEdges = Array.from(edgeMap.values());
 
-  return {
-    nodes: [centerAsset, ...relatedAssets],
-    edges: relations,
-  };
+  if (visited.size === 0) return { nodes: [], edges: [], centerAssetId: assetId };
+
+  // Fetch all visited asset nodes
+  const nodeRows = await d
+    .select({
+      id: assets.id,
+      name: assets.name,
+      display_name: assets.display_name,
+      asset_type: assets.asset_type,
+      status: assets.status,
+    })
+    .from(assets)
+    .where(and(eq(assets.tenant_id, tenantId), inArray(assets.id, Array.from(visited))));
+
+  return { nodes: nodeRows, edges: uniqueEdges, centerAssetId: assetId };
+}
+
+/**
+ * Get the full topology graph (all assets + all relations) for a tenant.
+ */
+export async function getFullAssetGraph(tenantId: string): Promise<{
+  nodes: Array<{ id: string; display_name: string; asset_type: string; status: string; name: string }>;
+  edges: Array<{ id: string; source_asset_id: string; target_asset_id: string; relation_type: string }>;
+}> {
+  const d = db();
+  const [nodeRows, edgeRows] = await Promise.all([
+    d
+      .select({
+        id: assets.id,
+        name: assets.name,
+        display_name: assets.display_name,
+        asset_type: assets.asset_type,
+        status: assets.status,
+      })
+      .from(assets)
+      .where(eq(assets.tenant_id, tenantId)),
+    d
+      .select({
+        id: assetRelations.id,
+        source_asset_id: assetRelations.source_asset_id,
+        target_asset_id: assetRelations.target_asset_id,
+        relation_type: assetRelations.relation_type,
+      })
+      .from(assetRelations)
+      .where(eq(assetRelations.tenant_id, tenantId)),
+  ]);
+  return { nodes: nodeRows, edges: edgeRows };
 }
 
 /**

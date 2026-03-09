@@ -16,9 +16,11 @@ import ReactFlow, {
   Controls,
   MiniMap,
   Background,
-  MarkerType,
+  type Node as RFNode,
+  type Edge as RFEdge,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
+import { applyDagreLayout } from '@/lib/graph-layout';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
@@ -152,6 +154,48 @@ export function AssetDetailPage() {
     const all = allAssetsData?.data ?? [];
     return all.filter((a) => a.id !== id);
   }, [allAssetsData, id]);
+
+  // ── Graph Layout (dagre) ───────────────────────────────────
+  const { rfNodes, rfEdges } = useMemo(() => {
+    if (!graphData?.nodes?.length) return { rfNodes: [], rfEdges: [] };
+
+    const rawNodes: RFNode[] = graphData.nodes.map((n) => ({
+      id: n.id,
+      data: {
+        label: (
+          <div style={{ textAlign: 'center', fontSize: 12 }}>
+            <div style={{ fontWeight: 600 }}>{n.display_name || n.name}</div>
+            <div style={{ opacity: 0.7, fontSize: 11 }}>{n.asset_type}</div>
+          </div>
+        ),
+      },
+      position: { x: 0, y: 0 },
+      style: {
+        background: n.id === graphData.centerAssetId ? '#2563eb' : '#1e293b',
+        color: '#fff',
+        border: n.id === graphData.centerAssetId ? '2px solid #3b82f6' : '1px solid #334155',
+        borderRadius: 8,
+        width: 160,
+        fontSize: 12,
+        padding: '8px 12px',
+      },
+    }));
+
+    const rawEdges: RFEdge[] = graphData.edges.map((e) => ({
+      id: e.id,
+      source: e.source_asset_id,
+      target: e.target_asset_id,
+      label: e.relation_type,
+      labelStyle: { fontSize: 10, fill: '#94a3b8' },
+      labelBgStyle: { fill: '#0f172a', fillOpacity: 0.8 },
+      style: { stroke: '#475569' },
+      type: 'smoothstep' as const,
+      animated: false,
+    }));
+
+    const layout = applyDagreLayout(rawNodes, rawEdges, 'TB');
+    return { rfNodes: layout.nodes, rfEdges: layout.edges };
+  }, [graphData]);
 
   // ── Handlers ──────────────────────────────────────────────
 
@@ -371,64 +415,23 @@ export function AssetDetailPage() {
                 </CardHeader>
                 <CardContent>
                   {graphView ? (
-                    graphData && graphData.nodes.length > 0 ? (
+                    rfNodes.length > 0 ? (
                       <div style={{ height: 400 }} className="border rounded-lg overflow-hidden">
                         <ReactFlow
-                          nodes={[
-                            // Central node — highlighted in brand blue
-                            {
-                              id: asset.id,
-                              position: { x: 300, y: 180 },
-                              data: { label: asset.display_name },
-                              style: {
-                                background: '#2563eb',
-                                color: 'white',
-                                borderRadius: 8,
-                                padding: '8px 14px',
-                                fontWeight: 600,
-                                fontSize: 13,
-                                border: 'none',
-                              },
-                            },
-                            // Neighbour nodes arranged in a circle around the centre
-                            ...graphData.nodes
-                              .filter((n) => n.id !== asset.id)
-                              .map((n, i, arr) => {
-                                const angle = (i / Math.max(arr.length, 1)) * 2 * Math.PI - Math.PI / 2;
-                                const radius = 180;
-                                return {
-                                  id: n.id,
-                                  position: {
-                                    x: 300 + radius * Math.cos(angle),
-                                    y: 180 + radius * Math.sin(angle),
-                                  },
-                                  data: { label: `${n.display_name}\n${n.asset_type}` },
-                                  style: {
-                                    background: '#f1f5f9',
-                                    borderRadius: 8,
-                                    padding: '6px 12px',
-                                    fontSize: 12,
-                                    border: '1px solid #e2e8f0',
-                                  },
-                                };
-                              }),
-                          ]}
-                          edges={graphData.edges.map((e) => ({
-                            id: e.id,
-                            source: e.source_asset_id,
-                            target: e.target_asset_id,
-                            label: e.relation_type,
-                            markerEnd: { type: MarkerType.ArrowClosed },
-                            style: { stroke: '#94a3b8' },
-                            labelStyle: { fontSize: 11, fill: '#64748b' },
-                            labelBgStyle: { fill: '#ffffff', fillOpacity: 0.85 },
-                          }))}
+                          nodes={rfNodes}
+                          edges={rfEdges}
                           fitView
                           fitViewOptions={{ padding: 0.25 }}
+                          nodesDraggable={true}
+                          nodesConnectable={false}
+                          elementsSelectable={true}
                         >
                           <Controls />
-                          <MiniMap nodeColor={() => '#2563eb'} />
-                          <Background />
+                          <MiniMap
+                            nodeColor={(n) => (n.style?.background as string) ?? '#1e293b'}
+                            maskColor="rgba(0,0,0,0.3)"
+                          />
+                          <Background color="#334155" gap={20} />
                         </ReactFlow>
                       </div>
                     ) : (

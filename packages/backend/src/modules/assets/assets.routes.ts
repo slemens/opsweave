@@ -19,6 +19,7 @@ import {
   createAssetRelation,
   deleteAssetRelation,
   getAssetStats,
+  getFullAssetGraph,
   getAssetGraph,
   getAssetTickets,
 } from './assets.controller.js';
@@ -58,8 +59,18 @@ assetRouter.get(
 );
 
 /**
+ * GET /api/v1/assets/graph
+ * Get full topology graph (all assets + all relations for this tenant).
+ * IMPORTANT: must be before /:id to avoid routing conflicts.
+ */
+assetRouter.get(
+  '/graph',
+  getFullAssetGraph,
+);
+
+/**
  * GET /api/v1/assets/:id/graph
- * Get 1-hop asset graph (nodes + edges).
+ * Get full connected component (BFS) graph centred on a given asset.
  * IMPORTANT: must be before /:id to avoid routing conflicts.
  */
 assetRouter.get(
