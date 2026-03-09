@@ -32,6 +32,8 @@ export function validate<T>(schema: ZodSchema<T>) {
 
 /**
  * Validate query parameters.
+ * In Express 5, req.query is a read-only getter. We store parsed
+ * query data on req.parsedQuery instead.
  */
 export function validateQuery<T>(schema: ZodSchema<T>) {
   return (req: Request, _res: Response, next: NextFunction): void => {
@@ -41,9 +43,8 @@ export function validateQuery<T>(schema: ZodSchema<T>) {
       throw result.error;
     }
 
-    // Attach parsed query — Express query is read-only on the type,
-    // so we cast through unknown to allow replacement.
-    (req as unknown as Record<string, unknown>)['query'] = result.data;
+    // Store on a custom property since Express 5 query is read-only
+    (req as Record<string, unknown>)['parsedQuery'] = result.data;
     next();
   };
 }

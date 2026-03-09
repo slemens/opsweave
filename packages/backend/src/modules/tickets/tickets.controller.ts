@@ -25,10 +25,10 @@ export async function listTickets(
   res: Response,
 ): Promise<void> {
   const tenantId = req.tenantId!;
-  const params = req.query as unknown as TicketFilterParams;
+  const params = ((req as Record<string, unknown>)['parsedQuery'] ?? req.query) as unknown as TicketFilterParams;
 
   const { tickets, total } = await ticketsService.listTickets(tenantId, params);
-  sendPaginated(res, tickets, total, params.page, params.limit);
+  sendPaginated(res, tickets, total, params.page ?? 1, params.limit ?? 25);
 }
 
 // ─── Get Ticket ─────────────────────────────────────────
