@@ -167,5 +167,10 @@
   },
   "validation": {
     "title_min_length": "Title must be at least 3 characters long"
-  }
+  },
+  "create_category": "Create new category",
+  "create_category_description": "Create a new category and assign it to this ticket.",
+  "category_name_placeholder": "Enter category name...",
+  "category_created": "Category created and assigned",
+  "creating": "Creating..."
 }

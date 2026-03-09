@@ -219,7 +219,6 @@ export function AssetsPage() {
 
     const layout = applyDagreLayout(rawNodes, rawEdges, 'LR');
     return { globalNodes: layout.nodes, globalEdges: layout.edges };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fullGraph]);
 
   // ── Handlers ──────────────────────────────────────────────

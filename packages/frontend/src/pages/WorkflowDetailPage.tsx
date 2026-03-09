@@ -271,7 +271,7 @@ export function WorkflowDetailPage() {
 
   const handleAddStep = useCallback(async () => {
     if (!id || !stepName.trim()) return;
-    let parsedConfig: Record<string, unknown> = {};
+    let parsedConfig: Record<string, unknown>;
     try {
       parsedConfig = JSON.parse(stepConfig || '{}') as Record<string, unknown>;
     } catch {
