@@ -17,9 +17,9 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/github/license/slemens/opsweave?style=flat-square" alt="Lizenz" />
-  <img src="https://img.shields.io/github/v/release/slemens/opsweave?style=flat-square" alt="Release" />
-  <img src="https://img.shields.io/github/actions/workflow/status/slemens/opsweave/ci.yml?style=flat-square" alt="CI" />
+  <img src="https://img.shields.io/badge/license-AGPL--3.0-blue?style=flat-square" alt="Lizenz" />
+  <img src="https://img.shields.io/badge/release-v0.2.0-orange?style=flat-square" alt="Release" />
+  <img src="https://github.com/slemens/opsweave/actions/workflows/ci.yml/badge.svg" alt="CI" />
   <img src="https://img.shields.io/badge/i18n-de%20%7C%20en-blue?style=flat-square" alt="Sprachen" />
 </p>
 
