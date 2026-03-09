@@ -167,5 +167,10 @@
   },
   "validation": {
     "title_min_length": "Der Titel muss mindestens 3 Zeichen lang sein"
-  }
+  },
+  "create_category": "Neue Kategorie erstellen",
+  "create_category_description": "Erstellen Sie eine neue Kategorie und weisen Sie sie diesem Ticket zu.",
+  "category_name_placeholder": "Kategoriename eingeben...",
+  "category_created": "Kategorie erstellt und zugewiesen",
+  "creating": "Erstelle..."
 }

@@ -66,6 +66,7 @@ import {
   useUsers,
   useCustomers,
   useCategories,
+  useCreateCategory,
   useUpdateTicket,
 } from '@/api/tickets';
 import type { TicketCommentWithAuthor, HistoryWithUser, ChildTicketSummary } from '@/api/tickets';
@@ -527,6 +528,7 @@ export function TicketDetailPage() {
   const updatePriority = useUpdateTicketPriority();
   const assignTicket = useAssignTicket();
   const updateTicket = useUpdateTicket();
+  const createCategory = useCreateCategory();
   const { data: groupsData } = useGroups();
   const { data: usersData } = useUsers();
   const { data: customersData } = useCustomers();
@@ -684,7 +686,16 @@ export function TicketDetailPage() {
     }
   }, [id, updateTicket, t]);
 
+  // ── New Category creation state ────────────────────────────
+  const [newCatDialogOpen, setNewCatDialogOpen] = useState(false);
+  const [newCatName, setNewCatName] = useState('');
+
   const handleCategoryChange = useCallback(async (catId: string) => {
+    if (catId === '__create_new__') {
+      setNewCatName('');
+      setNewCatDialogOpen(true);
+      return;
+    }
     if (!id) return;
     try {
       await updateTicket.mutateAsync({
@@ -696,6 +707,23 @@ export function TicketDetailPage() {
       toast.error(t('update_error'));
     }
   }, [id, updateTicket, t]);
+
+  const handleCreateCategory = useCallback(async () => {
+    if (!id || !newCatName.trim()) return;
+    try {
+      const created = await createCategory.mutateAsync({
+        name: newCatName.trim(),
+        applies_to: ticket?.ticket_type ?? 'all',
+      });
+      // Assign the newly created category to this ticket
+      await updateTicket.mutateAsync({ id, category_id: created.id });
+      toast.success(t('category_created'));
+      setNewCatDialogOpen(false);
+      setNewCatName('');
+    } catch {
+      toast.error(t('update_error'));
+    }
+  }, [id, newCatName, createCategory, updateTicket, ticket?.ticket_type, t]);
 
   const handleAssetChange = useCallback(async (assetId: string) => {
     if (!id) return;
@@ -1497,6 +1525,12 @@ export function TicketDetailPage() {
                         {c.name}
                       </SelectItem>
                     ))}
+                    <SelectItem value="__create_new__">
+                      <span className="flex items-center gap-1 text-primary">
+                        <Plus className="h-3 w-3" />
+                        {t('create_category')}
+                      </span>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </SidebarField>
@@ -1636,6 +1670,39 @@ export function TicketDetailPage() {
           </Card>
         </div>
       </div>
+
+      {/* ── New Category Dialog ─────────────────────────────── */}
+      <Dialog open={newCatDialogOpen} onOpenChange={setNewCatDialogOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>{t('create_category')}</DialogTitle>
+            <DialogDescription>{t('create_category_description')}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="space-y-1.5">
+              <Label>{t('fields.name')}</Label>
+              <Input
+                value={newCatName}
+                onChange={(e) => setNewCatName(e.target.value)}
+                placeholder={t('category_name_placeholder')}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleCreateCategory(); }}
+                autoFocus
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNewCatDialogOpen(false)}>
+              {tCommon('actions.cancel')}
+            </Button>
+            <Button
+              onClick={handleCreateCategory}
+              disabled={!newCatName.trim() || createCategory.isPending}
+            >
+              {createCategory.isPending ? t('creating') : tCommon('actions.create')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

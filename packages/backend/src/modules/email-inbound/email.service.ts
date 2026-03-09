@@ -496,7 +496,6 @@ export async function processInboundEmail(
       .limit(1);
 
     ticketRow = ticketRows[0] ?? null;
-    isNew = false;
   } else {
     // 3b. No match: load config and create new ticket
     const configRows = await d

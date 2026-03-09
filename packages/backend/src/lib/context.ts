@@ -22,6 +22,7 @@ export interface RequestUser {
 }
 
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
       /** Authenticated user payload (set by auth middleware). */
