@@ -263,6 +263,16 @@
   Keine Warnung vor ablaufenden SLA-Deadlines.
   - Soll: Notification X Minuten vor Response/Resolve-Deadline
 
+- [ ] **FEAT-10: Benutzerverwaltung (User Management UI)**
+  Kein Admin-UI zum Verwalten von Benutzern. Users können nur per API/Seed erstellt werden.
+  - Soll: Settings-Tab "Benutzer" mit CRUD (erstellen, bearbeiten, deaktivieren, Rolle ändern)
+  - User-Liste mit Name, Email, Rolle, Status, letzter Login
+  - Passwort-Reset durch Admin
+  - Tenant-Membership-Verwaltung (User zu Tenant hinzufügen/entfernen)
+  - Rolle pro Tenant setzen (admin, manager, agent, viewer)
+  - Backend: `GET/POST /api/v1/users`, `GET/PUT/DELETE /api/v1/users/:id`
+  - Frontend: SettingsPage Tab "Benutzer" mit Tabelle + Create/Edit Dialog
+
 ---
 
 ## ARCHITEKTUR-EMPFEHLUNGEN (fur 10x Scale / 5+ Jahre)
