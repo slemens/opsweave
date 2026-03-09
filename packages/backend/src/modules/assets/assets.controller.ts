@@ -160,6 +160,19 @@ export async function getAssetStats(
 // ─── Asset Graph ───────────────────────────────────────
 
 /**
+ * GET /api/v1/assets/graph
+ */
+export async function getFullAssetGraph(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const tenantId = req.tenantId!;
+
+  const graph = await assetsService.getFullAssetGraph(tenantId);
+  sendSuccess(res, graph);
+}
+
+/**
  * GET /api/v1/assets/:id/graph
  */
 export async function getAssetGraph(

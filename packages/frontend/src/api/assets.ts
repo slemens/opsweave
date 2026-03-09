@@ -79,6 +79,7 @@ export interface AssetGraphNode {
   display_name: string;
   asset_type: string;
   status: string;
+  name: string;
 }
 
 export interface AssetGraphEdge {
@@ -91,6 +92,12 @@ export interface AssetGraphEdge {
 export interface AssetGraph {
   nodes: AssetGraphNode[];
   edges: AssetGraphEdge[];
+  centerAssetId?: string;
+}
+
+export interface FullAssetGraph {
+  nodes: Array<{ id: string; display_name: string; asset_type: string; status: string; name: string }>;
+  edges: Array<{ id: string; source_asset_id: string; target_asset_id: string; relation_type: string }>;
 }
 
 export interface CreateAssetPayload {
@@ -140,6 +147,7 @@ export const assetKeys = {
   detail: (id: string) => [...assetKeys.details(), id] as const,
   relations: (id: string) => [...assetKeys.all, 'relations', id] as const,
   graph: (id: string) => [...assetKeys.all, 'graph', id] as const,
+  graphFull: () => [...assetKeys.all, 'graph', 'full'] as const,
   stats: () => [...assetKeys.all, 'stats'] as const,
   tickets: (id: string) => [...assetKeys.all, 'tickets', id] as const,
 };
@@ -208,9 +216,21 @@ export function useAssetGraph(assetId: string) {
   return useQuery({
     queryKey: assetKeys.graph(assetId),
     queryFn: async () => {
-      return apiClient.get<AssetGraph>(`/assets/${assetId}/graph`);
+      const result = await apiClient.get<AssetGraph>(`/assets/${assetId}/graph`);
+      // Ensure centerAssetId is populated; fall back to the requested assetId
+      if (!result.centerAssetId) {
+        return { ...result, centerAssetId: assetId };
+      }
+      return result;
     },
     enabled: !!assetId,
+  });
+}
+
+export function useFullAssetGraph() {
+  return useQuery({
+    queryKey: assetKeys.graphFull(),
+    queryFn: () => apiClient.get<FullAssetGraph>('/assets/graph'),
   });
 }
 

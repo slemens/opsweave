@@ -10,7 +10,18 @@ import {
   ChevronRight,
   Server,
   FilterX,
+  Network,
 } from 'lucide-react';
+import ReactFlow, {
+  Controls,
+  MiniMap,
+  Background,
+  type Node as RFNode,
+  type Edge as RFEdge,
+} from 'reactflow';
+import 'reactflow/dist/style.css';
+import { useFullAssetGraph } from '@/api/assets';
+import { applyDagreLayout } from '@/lib/graph-layout';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -91,6 +102,9 @@ export function AssetsPage() {
   const { t: tCommon } = useTranslation('common');
   const navigate = useNavigate();
 
+  // ── View Toggle ───────────────────────────────────────────
+  const [globalGraphView, setGlobalGraphView] = useState(false);
+
   // ── Filter State ──────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
@@ -128,6 +142,7 @@ export function AssetsPage() {
   const { data, isLoading, isError, refetch } = useAssets(listParams);
   const createAsset = useCreateAsset();
   const { data: customersData } = useCustomers();
+  const { data: fullGraph, isLoading: graphLoading } = useFullAssetGraph();
 
   const assetList = data?.data ?? [];
   const meta = data?.meta;
@@ -139,6 +154,73 @@ export function AssetsPage() {
   }, [customersData]);
 
   const hasActiveFilters = typeFilter !== 'all' || statusFilter !== 'all' || slaFilter !== 'all' || envFilter !== 'all' || customerFilter !== 'all' || searchQuery !== '';
+
+  // ── Global Topology Graph ─────────────────────────────────
+
+  const assetTypeColors: Record<string, string> = {
+    server_physical: '#0f766e',
+    server_virtual: '#0369a1',
+    virtualization_host: '#0369a1',
+    container: '#1d4ed8',
+    container_host: '#1d4ed8',
+    network_switch: '#7c3aed',
+    network_router: '#6d28d9',
+    network_firewall: '#b91c1c',
+    network_load_balancer: '#9f1239',
+    network_wap: '#c2410c',
+    rack: '#92400e',
+    storage_san: '#065f46',
+    storage_nas: '#065f46',
+    storage_backup: '#064e3b',
+    database: '#86198f',
+    application: '#0c4a6e',
+    service: '#0c4a6e',
+    middleware: '#1e3a5f',
+    cluster: '#1e3a5f',
+    workstation: '#374151',
+    laptop: '#374151',
+    printer: '#374151',
+  };
+
+  const { globalNodes, globalEdges } = useMemo(() => {
+    if (!fullGraph?.nodes?.length) return { globalNodes: [], globalEdges: [] };
+
+    const rawNodes: RFNode[] = fullGraph.nodes.map((n) => ({
+      id: n.id,
+      data: {
+        label: (
+          <div style={{ textAlign: 'center', fontSize: 11 }}>
+            <div style={{ fontWeight: 600, fontSize: 12 }}>{n.display_name || n.name}</div>
+            <div style={{ opacity: 0.65, fontSize: 10 }}>{n.asset_type}</div>
+          </div>
+        ),
+      },
+      position: { x: 0, y: 0 },
+      style: {
+        background: assetTypeColors[n.asset_type] ?? '#334155',
+        color: '#fff',
+        border: '1px solid rgba(255,255,255,0.15)',
+        borderRadius: 8,
+        width: 160,
+        padding: '6px 10px',
+      },
+    }));
+
+    const rawEdges: RFEdge[] = fullGraph.edges.map((e) => ({
+      id: e.id,
+      source: e.source_asset_id,
+      target: e.target_asset_id,
+      label: e.relation_type,
+      labelStyle: { fontSize: 9, fill: '#94a3b8' },
+      labelBgStyle: { fill: '#0f172a', fillOpacity: 0.8 },
+      style: { stroke: '#475569' },
+      type: 'smoothstep' as const,
+    }));
+
+    const layout = applyDagreLayout(rawNodes, rawEdges, 'LR');
+    return { globalNodes: layout.nodes, globalEdges: layout.edges };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fullGraph]);
 
   // ── Handlers ──────────────────────────────────────────────
 
@@ -275,202 +357,259 @@ export function AssetsPage() {
         </Button>
       </div>
 
-      {/* Search */}
-      <div className="flex items-center gap-3">
-        <form onSubmit={handleSearch} className="relative flex-1 max-w-md">
-          <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder={`${tCommon('actions.search')}...`}
-            className="pl-8"
-            value={searchQuery}
-            onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
-          />
-        </form>
-        {hasActiveFilters && (
-          <Button variant="ghost" size="sm" onClick={resetFilters} className="text-muted-foreground">
-            <FilterX className="mr-1.5 h-4 w-4" />
-            {tCommon('actions.reset')}
-          </Button>
-        )}
+      {/* View toggle */}
+      <div className="flex items-center gap-2 mb-4">
+        <button
+          onClick={() => setGlobalGraphView(false)}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+            !globalGraphView ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'
+          }`}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          Tabelle
+        </button>
+        <button
+          onClick={() => setGlobalGraphView(true)}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+            globalGraphView ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'
+          }`}
+        >
+          <Network size={14} />
+          Topologie
+        </button>
       </div>
 
-      {/* Table */}
-      {isLoading ? (
-        <div className="space-y-3">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <Skeleton key={i} className="h-12 w-full" />
-          ))}
-        </div>
-      ) : isError ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="rounded-full bg-destructive/10 p-3 mb-4">
-            <AlertCircle className="h-6 w-6 text-destructive" />
-          </div>
-          <p className="text-sm font-medium text-foreground mb-1">{tCommon('status.error')}</p>
-          <p className="text-sm text-muted-foreground mb-4">{tCommon('errors.generic')}</p>
-          <Button variant="outline" onClick={() => refetch()}>
-            <RefreshCw className="mr-2 h-4 w-4" />
-            {tCommon('actions.retry')}
-          </Button>
-        </div>
-      ) : assetList.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="rounded-full bg-muted p-4 mb-4">
-            <Server className="h-8 w-8 text-muted-foreground" />
-          </div>
-          <p className="text-sm font-medium text-foreground mb-1">{t('list.empty')}</p>
-          <p className="text-sm text-muted-foreground mb-4">{t('list.empty_hint')}</p>
-          <Button onClick={() => setCreateOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            {t('create')}
-          </Button>
-        </div>
-      ) : (
-        <>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="w-[220px]">
-                    <span className="flex items-center px-1 pt-1 text-xs font-medium text-muted-foreground">
-                      {t('fields.display_name')}
-                    </span>
-                  </TableHead>
-                  <FilterHead
-                    label={t('fields.asset_type')}
-                    filterValue={typeFilter}
-                    onFilterChange={(v) => { setTypeFilter(v); setPage(1); }}
-                    options={typeOptions}
-                    allLabel={t('filter_all_types')}
-                  />
-                  <FilterHead
-                    label={t('fields.status')}
-                    filterValue={statusFilter}
-                    onFilterChange={(v) => { setStatusFilter(v); setPage(1); }}
-                    options={statusOptions}
-                    allLabel={t('filter_all_statuses')}
-                  />
-                  <TableHead>
-                    <span className="text-xs font-medium text-muted-foreground">
-                      {t('fields.ip_address')}
-                    </span>
-                  </TableHead>
-                  <TableHead>
-                    <span className="text-xs font-medium text-muted-foreground">
-                      {t('fields.location')}
-                    </span>
-                  </TableHead>
-                  <FilterHead
-                    label={t('fields.sla_tier')}
-                    filterValue={slaFilter}
-                    onFilterChange={(v) => { setSlaFilter(v); setPage(1); }}
-                    options={slaOptions}
-                    allLabel={t('filter_all_sla')}
-                  />
-                  <FilterHead
-                    label={t('fields.environment')}
-                    filterValue={envFilter}
-                    onFilterChange={(v) => { setEnvFilter(v); setPage(1); }}
-                    options={envOptions}
-                    allLabel={t('filter_all_environments')}
-                  />
-                  <FilterHead
-                    label={t('fields.customer')}
-                    filterValue={customerFilter}
-                    onFilterChange={(v) => { setCustomerFilter(v); setPage(1); }}
-                    options={customerOptions}
-                    allLabel={t('filter_all_customers')}
-                  />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {assetList.map((asset: AssetWithRelations) => (
-                  <TableRow
-                    key={asset.id}
-                    className="cursor-pointer"
-                    onClick={() => navigate(`/assets/${asset.id}`)}
-                  >
-                    <TableCell className="font-medium">
-                      <div>
-                        <span className="text-sm">{asset.display_name}</span>
-                        <span className="block text-xs text-muted-foreground font-mono">{asset.name}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="text-xs font-normal">
-                        {t(`types.${asset.asset_type}`)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={cn('text-xs border', statusColors[asset.status] ?? '')}>
-                        {t(`statuses.${asset.status}`)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm font-mono text-muted-foreground">
-                        {asset.ip_address ?? '\u2014'}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm text-muted-foreground">
-                        {asset.location ?? '\u2014'}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      {asset.sla_tier !== 'none' ? (
-                        <Badge variant="outline" className={cn('text-xs border', slaColors[asset.sla_tier] ?? '')}>
-                          {t(`sla_tiers.${asset.sla_tier}`)}
-                        </Badge>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">{'\u2014'}</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {asset.environment ? (
-                        <span className="text-sm">{t(`environments.${asset.environment}`)}</span>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">{'\u2014'}</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm text-muted-foreground">
-                        {asset.customer?.name ?? '\u2014'}
-                      </span>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between px-2 py-2">
-              <p className="text-sm text-muted-foreground">
-                {t('list.page_info', { page: meta?.page ?? 1, pages: totalPages })}
-              </p>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page <= 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={page >= totalPages}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
+      {/* Search (table view only) */}
+      {!globalGraphView && (
+        <div className="flex items-center gap-3">
+          <form onSubmit={handleSearch} className="relative flex-1 max-w-md">
+            <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder={`${tCommon('actions.search')}...`}
+              className="pl-8"
+              value={searchQuery}
+              onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
+            />
+          </form>
+          {hasActiveFilters && (
+            <Button variant="ghost" size="sm" onClick={resetFilters} className="text-muted-foreground">
+              <FilterX className="mr-1.5 h-4 w-4" />
+              {tCommon('actions.reset')}
+            </Button>
           )}
-        </>
+        </div>
+      )}
+
+      {/* Table (table view only) */}
+      {!globalGraphView && (
+        isLoading ? (
+          <div className="space-y-3">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <Skeleton key={i} className="h-12 w-full" />
+            ))}
+          </div>
+        ) : isError ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="rounded-full bg-destructive/10 p-3 mb-4">
+              <AlertCircle className="h-6 w-6 text-destructive" />
+            </div>
+            <p className="text-sm font-medium text-foreground mb-1">{tCommon('status.error')}</p>
+            <p className="text-sm text-muted-foreground mb-4">{tCommon('errors.generic')}</p>
+            <Button variant="outline" onClick={() => refetch()}>
+              <RefreshCw className="mr-2 h-4 w-4" />
+              {tCommon('actions.retry')}
+            </Button>
+          </div>
+        ) : assetList.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="rounded-full bg-muted p-4 mb-4">
+              <Server className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <p className="text-sm font-medium text-foreground mb-1">{t('list.empty')}</p>
+            <p className="text-sm text-muted-foreground mb-4">{t('list.empty_hint')}</p>
+            <Button onClick={() => setCreateOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              {t('create')}
+            </Button>
+          </div>
+        ) : (
+          <>
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="w-[220px]">
+                      <span className="flex items-center px-1 pt-1 text-xs font-medium text-muted-foreground">
+                        {t('fields.display_name')}
+                      </span>
+                    </TableHead>
+                    <FilterHead
+                      label={t('fields.asset_type')}
+                      filterValue={typeFilter}
+                      onFilterChange={(v) => { setTypeFilter(v); setPage(1); }}
+                      options={typeOptions}
+                      allLabel={t('filter_all_types')}
+                    />
+                    <FilterHead
+                      label={t('fields.status')}
+                      filterValue={statusFilter}
+                      onFilterChange={(v) => { setStatusFilter(v); setPage(1); }}
+                      options={statusOptions}
+                      allLabel={t('filter_all_statuses')}
+                    />
+                    <TableHead>
+                      <span className="text-xs font-medium text-muted-foreground">
+                        {t('fields.ip_address')}
+                      </span>
+                    </TableHead>
+                    <TableHead>
+                      <span className="text-xs font-medium text-muted-foreground">
+                        {t('fields.location')}
+                      </span>
+                    </TableHead>
+                    <FilterHead
+                      label={t('fields.sla_tier')}
+                      filterValue={slaFilter}
+                      onFilterChange={(v) => { setSlaFilter(v); setPage(1); }}
+                      options={slaOptions}
+                      allLabel={t('filter_all_sla')}
+                    />
+                    <FilterHead
+                      label={t('fields.environment')}
+                      filterValue={envFilter}
+                      onFilterChange={(v) => { setEnvFilter(v); setPage(1); }}
+                      options={envOptions}
+                      allLabel={t('filter_all_environments')}
+                    />
+                    <FilterHead
+                      label={t('fields.customer')}
+                      filterValue={customerFilter}
+                      onFilterChange={(v) => { setCustomerFilter(v); setPage(1); }}
+                      options={customerOptions}
+                      allLabel={t('filter_all_customers')}
+                    />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {assetList.map((asset: AssetWithRelations) => (
+                    <TableRow
+                      key={asset.id}
+                      className="cursor-pointer"
+                      onClick={() => navigate(`/assets/${asset.id}`)}
+                    >
+                      <TableCell className="font-medium">
+                        <div>
+                          <span className="text-sm">{asset.display_name}</span>
+                          <span className="block text-xs text-muted-foreground font-mono">{asset.name}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-xs font-normal">
+                          {t(`types.${asset.asset_type}`)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={cn('text-xs border', statusColors[asset.status] ?? '')}>
+                          {t(`statuses.${asset.status}`)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm font-mono text-muted-foreground">
+                          {asset.ip_address ?? '\u2014'}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-muted-foreground">
+                          {asset.location ?? '\u2014'}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        {asset.sla_tier !== 'none' ? (
+                          <Badge variant="outline" className={cn('text-xs border', slaColors[asset.sla_tier] ?? '')}>
+                            {t(`sla_tiers.${asset.sla_tier}`)}
+                          </Badge>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">{'\u2014'}</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {asset.environment ? (
+                          <span className="text-sm">{t(`environments.${asset.environment}`)}</span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">{'\u2014'}</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-muted-foreground">
+                          {asset.customer?.name ?? '\u2014'}
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between px-2 py-2">
+                <p className="text-sm text-muted-foreground">
+                  {t('list.page_info', { page: meta?.page ?? 1, pages: totalPages })}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page <= 1}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={page >= totalPages}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
+        )
+      )}
+
+      {/* Topology Graph View */}
+      {globalGraphView && (
+        <div className="rounded-lg border border-border overflow-hidden" style={{ height: 600 }}>
+          {graphLoading ? (
+            <div className="flex items-center justify-center h-full text-muted-foreground">Lade Topologie...</div>
+          ) : globalNodes.length === 0 ? (
+            <div className="flex items-center justify-center h-full text-muted-foreground">Keine Assets vorhanden</div>
+          ) : (
+            <ReactFlow
+              nodes={globalNodes}
+              edges={globalEdges}
+              fitView
+              fitViewOptions={{ padding: 0.2 }}
+              nodesDraggable={true}
+              nodesConnectable={false}
+              elementsSelectable={true}
+              onNodeClick={(_, node) => {
+                window.location.href = `/assets/${node.id}`;
+              }}
+            >
+              <Controls />
+              <MiniMap
+                nodeColor={(n) => (n.style?.background as string) ?? '#334155'}
+                maskColor="rgba(0,0,0,0.3)"
+              />
+              <Background color="#334155" gap={20} />
+            </ReactFlow>
+          )}
+        </div>
       )}
 
       {/* Create Asset Dialog */}
