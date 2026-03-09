@@ -22,6 +22,7 @@ import {
   ticketComments,
   ticketHistory,
   customers,
+  customerPortalUsers,
   assets,
   assetRelations,
   workflowTemplates,
@@ -29,6 +30,7 @@ import {
   kbArticles,
   kbArticleLinks,
 } from '../schema/index.js';
+import { DEMO_LICENSE_KEY } from './demo-license.js';
 
 const now = new Date().toISOString();
 const BCRYPT_ROUNDS = 12;
@@ -45,12 +47,12 @@ async function seed() {
     name: 'Demo Organisation',
     slug: 'demo-org',
     settings: '{}',
-    license_key: null,
+    license_key: DEMO_LICENSE_KEY,
     is_active: 1,
     created_at: now,
     updated_at: now,
   });
-  console.log('  ✓ Tenant: Demo Organisation');
+  console.log('  ✓ Tenant: Demo Organisation (Enterprise license applied)');
 
   // ─── Users ──────────────────────────────────────────────
   const adminId = uuidv4();
@@ -207,6 +209,25 @@ async function seed() {
     },
   ]);
   console.log('  ✓ Customers: Acme GmbH, TechCorp AG, MedTech Solutions');
+
+  // ─── Customer Portal Users ────────────────────────────────
+  // Separate user table — not the same as internal users.
+  // Portal users see only tickets belonging to their customer within the tenant.
+
+  const portalUserHash = await bcrypt.hash('changeme', BCRYPT_ROUNDS);
+
+  await db.insert(customerPortalUsers).values({
+    id: '00000000-0000-0000-0000-000000000099',
+    tenant_id: tenantId,
+    customer_id: customerAcmeId,
+    email: 'portal@acme.example.de',
+    display_name: 'Acme Portal User',
+    password_hash: portalUserHash,
+    is_active: 1,
+    last_login: null,
+    created_at: now,
+  });
+  console.log('  ✓ Customer Portal User: portal@acme.example.de (Acme GmbH)');
 
   // ─── Categories ──────────────────────────────────────────
   const catNetzwerkId = uuidv4();
@@ -1003,6 +1024,8 @@ async function seed() {
   console.log('   Manager: manager@opsweave.local / password123');
   console.log('   Agent:   agent@opsweave.local / password123');
   console.log('   Viewer:  viewer@opsweave.local / password123');
+  console.log('\n🌐 Customer Portal credentials:');
+  console.log('   Acme Portal User: portal@acme.example.de / changeme');
 
   process.exit(0);
 }

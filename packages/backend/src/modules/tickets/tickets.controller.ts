@@ -254,6 +254,36 @@ export async function getChildTickets(
   sendSuccess(res, children);
 }
 
+// ─── Timeline & Customer Stats ──────────────────────────
+
+/**
+ * GET /api/v1/tickets/stats/timeline
+ */
+export async function getTicketTimeline(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const tenantId = req.tenantId!;
+  const days = Math.min(365, Math.max(1, Number(req.query['days']) || 30));
+
+  const data = await ticketsService.getTicketTimeline(tenantId, days);
+  sendSuccess(res, data);
+}
+
+/**
+ * GET /api/v1/tickets/stats/by-customer
+ */
+export async function getTicketsByCustomer(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const tenantId = req.tenantId!;
+  const limit = Math.min(20, Math.max(1, Number(req.query['limit']) || 5));
+
+  const data = await ticketsService.getTicketsByCustomer(tenantId, limit);
+  sendSuccess(res, data);
+}
+
 // ─── Categories ────────────────────────────────────────
 
 /**

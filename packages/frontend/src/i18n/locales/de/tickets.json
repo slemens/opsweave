@@ -3,6 +3,11 @@
   "create": "Ticket erstellen",
   "edit": "Ticket bearbeiten",
   "detail": "Ticket-Details",
+  "detail_fields": {
+    "asset": "Asset",
+    "no_asset": "Kein Asset zugewiesen",
+    "change_asset": "Asset ändern"
+  },
   "create_description": "Erstellen Sie ein neues Ticket, um ein Anliegen zu erfassen.",
   "create_success": "Ticket erfolgreich erstellt",
   "create_error": "Fehler beim Erstellen des Tickets",
@@ -117,7 +122,14 @@
     "empty": "Keine Tickets gefunden",
     "empty_hint": "Passen Sie die Filter an oder erstellen Sie ein neues Ticket.",
     "showing": "{{count}} Tickets",
-    "page_info": "Seite {{page}} von {{pages}}"
+    "page_info": "Seite {{page}} von {{pages}}",
+    "sla_legend": "SLA-Status:"
+  },
+  "sla": {
+    "ok": "Im Zeitplan",
+    "warning": "Warnung",
+    "breached": "Überschritten",
+    "none": "Kein SLA"
   },
   "views": {
     "all": "Alle Tickets",

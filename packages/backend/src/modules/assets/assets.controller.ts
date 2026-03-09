@@ -157,6 +157,22 @@ export async function getAssetStats(
   sendSuccess(res, stats);
 }
 
+// ─── Asset Graph ───────────────────────────────────────
+
+/**
+ * GET /api/v1/assets/:id/graph
+ */
+export async function getAssetGraph(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const tenantId = req.tenantId!;
+  const { id } = req.params as { id: string };
+
+  const graph = await assetsService.getAssetGraph(tenantId, id);
+  sendSuccess(res, graph);
+}
+
 // ─── Asset Tickets ─────────────────────────────────────
 
 /**

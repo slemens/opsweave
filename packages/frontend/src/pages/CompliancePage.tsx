@@ -4,6 +4,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   ChevronDown,
+  ChevronRight,
   FileText,
   Plus,
   RefreshCw,
@@ -683,17 +684,6 @@ function FrameworksTab({
 
   return (
     <div className="space-y-4">
-      {/* Community limit banner */}
-      {atCommunityLimit && (
-        <div className="flex items-start gap-3 rounded-lg border border-orange-500/30 bg-orange-500/10 px-4 py-3">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-orange-400" />
-          <div className="text-sm">
-            <span className="font-medium text-orange-300">{t('frameworks.community_limit')}</span>
-            <span className="ml-2 text-orange-400/80">{t('frameworks.community_limit_hint')}</span>
-          </div>
-        </div>
-      )}
-
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -885,9 +875,18 @@ function RequirementsTab({
   const [editTarget, setEditTarget] = useState<RegulatoryRequirement | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<RegulatoryRequirement | null>(null);
   const [search, setSearch] = useState('');
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   const { data, isLoading } = useRequirements(selectedFrameworkId, { limit: 200 });
   const deleteMutation = useDeleteRequirement();
+
+  function toggleExpand(id: string) {
+    setExpandedIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
 
   const requirements = useMemo(() => {
     const all = data?.data ?? [];
@@ -975,56 +974,87 @@ function RequirementsTab({
                   </TableCell>
                 </TableRow>
               ) : (
-                requirements.map((req) => (
-                  <TableRow
-                    key={req.id}
-                    className="dark:border-slate-700 dark:hover:bg-slate-800/40 transition-colors"
-                  >
-                    <TableCell>
-                      <span className="font-mono text-xs rounded bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 text-blue-600 dark:text-blue-400 border border-slate-200 dark:border-slate-700">
-                        {req.code}
-                      </span>
-                    </TableCell>
-                    <TableCell className="font-medium text-slate-900 dark:text-white">
-                      {req.title}
-                    </TableCell>
-                    <TableCell>
-                      {req.category ? (
-                        <Badge
-                          variant="outline"
-                          className="text-xs dark:border-slate-600 dark:text-slate-400"
-                        >
-                          {req.category}
-                        </Badge>
-                      ) : (
-                        <span className="text-slate-400">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-sm text-slate-500 dark:text-slate-400 max-w-xs">
-                      <span className="line-clamp-2">{req.description ?? '—'}</span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 px-2 text-slate-400 hover:text-slate-700 dark:hover:text-white"
-                          onClick={() => setEditTarget(req)}
-                        >
-                          {tCommon('edit')}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 px-2 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-                          onClick={() => setDeleteTarget(req)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
+                requirements.flatMap((req) => {
+                  const isExpanded = expandedIds.has(req.id);
+                  return [
+                    <TableRow
+                      key={req.id}
+                      className="dark:border-slate-700 dark:hover:bg-slate-800/40 transition-colors cursor-pointer"
+                      onClick={() => toggleExpand(req.id)}
+                    >
+                      <TableCell>
+                        <div className="flex items-center gap-1.5">
+                          {isExpanded
+                            ? <ChevronDown className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                            : <ChevronRight className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                          }
+                          <span className="font-mono text-xs rounded bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 text-blue-600 dark:text-blue-400 border border-slate-200 dark:border-slate-700">
+                            {req.code}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-medium text-slate-900 dark:text-white">
+                        {req.title}
+                      </TableCell>
+                      <TableCell>
+                        {req.category ? (
+                          <Badge
+                            variant="outline"
+                            className="text-xs dark:border-slate-600 dark:text-slate-400"
+                          >
+                            {req.category}
+                          </Badge>
+                        ) : (
+                          <span className="text-slate-400">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-sm text-slate-500 dark:text-slate-400 max-w-xs">
+                        <span className="line-clamp-2">{req.description ?? '—'}</span>
+                      </TableCell>
+                      <TableCell className="text-right" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2 text-slate-400 hover:text-slate-700 dark:hover:text-white"
+                            onClick={() => setEditTarget(req)}
+                          >
+                            {tCommon('edit')}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                            onClick={() => setDeleteTarget(req)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>,
+                    ...(isExpanded && req.description
+                      ? [
+                          <TableRow key={`${req.id}-expanded`} className="dark:border-slate-700 bg-slate-50 dark:bg-slate-800/30">
+                            <TableCell colSpan={5} className="px-8 py-3">
+                              <div className="space-y-2">
+                                {req.category && (
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{t('fields.category')}:</span>
+                                    <Badge variant="outline" className="text-xs dark:border-slate-600 dark:text-slate-400">
+                                      {req.category}
+                                    </Badge>
+                                  </div>
+                                )}
+                                <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                                  {req.description}
+                                </p>
+                              </div>
+                            </TableCell>
+                          </TableRow>,
+                        ]
+                      : []),
+                  ];
+                })
               )}
             </TableBody>
           </Table>

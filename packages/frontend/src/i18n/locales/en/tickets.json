@@ -3,6 +3,11 @@
   "create": "Create Ticket",
   "edit": "Edit Ticket",
   "detail": "Ticket Details",
+  "detail_fields": {
+    "asset": "Asset",
+    "no_asset": "No asset assigned",
+    "change_asset": "Change asset"
+  },
   "create_description": "Create a new ticket to capture a request or issue.",
   "create_success": "Ticket created successfully",
   "create_error": "Failed to create ticket",
@@ -117,7 +122,14 @@
     "empty": "No tickets found",
     "empty_hint": "Adjust your filters or create a new ticket.",
     "showing": "{{count}} Tickets",
-    "page_info": "Page {{page}} of {{pages}}"
+    "page_info": "Page {{page}} of {{pages}}",
+    "sla_legend": "SLA Status:"
+  },
+  "sla": {
+    "ok": "On track",
+    "warning": "Warning",
+    "breached": "Breached",
+    "none": "No SLA"
   },
   "views": {
     "all": "All Tickets",

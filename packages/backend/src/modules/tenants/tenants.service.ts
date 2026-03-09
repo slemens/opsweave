@@ -331,6 +331,22 @@ export function addTenantMember(
 }
 
 /**
+ * Return the raw license_key string for a tenant.
+ * Returns null when the tenant has no Enterprise license set.
+ * Used by the license middleware via licenseKeyFn callbacks.
+ */
+export async function getTenantLicenseKey(tenantId: string): Promise<string | null> {
+  const row = db()
+    .select({ license_key: tenants.license_key })
+    .from(tenants)
+    .where(eq(tenants.id, tenantId))
+    .limit(1)
+    .get();
+
+  return row?.license_key ?? null;
+}
+
+/**
  * Remove a user from a tenant.
  */
 export function removeTenantMember(

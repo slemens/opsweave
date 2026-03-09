@@ -597,6 +597,14 @@ function TicketListView({
 
   return (
     <div className="space-y-3">
+      {/* SLA-Legende */}
+      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+        <span className="font-medium">{t('list.sla_legend')}</span>
+        <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-green-500 inline-block" />{t('sla.ok')}</span>
+        <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-yellow-500 inline-block" />{t('sla.warning')}</span>
+        <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-red-500 inline-block" />{t('sla.breached')}</span>
+        <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-gray-300 inline-block" />{t('sla.none')}</span>
+      </div>
       <div className="border rounded-lg overflow-x-auto">
         <Table className="min-w-[1250px]">
           <TableHeader>

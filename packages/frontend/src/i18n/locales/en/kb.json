@@ -45,6 +45,9 @@
     "preview": "Preview",
     "edit": "Edit"
   },
+  "viewer": {
+    "title": "View article"
+  },
   "link_ticket": "Link to ticket",
   "linked_tickets": "Linked tickets",
   "ticket_tab": {

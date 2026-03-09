@@ -1,4 +1,4 @@
-import { eq, and, count, like, or, asc, desc } from 'drizzle-orm';
+import { eq, and, count, like, or, asc, desc, inArray } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 
 import { getDb, type TypedDb } from '../../config/database.js';
@@ -589,6 +589,80 @@ export async function getAssetStats(
   }
 
   return { by_type, by_status, by_sla, total };
+}
+
+/**
+ * Get a 1-hop graph (nodes + edges) centred on a given asset.
+ */
+export async function getAssetGraph(
+  tenantId: string,
+  assetId: string,
+): Promise<{
+  nodes: Array<{ id: string; display_name: string; asset_type: string; status: string }>;
+  edges: Array<{ id: string; source_asset_id: string; target_asset_id: string; relation_type: string }>;
+}> {
+  const d = db();
+
+  // Central asset
+  const centerRows = await d
+    .select({
+      id: assets.id,
+      display_name: assets.display_name,
+      asset_type: assets.asset_type,
+      status: assets.status,
+    })
+    .from(assets)
+    .where(and(eq(assets.id, assetId), eq(assets.tenant_id, tenantId)))
+    .limit(1);
+
+  const centerAsset = centerRows[0];
+  if (!centerAsset) return { nodes: [], edges: [] };
+
+  // All relations where this asset is source or target (1 hop)
+  const relations = await d
+    .select({
+      id: assetRelations.id,
+      source_asset_id: assetRelations.source_asset_id,
+      target_asset_id: assetRelations.target_asset_id,
+      relation_type: assetRelations.relation_type,
+    })
+    .from(assetRelations)
+    .where(
+      and(
+        eq(assetRelations.tenant_id, tenantId),
+        or(
+          eq(assetRelations.source_asset_id, assetId),
+          eq(assetRelations.target_asset_id, assetId),
+        ),
+      ),
+    );
+
+  // Collect all neighbour IDs
+  const relatedIds = new Set<string>();
+  for (const rel of relations) {
+    if (rel.source_asset_id !== assetId) relatedIds.add(rel.source_asset_id);
+    if (rel.target_asset_id !== assetId) relatedIds.add(rel.target_asset_id);
+  }
+
+  // Load neighbour assets
+  const relatedIdsList = [...relatedIds];
+  const relatedAssets =
+    relatedIdsList.length > 0
+      ? await d
+          .select({
+            id: assets.id,
+            display_name: assets.display_name,
+            asset_type: assets.asset_type,
+            status: assets.status,
+          })
+          .from(assets)
+          .where(and(eq(assets.tenant_id, tenantId), inArray(assets.id, relatedIdsList)))
+      : [];
+
+  return {
+    nodes: [centerAsset, ...relatedAssets],
+    edges: relations,
+  };
 }
 
 /**

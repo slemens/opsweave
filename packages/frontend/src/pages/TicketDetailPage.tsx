@@ -78,6 +78,7 @@ import {
   useCompleteWorkflowStep,
   useCancelWorkflowInstance,
 } from '@/api/workflows';
+import { useAssets } from '@/api/assets';
 import type { WorkflowInstanceFull } from '@/api/workflows';
 import { useKbArticles, useLinkArticleToTicket, useUnlinkArticleFromTicket } from '@/api/kb';
 import type { KbArticle } from '@/api/kb';
@@ -156,7 +157,10 @@ function CommentItem({ comment, locale }: CommentItemProps) {
               {t('comments.internal')}
             </Badge>
           )}
-          <span className="text-xs text-muted-foreground">
+          <span
+            className="text-xs text-muted-foreground cursor-help"
+            title={formatDate(comment.created_at, locale)}
+          >
             {formatRelativeTime(comment.created_at, locale)}
           </span>
         </div>
@@ -527,6 +531,7 @@ export function TicketDetailPage() {
   const { data: usersData } = useUsers();
   const { data: customersData } = useCustomers();
   const { data: categoriesData } = useCategories();
+  const { data: assetsData } = useAssets({ limit: 100 });
 
   const ticket = ticketData;
   const comments = commentsData ?? [];
@@ -539,6 +544,7 @@ export function TicketDetailPage() {
   const categories = (categoriesData?.data ?? []).filter(
     (c) => c.is_active && (c.applies_to === 'all' || c.applies_to === ticket?.ticket_type),
   );
+  const assets = (assetsData as { data?: { id: string; display_name: string; name: string }[] } | undefined)?.data ?? [];
 
   // ── Knowledge Base ─────────────────────────────────────────
   const [kbSearch, setKbSearch] = useState('');
@@ -684,6 +690,19 @@ export function TicketDetailPage() {
       await updateTicket.mutateAsync({
         id,
         category_id: catId === '__none__' ? null : catId,
+      });
+      toast.success(t('update_success'));
+    } catch {
+      toast.error(t('update_error'));
+    }
+  }, [id, updateTicket, t]);
+
+  const handleAssetChange = useCallback(async (assetId: string) => {
+    if (!id) return;
+    try {
+      await updateTicket.mutateAsync({
+        id,
+        asset_id: assetId === '__none__' ? null : assetId,
       });
       toast.success(t('update_success'));
     } catch {
@@ -1417,14 +1436,25 @@ export function TicketDetailPage() {
               </SidebarField>
 
               {/* Asset */}
-              <SidebarField label={t('fields.asset')}>
-                <span className="text-sm">
-                  {ticket.asset ? (
-                    <span className="font-mono text-xs">{ticket.asset.display_name}</span>
-                  ) : (
-                    <span className="text-muted-foreground">-</span>
-                  )}
-                </span>
+              <SidebarField label={t('detail_fields.asset')}>
+                <Select
+                  value={ticket.asset_id ?? '__none__'}
+                  onValueChange={handleAssetChange}
+                >
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder={t('detail_fields.no_asset')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">
+                      <span className="text-muted-foreground italic">{t('detail_fields.no_asset')}</span>
+                    </SelectItem>
+                    {assets.map((a) => (
+                      <SelectItem key={a.id} value={a.id}>
+                        {a.display_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </SidebarField>
 
               {/* Customer */}

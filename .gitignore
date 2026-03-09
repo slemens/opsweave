@@ -15,3 +15,14 @@ vite.config.js.map
 vite.config.d.ts
 vite.config.d.ts.map
 opsweave.db*
+packages/frontend/e2e/*.js
+packages/frontend/e2e/*.js.map
+packages/frontend/e2e/*.d.ts
+packages/frontend/e2e/*.d.ts.map
+packages/frontend/playwright.config.js
+packages/frontend/playwright.config.js.map
+packages/frontend/playwright.config.d.ts
+packages/frontend/playwright.config.d.ts.map
+scripts/generate-license.ts
+playwright-report/
+test-results/
