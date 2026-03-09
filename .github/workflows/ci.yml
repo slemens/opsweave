@@ -73,9 +73,11 @@ jobs:
         working-directory: packages/backend
         env:
           NODE_ENV: test
-          DB_TYPE: sqlite
-          DB_PATH: ../../opsweave.db
+          DB_DRIVER: sqlite
+          DATABASE_URL: "file:../../opsweave.db"
+          QUEUE_DRIVER: better-queue
           JWT_SECRET: test-secret
+          SESSION_SECRET: test-secret
           PORT: 3000
 
       - name: Wait for backend
