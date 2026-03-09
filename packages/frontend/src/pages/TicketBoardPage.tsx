@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useCallback, useMemo } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Plus,
@@ -8,6 +8,14 @@ import {
   RefreshCw,
   Clock,
   User,
+  LayoutGrid,
+  List,
+  ChevronLeft,
+  ChevronRight,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  Ticket as TicketIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -26,7 +34,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   Select,
@@ -35,15 +42,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { cn, formatRelativeTime } from '@/lib/utils';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { cn, formatDate, formatRelativeTime } from '@/lib/utils';
 import {
   useBoardData,
+  useTickets,
   useCreateTicket,
   useGroups,
 } from '@/api/tickets';
-import type { TicketWithRelations, CreateTicketPayload } from '@/api/tickets';
+import type { TicketWithRelations, CreateTicketPayload, TicketListParams } from '@/api/tickets';
 import type { TicketType, TicketPriority, TicketStatus } from '@opsweave/shared';
 import { TICKET_TYPES, TICKET_PRIORITIES, TICKET_STATUSES } from '@opsweave/shared';
+import { useAuthStore } from '@/stores/auth-store';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -75,6 +92,31 @@ const ticketTypeBadgeColors: Record<TicketType, string> = {
   change: 'bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-800',
 };
 
+const statusDotColors: Record<TicketStatus, string> = {
+  open: 'bg-blue-500',
+  in_progress: 'bg-amber-500',
+  pending: 'bg-orange-500',
+  resolved: 'bg-emerald-500',
+  closed: 'bg-slate-400',
+};
+
+// Preset view definitions
+type PresetView = 'all' | 'my_tickets' | 'incidents' | 'changes' | 'problems' | 'open' | 'unassigned';
+
+interface PresetConfig {
+  key: PresetView;
+  getParams: (userId: string) => Partial<TicketListParams>;
+}
+
+const PRESET_VIEWS: PresetConfig[] = [
+  { key: 'all', getParams: () => ({}) },
+  { key: 'my_tickets', getParams: (userId) => ({ assignee_id: userId }) },
+  { key: 'open', getParams: () => ({ status: 'open' as TicketStatus }) },
+  { key: 'incidents', getParams: () => ({ ticket_type: 'incident' as TicketType }) },
+  { key: 'changes', getParams: () => ({ ticket_type: 'change' as TicketType }) },
+  { key: 'problems', getParams: () => ({ ticket_type: 'problem' as TicketType }) },
+];
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -100,7 +142,7 @@ function isSlaApproachingBreach(ticket: TicketWithRelations): 'warning' | 'breac
 }
 
 // ---------------------------------------------------------------------------
-// TicketCard Component
+// TicketCard Component (for Board view)
 // ---------------------------------------------------------------------------
 
 interface TicketCardProps {
@@ -300,6 +342,255 @@ function BoardSkeleton() {
 }
 
 // ---------------------------------------------------------------------------
+// List Skeleton
+// ---------------------------------------------------------------------------
+
+function ListSkeleton() {
+  return (
+    <div className="border rounded-lg">
+      <div className="border-b px-3 py-3">
+        <div className="flex gap-4">
+          {[80, 200, 60, 60, 60, 100, 80].map((w, i) => (
+            <Skeleton key={i} className="h-4" style={{ width: w }} />
+          ))}
+        </div>
+      </div>
+      {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+        <div key={i} className="border-b last:border-0 px-3 py-3">
+          <div className="flex gap-4 items-center">
+            <Skeleton className="h-5 w-24" />
+            <Skeleton className="h-4 flex-1" />
+            <Skeleton className="h-5 w-16" />
+            <Skeleton className="h-5 w-16" />
+            <Skeleton className="h-5 w-16" />
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-4 w-16" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Ticket List View Component
+// ---------------------------------------------------------------------------
+
+type SortField = 'ticket_number' | 'title' | 'status' | 'priority' | 'ticket_type' | 'created_at' | 'updated_at';
+type SortOrder = 'asc' | 'desc';
+
+interface TicketListViewProps {
+  tickets: TicketWithRelations[];
+  isLoading: boolean;
+  isError: boolean;
+  locale: string;
+  page: number;
+  totalPages: number;
+  totalCount: number;
+  sortField: SortField;
+  sortOrder: SortOrder;
+  onSort: (field: SortField) => void;
+  onPageChange: (page: number) => void;
+  onRefetch: () => void;
+}
+
+function TicketListView({
+  tickets,
+  isLoading,
+  isError,
+  locale,
+  page,
+  totalPages,
+  totalCount,
+  sortField,
+  sortOrder,
+  onSort,
+  onPageChange,
+  onRefetch,
+}: TicketListViewProps) {
+  const { t } = useTranslation('tickets');
+  const { t: tCommon } = useTranslation();
+  const navigate = useNavigate();
+
+  function SortIcon({ field }: { field: SortField }) {
+    if (sortField !== field) {
+      return <ArrowUpDown className="h-3 w-3 ml-1 text-muted-foreground/40" />;
+    }
+    return sortOrder === 'asc'
+      ? <ArrowUp className="h-3 w-3 ml-1 text-primary" />
+      : <ArrowDown className="h-3 w-3 ml-1 text-primary" />;
+  }
+
+  function SortableHead({ field, children }: { field: SortField; children: React.ReactNode }) {
+    return (
+      <TableHead
+        className="cursor-pointer select-none hover:text-foreground transition-colors"
+        onClick={() => onSort(field)}
+      >
+        <span className="flex items-center">
+          {children}
+          <SortIcon field={field} />
+        </span>
+      </TableHead>
+    );
+  }
+
+  if (isLoading) return <ListSkeleton />;
+
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <div className="rounded-full bg-destructive/10 p-3 mb-4">
+          <AlertCircle className="h-6 w-6 text-destructive" />
+        </div>
+        <p className="text-sm font-medium text-foreground mb-1">{tCommon('status.error')}</p>
+        <p className="text-sm text-muted-foreground mb-4">{tCommon('errors.generic')}</p>
+        <Button variant="outline" onClick={onRefetch}>
+          <RefreshCw className="mr-2 h-4 w-4" />
+          {tCommon('actions.retry')}
+        </Button>
+      </div>
+    );
+  }
+
+  if (tickets.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <div className="rounded-full bg-muted p-4 mb-4">
+          <TicketIcon className="h-8 w-8 text-muted-foreground/30" />
+        </div>
+        <p className="text-sm font-medium text-foreground mb-1">{t('list.empty')}</p>
+        <p className="text-sm text-muted-foreground">{t('list.empty_hint')}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="border rounded-lg overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/30 hover:bg-muted/30">
+              <SortableHead field="ticket_number">{t('fields.ticket_number')}</SortableHead>
+              <SortableHead field="title">{t('fields.title')}</SortableHead>
+              <SortableHead field="ticket_type">{t('fields.type')}</SortableHead>
+              <SortableHead field="status">{t('fields.status')}</SortableHead>
+              <SortableHead field="priority">{t('fields.priority')}</SortableHead>
+              <TableHead>{t('fields.assignee')}</TableHead>
+              <TableHead>{t('fields.group')}</TableHead>
+              <SortableHead field="created_at">{t('fields.created_at')}</SortableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {tickets.map((ticket) => {
+              const slaStatus = isSlaApproachingBreach(ticket);
+              return (
+                <TableRow
+                  key={ticket.id}
+                  className="cursor-pointer"
+                  onClick={() => navigate(`/tickets/${ticket.id}`)}
+                >
+                  <TableCell className="font-mono text-xs whitespace-nowrap">
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant="outline"
+                        className={cn('text-[11px] font-mono font-medium px-1.5 py-0', ticketTypeBadgeColors[ticket.ticket_type])}
+                      >
+                        {ticket.ticket_number}
+                      </Badge>
+                      {slaStatus && (
+                        <span
+                          className={cn(
+                            'flex h-2 w-2 rounded-full shrink-0',
+                            slaStatus === 'breached' ? 'bg-red-500 animate-pulse' : 'bg-amber-500',
+                          )}
+                        />
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="max-w-[300px]">
+                    <span className="line-clamp-1 text-sm font-medium">{ticket.title}</span>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className={cn('text-[11px] px-1.5 py-0', ticketTypeBadgeColors[ticket.ticket_type])}>
+                      {t(`types.${ticket.ticket_type}`)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1.5">
+                      <span className={cn('h-2 w-2 rounded-full shrink-0', statusDotColors[ticket.status])} />
+                      <span className="text-xs whitespace-nowrap">{t(`statuses.${ticket.status}`)}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      variant="outline"
+                      className={cn('text-[11px] px-1.5 py-0 font-medium', priorityBadgeVariants[ticket.priority].className)}
+                    >
+                      {t(`priorities.${ticket.priority}`)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                    {ticket.assignee ? (
+                      <div className="flex items-center gap-1.5">
+                        <Avatar className="h-5 w-5">
+                          <AvatarFallback className="text-[9px] bg-primary/10 text-primary">
+                            {getInitials(ticket.assignee.display_name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span>{ticket.assignee.display_name}</span>
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground/50">—</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                    {ticket.assignee_group?.name ?? <span className="text-muted-foreground/50">—</span>}
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                    {formatDate(ticket.created_at, locale, { hour: undefined, minute: undefined })}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Pagination */}
+      <div className="flex items-center justify-between px-1">
+        <p className="text-xs text-muted-foreground tabular-nums">
+          {t('list.showing', { count: totalCount })}
+          {totalPages > 1 && ` · ${t('list.page_info', { page, pages: totalPages })}`}
+        </p>
+        {totalPages > 1 && (
+          <div className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-7 w-7"
+              onClick={() => onPageChange(page - 1)}
+              disabled={page <= 1}
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-7 w-7"
+              onClick={() => onPageChange(page + 1)}
+              disabled={page >= totalPages}
+            >
+              <ChevronRight className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Create Ticket Dialog
 // ---------------------------------------------------------------------------
 
@@ -333,7 +624,6 @@ function CreateTicketDialog({ open, onOpenChange }: CreateTicketDialogProps) {
   }, []);
 
   const handleSubmit = useCallback(async () => {
-    // Validate
     if (title.trim().length < 3) {
       setTitleError(t('validation.title_min_length'));
       return;
@@ -496,72 +786,207 @@ export function TicketBoardPage() {
   const { t, i18n } = useTranslation('tickets');
   const { t: tCommon } = useTranslation();
   const locale = i18n.language === 'de' ? 'de-DE' : 'en-US';
+  const user = useAuthStore((s) => s.user);
 
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // View mode (board or list) — persisted in URL
+  const viewMode = (searchParams.get('view') ?? 'board') as 'board' | 'list';
+  const setViewMode = useCallback((mode: 'board' | 'list') => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set('view', mode);
+      // Reset page when switching views
+      next.delete('page');
+      return next;
+    });
+  }, [setSearchParams]);
+
+  // Preset view — persisted in URL
+  const activePreset = (searchParams.get('preset') ?? 'all') as PresetView;
+  const setActivePreset = useCallback((preset: PresetView) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set('preset', preset);
+      next.set('view', 'list'); // Switching preset always goes to list view
+      next.delete('page');
+      return next;
+    });
+  }, [setSearchParams]);
+
+  // Filters
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
-  const { data: boardData, isLoading, isError, refetch } = useBoardData();
+  // List view sorting & pagination
+  const [sortField, setSortField] = useState<SortField>('created_at');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+  const listPage = parseInt(searchParams.get('page') ?? '1', 10);
+  const setListPage = useCallback((page: number) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set('page', String(page));
+      return next;
+    });
+  }, [setSearchParams]);
 
-  // Build column data from API response
-  const columns = BOARD_COLUMNS.map((status) => {
-    const column = boardData?.columns?.find((c) => c.status === status);
-    let tickets = column?.tickets ?? [];
+  const handleSort = useCallback((field: SortField) => {
+    if (field === sortField) {
+      setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortField(field);
+      setSortOrder(field === 'created_at' ? 'desc' : 'asc');
+    }
+  }, [sortField]);
 
-    // Apply client-side filters
-    if (typeFilter !== 'all') {
-      tickets = tickets.filter((t) => t.ticket_type === typeFilter);
+  // Build query params for list view
+  const listParams = useMemo((): TicketListParams => {
+    const presetConfig = PRESET_VIEWS.find((p) => p.key === activePreset);
+    const presetParams = presetConfig?.getParams(user?.id ?? '') ?? {};
+
+    const params: TicketListParams = {
+      page: listPage,
+      limit: 25,
+      sort: sortField,
+      order: sortOrder,
+      ...presetParams,
+    };
+
+    // Additional filters from dropdowns (override preset if set)
+    if (typeFilter !== 'all' && !presetParams.ticket_type) {
+      params.ticket_type = typeFilter as TicketType;
     }
     if (priorityFilter !== 'all') {
-      tickets = tickets.filter((t) => t.priority === priorityFilter);
+      params.priority = priorityFilter as TicketPriority;
     }
     if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
-      tickets = tickets.filter(
-        (t) =>
-          t.title.toLowerCase().includes(q) ||
-          t.ticket_number.toLowerCase().includes(q),
-      );
+      params.q = searchQuery.trim();
     }
 
-    return {
-      status,
-      tickets,
-      count: tickets.length,
-    };
-  });
+    return params;
+  }, [activePreset, listPage, sortField, sortOrder, typeFilter, priorityFilter, searchQuery, user?.id]);
+
+  // Data hooks
+  const boardQuery = useBoardData();
+  const listQuery = useTickets(listParams);
+
+  // Use the appropriate query based on view mode
+  const isListView = viewMode === 'list';
+  const activeQuery = isListView ? listQuery : boardQuery;
+
+  // Board columns (only for board view)
+  const boardColumns = useMemo(() => {
+    if (isListView || !boardQuery.data) return [];
+    return BOARD_COLUMNS.map((status) => {
+      const column = boardQuery.data?.columns?.find((c) => c.status === status);
+      let tickets = column?.tickets ?? [];
+
+      if (typeFilter !== 'all') {
+        tickets = tickets.filter((t) => t.ticket_type === typeFilter);
+      }
+      if (priorityFilter !== 'all') {
+        tickets = tickets.filter((t) => t.priority === priorityFilter);
+      }
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        tickets = tickets.filter(
+          (t) =>
+            t.title.toLowerCase().includes(q) ||
+            t.ticket_number.toLowerCase().includes(q),
+        );
+      }
+
+      return { status, tickets, count: tickets.length };
+    });
+  }, [isListView, boardQuery.data, typeFilter, priorityFilter, searchQuery]);
+
+  // List data
+  const listTickets = isListView ? (listQuery.data?.data ?? []) : [];
+  const listMeta = isListView ? listQuery.data?.meta : undefined;
+  const totalPages = listMeta ? Math.ceil(listMeta.total / listMeta.limit) : 1;
 
   return (
     <div className="space-y-4">
       {/* Page header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">{t('board.title')}</h2>
-          <p className="text-sm text-muted-foreground mt-0.5">{t('board.drag_hint')}</p>
+          <h2 className="text-2xl font-bold tracking-tight">
+            {isListView ? t('list.title') : t('board.title')}
+          </h2>
+          {!isListView && (
+            <p className="text-sm text-muted-foreground mt-0.5">{t('board.drag_hint')}</p>
+          )}
         </div>
-        <Button onClick={() => setCreateDialogOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          {t('create')}
-        </Button>
+        <div className="flex items-center gap-2">
+          {/* View toggle */}
+          <div className="flex items-center border rounded-lg overflow-hidden">
+            <Button
+              variant={!isListView ? 'default' : 'ghost'}
+              size="sm"
+              className={cn('rounded-none h-8 px-3', !isListView && 'pointer-events-none')}
+              onClick={() => setViewMode('board')}
+              aria-label={t('board.view_board')}
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={isListView ? 'default' : 'ghost'}
+              size="sm"
+              className={cn('rounded-none h-8 px-3', isListView && 'pointer-events-none')}
+              onClick={() => setViewMode('list')}
+              aria-label={t('board.view_list')}
+            >
+              <List className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <Button onClick={() => setCreateDialogOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            {t('create')}
+          </Button>
+        </div>
       </div>
+
+      {/* Preset filter tabs (visible in list view) */}
+      {isListView && (
+        <div className="flex items-center gap-1 overflow-x-auto pb-1 -mb-1">
+          {PRESET_VIEWS.map((preset) => (
+            <Button
+              key={preset.key}
+              variant={activePreset === preset.key ? 'default' : 'outline'}
+              size="sm"
+              className={cn(
+                'h-7 text-xs whitespace-nowrap',
+                activePreset === preset.key && 'pointer-events-none',
+              )}
+              onClick={() => setActivePreset(preset.key)}
+            >
+              {t(`views.${preset.key}`)}
+            </Button>
+          ))}
+        </div>
+      )}
 
       {/* Filter bar */}
       <div className="flex items-center gap-3 flex-wrap">
-        {/* Type filter */}
-        <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger className="w-[160px]">
-            <SelectValue placeholder={t('fields.type')} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t('filter_all_types')}</SelectItem>
-            {TICKET_TYPES.map((type) => (
-              <SelectItem key={type} value={type}>
-                {t(`types.${type}`)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {/* Type filter — hidden when preset already filters by type */}
+        {!(isListView && ['incidents', 'changes', 'problems'].includes(activePreset)) && (
+          <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder={t('fields.type')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('filter_all_types')}</SelectItem>
+              {TICKET_TYPES.map((type) => (
+                <SelectItem key={type} value={type}>
+                  {t(`types.${type}`)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
 
         {/* Priority filter */}
         <Select value={priorityFilter} onValueChange={setPriorityFilter}>
@@ -602,42 +1027,59 @@ export function TicketBoardPage() {
         <Button
           variant="outline"
           size="icon"
-          onClick={() => void refetch()}
+          onClick={() => void activeQuery.refetch()}
           aria-label={tCommon('actions.refresh')}
         >
           <RefreshCw className="h-4 w-4" />
         </Button>
       </div>
 
-      {/* Board content */}
-      {isLoading ? (
-        <BoardSkeleton />
-      ) : isError ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="rounded-full bg-destructive/10 p-3 mb-4">
-            <AlertCircle className="h-6 w-6 text-destructive" />
-          </div>
-          <p className="text-sm font-medium text-foreground mb-1">{tCommon('status.error')}</p>
-          <p className="text-sm text-muted-foreground mb-4">
-            {tCommon('errors.generic')}
-          </p>
-          <Button variant="outline" onClick={() => void refetch()}>
-            <RefreshCw className="mr-2 h-4 w-4" />
-            {tCommon('actions.retry')}
-          </Button>
-        </div>
+      {/* Content */}
+      {isListView ? (
+        <TicketListView
+          tickets={listTickets}
+          isLoading={listQuery.isLoading}
+          isError={listQuery.isError}
+          locale={locale}
+          page={listPage}
+          totalPages={totalPages}
+          totalCount={listMeta?.total ?? 0}
+          sortField={sortField}
+          sortOrder={sortOrder}
+          onSort={handleSort}
+          onPageChange={setListPage}
+          onRefetch={() => void listQuery.refetch()}
+        />
       ) : (
-        <div className="flex gap-4 overflow-x-auto pb-4 -mx-1 px-1">
-          {columns.map((col) => (
-            <BoardColumn
-              key={col.status}
-              status={col.status}
-              tickets={col.tickets}
-              count={col.count}
-              locale={locale}
-            />
-          ))}
-        </div>
+        <>
+          {boardQuery.isLoading ? (
+            <BoardSkeleton />
+          ) : boardQuery.isError ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <div className="rounded-full bg-destructive/10 p-3 mb-4">
+                <AlertCircle className="h-6 w-6 text-destructive" />
+              </div>
+              <p className="text-sm font-medium text-foreground mb-1">{tCommon('status.error')}</p>
+              <p className="text-sm text-muted-foreground mb-4">{tCommon('errors.generic')}</p>
+              <Button variant="outline" onClick={() => void boardQuery.refetch()}>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                {tCommon('actions.retry')}
+              </Button>
+            </div>
+          ) : (
+            <div className="flex gap-4 overflow-x-auto pb-4 -mx-1 px-1">
+              {boardColumns.map((col) => (
+                <BoardColumn
+                  key={col.status}
+                  status={col.status}
+                  tickets={col.tickets}
+                  count={col.count}
+                  locale={locale}
+                />
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {/* Create Ticket Dialog */}

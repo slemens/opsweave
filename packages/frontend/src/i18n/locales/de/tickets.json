@@ -77,6 +77,22 @@
     "view_list": "Listenansicht",
     "view_board": "Boardansicht"
   },
+  "list": {
+    "title": "Ticket-Liste",
+    "empty": "Keine Tickets gefunden",
+    "empty_hint": "Passen Sie die Filter an oder erstellen Sie ein neues Ticket.",
+    "showing": "{{count}} Tickets",
+    "page_info": "Seite {{page}} von {{pages}}"
+  },
+  "views": {
+    "all": "Alle Tickets",
+    "my_tickets": "Meine Tickets",
+    "incidents": "Incidents",
+    "changes": "Changes",
+    "problems": "Problems",
+    "open": "Offene Tickets",
+    "unassigned": "Nicht zugewiesen"
+  },
   "comments": {
     "title": "Kommentare",
     "add": "Kommentar hinzuf\u00fcgen",

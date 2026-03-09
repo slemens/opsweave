@@ -77,6 +77,22 @@
     "view_list": "List View",
     "view_board": "Board View"
   },
+  "list": {
+    "title": "Ticket List",
+    "empty": "No tickets found",
+    "empty_hint": "Adjust your filters or create a new ticket.",
+    "showing": "{{count}} Tickets",
+    "page_info": "Page {{page}} of {{pages}}"
+  },
+  "views": {
+    "all": "All Tickets",
+    "my_tickets": "My Tickets",
+    "incidents": "Incidents",
+    "changes": "Changes",
+    "problems": "Problems",
+    "open": "Open Tickets",
+    "unassigned": "Unassigned"
+  },
   "comments": {
     "title": "Comments",
     "add": "Add Comment",
