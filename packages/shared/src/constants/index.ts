@@ -306,7 +306,7 @@ export const COMMUNITY_LIMITS = {
 export const PAGINATION_DEFAULTS = {
   page: 1,
   limit: 25,
-  maxLimit: 100,
+  maxLimit: 500,
   defaultSort: 'created_at',
   defaultOrder: 'desc',
 } as const;
