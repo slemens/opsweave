@@ -30,7 +30,8 @@
     "add": "Hinzuf\u00fcgen",
     "remove": "Entfernen",
     "view": "Ansehen",
-    "retry": "Erneut versuchen"
+    "retry": "Erneut versuchen",
+    "reset_filters": "Filter zurücksetzen"
   },
   "status": {
     "loading": "Wird geladen\u2026",

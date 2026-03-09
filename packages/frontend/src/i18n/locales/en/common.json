@@ -30,7 +30,8 @@
     "add": "Add",
     "remove": "Remove",
     "view": "View",
-    "retry": "Retry"
+    "retry": "Retry",
+    "reset_filters": "Reset filters"
   },
   "status": {
     "loading": "Loading\u2026",

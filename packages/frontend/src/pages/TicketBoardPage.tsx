@@ -16,6 +16,7 @@ import {
   ArrowUp,
   ArrowDown,
   Ticket as TicketIcon,
+  FilterX,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -392,6 +393,13 @@ interface TicketListViewProps {
   onSort: (field: SortField) => void;
   onPageChange: (page: number) => void;
   onRefetch: () => void;
+  // Column filters
+  statusFilter: string;
+  typeFilter: string;
+  priorityFilter: string;
+  onStatusFilterChange: (v: string) => void;
+  onTypeFilterChange: (v: string) => void;
+  onPriorityFilterChange: (v: string) => void;
 }
 
 function TicketListView({
@@ -407,6 +415,12 @@ function TicketListView({
   onSort,
   onPageChange,
   onRefetch,
+  statusFilter,
+  typeFilter,
+  priorityFilter,
+  onStatusFilterChange,
+  onTypeFilterChange,
+  onPriorityFilterChange,
 }: TicketListViewProps) {
   const { t } = useTranslation('tickets');
   const { t: tCommon } = useTranslation();
@@ -421,16 +435,64 @@ function TicketListView({
       : <ArrowDown className="h-3 w-3 ml-1 text-primary" />;
   }
 
-  function SortableHead({ field, children }: { field: SortField; children: React.ReactNode }) {
+  function SortableHead({ field, children, className: extraClass }: { field: SortField; children: React.ReactNode; className?: string }) {
     return (
       <TableHead
-        className="cursor-pointer select-none hover:text-foreground transition-colors"
+        className={cn('cursor-pointer select-none hover:text-foreground transition-colors', extraClass)}
         onClick={() => onSort(field)}
       >
         <span className="flex items-center">
           {children}
           <SortIcon field={field} />
         </span>
+      </TableHead>
+    );
+  }
+
+  function FilterableHead({
+    field,
+    label,
+    filterValue,
+    onFilterChange,
+    options,
+    allLabel,
+  }: {
+    field: SortField;
+    label: string;
+    filterValue: string;
+    onFilterChange: (v: string) => void;
+    options: Array<{ value: string; label: string; dot?: string }>;
+    allLabel: string;
+  }) {
+    return (
+      <TableHead className="p-0">
+        <div className="flex flex-col">
+          <span
+            className="flex items-center px-3 pt-2 pb-1 cursor-pointer select-none hover:text-foreground transition-colors text-xs font-medium text-muted-foreground"
+            onClick={() => onSort(field)}
+          >
+            {label}
+            <SortIcon field={field} />
+          </span>
+          <div className="px-2 pb-1.5">
+            <Select value={filterValue} onValueChange={onFilterChange}>
+              <SelectTrigger className="h-6 text-[11px] border-dashed min-w-[90px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{allLabel}</SelectItem>
+                {options.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    <span className="flex items-center gap-1.5">
+                      {opt.dot && <span className={cn('h-1.5 w-1.5 rounded-full', opt.dot)} />}
+                      {opt.label}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
       </TableHead>
     );
   }
@@ -473,9 +535,38 @@ function TicketListView({
             <TableRow className="bg-muted/30 hover:bg-muted/30">
               <SortableHead field="ticket_number">{t('fields.ticket_number')}</SortableHead>
               <SortableHead field="title">{t('fields.title')}</SortableHead>
-              <SortableHead field="ticket_type">{t('fields.type')}</SortableHead>
-              <SortableHead field="status">{t('fields.status')}</SortableHead>
-              <SortableHead field="priority">{t('fields.priority')}</SortableHead>
+              <FilterableHead
+                field="ticket_type"
+                label={t('fields.type')}
+                filterValue={typeFilter}
+                onFilterChange={onTypeFilterChange}
+                allLabel={t('filter_all_types')}
+                options={TICKET_TYPES.map((type) => ({ value: type, label: t(`types.${type}`) }))}
+              />
+              <FilterableHead
+                field="status"
+                label={t('fields.status')}
+                filterValue={statusFilter}
+                onFilterChange={onStatusFilterChange}
+                allLabel={tCommon('status.all', { defaultValue: 'Alle' })}
+                options={TICKET_STATUSES.map((s) => ({
+                  value: s,
+                  label: t(`statuses.${s}`),
+                  dot: statusDotColors[s],
+                }))}
+              />
+              <FilterableHead
+                field="priority"
+                label={t('fields.priority')}
+                filterValue={priorityFilter}
+                onFilterChange={onPriorityFilterChange}
+                allLabel={t('filter_all_priorities')}
+                options={TICKET_PRIORITIES.map((p) => ({
+                  value: p,
+                  label: t(`priorities.${p}`),
+                  dot: p === 'critical' ? 'bg-red-500' : p === 'high' ? 'bg-orange-500' : p === 'medium' ? 'bg-blue-500' : 'bg-slate-400',
+                }))}
+              />
               <TableHead>{t('fields.assignee')}</TableHead>
               <TableHead>{t('fields.group')}</TableHead>
               <SortableHead field="created_at">{t('fields.created_at')}</SortableHead>
@@ -790,9 +881,11 @@ export function TicketBoardPage() {
 
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // View mode (board or list) — persisted in URL
-  const viewMode = (searchParams.get('view') ?? 'board') as 'board' | 'list';
+  // View mode (board or list) — persisted in URL + localStorage
+  const storedView = typeof window !== 'undefined' ? localStorage.getItem('opsweave_ticket_view') : null;
+  const viewMode = (searchParams.get('view') ?? storedView ?? 'board') as 'board' | 'list';
   const setViewMode = useCallback((mode: 'board' | 'list') => {
+    localStorage.setItem('opsweave_ticket_view', mode);
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
       next.set('view', mode);
@@ -817,8 +910,16 @@ export function TicketBoardPage() {
   // Filters
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+
+  const hasActiveColumnFilters = typeFilter !== 'all' || priorityFilter !== 'all' || statusFilter !== 'all';
+  const resetColumnFilters = useCallback(() => {
+    setTypeFilter('all');
+    setPriorityFilter('all');
+    setStatusFilter('all');
+  }, []);
 
   // List view sorting & pagination
   const [sortField, setSortField] = useState<SortField>('created_at');
@@ -861,12 +962,15 @@ export function TicketBoardPage() {
     if (priorityFilter !== 'all') {
       params.priority = priorityFilter as TicketPriority;
     }
+    if (statusFilter !== 'all' && !presetParams.status) {
+      params.status = statusFilter as TicketStatus;
+    }
     if (searchQuery.trim()) {
       params.q = searchQuery.trim();
     }
 
     return params;
-  }, [activePreset, listPage, sortField, sortOrder, typeFilter, priorityFilter, searchQuery, user?.id]);
+  }, [activePreset, listPage, sortField, sortOrder, typeFilter, priorityFilter, statusFilter, searchQuery, user?.id]);
 
   // Data hooks
   const boardQuery = useBoardData();
@@ -949,84 +1053,105 @@ export function TicketBoardPage() {
         </div>
       </div>
 
-      {/* Preset filter tabs (visible in list view) */}
-      {isListView && (
-        <div className="flex items-center gap-1 overflow-x-auto pb-1 -mb-1">
-          {PRESET_VIEWS.map((preset) => (
-            <Button
-              key={preset.key}
-              variant={activePreset === preset.key ? 'default' : 'outline'}
-              size="sm"
-              className={cn(
-                'h-7 text-xs whitespace-nowrap',
-                activePreset === preset.key && 'pointer-events-none',
-              )}
-              onClick={() => setActivePreset(preset.key)}
-            >
-              {t(`views.${preset.key}`)}
-            </Button>
-          ))}
-        </div>
-      )}
-
-      {/* Filter bar */}
-      <div className="flex items-center gap-3 flex-wrap">
-        {/* Type filter — hidden when preset already filters by type */}
-        {!(isListView && ['incidents', 'changes', 'problems'].includes(activePreset)) && (
-          <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="w-[160px]">
-              <SelectValue placeholder={t('fields.type')} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t('filter_all_types')}</SelectItem>
-              {TICKET_TYPES.map((type) => (
-                <SelectItem key={type} value={type}>
-                  {t(`types.${type}`)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      {/* Toolbar */}
+      <div className="flex items-center gap-2 flex-wrap">
+        {/* Preset filter tabs (list view only) */}
+        {isListView && (
+          <div className="flex items-center gap-1 overflow-x-auto mr-auto">
+            {PRESET_VIEWS.map((preset) => (
+              <Button
+                key={preset.key}
+                variant={activePreset === preset.key ? 'default' : 'outline'}
+                size="sm"
+                className={cn(
+                  'h-7 text-xs whitespace-nowrap',
+                  activePreset === preset.key && 'pointer-events-none',
+                )}
+                onClick={() => setActivePreset(preset.key)}
+              >
+                {t(`views.${preset.key}`)}
+              </Button>
+            ))}
+          </div>
         )}
 
-        {/* Priority filter */}
-        <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-          <SelectTrigger className="w-[160px]">
-            <SelectValue placeholder={t('fields.priority')} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t('filter_all_priorities')}</SelectItem>
-            {TICKET_PRIORITIES.map((p) => (
-              <SelectItem key={p} value={p}>
-                <span className="flex items-center gap-2">
-                  <span className={cn(
-                    'h-2 w-2 rounded-full',
-                    p === 'critical' && 'bg-red-500',
-                    p === 'high' && 'bg-orange-500',
-                    p === 'medium' && 'bg-blue-500',
-                    p === 'low' && 'bg-slate-400',
-                  )} />
-                  {t(`priorities.${p}`)}
-                </span>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {/* Type & Priority filters (board view only — list view uses inline column filters) */}
+        {!isListView && (
+          <>
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger className="w-[160px] h-8">
+                <SelectValue placeholder={t('fields.type')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('filter_all_types')}</SelectItem>
+                {TICKET_TYPES.map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {t(`types.${type}`)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+              <SelectTrigger className="w-[160px] h-8">
+                <SelectValue placeholder={t('fields.priority')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('filter_all_priorities')}</SelectItem>
+                {TICKET_PRIORITIES.map((p) => (
+                  <SelectItem key={p} value={p}>
+                    <span className="flex items-center gap-2">
+                      <span className={cn(
+                        'h-2 w-2 rounded-full',
+                        p === 'critical' && 'bg-red-500',
+                        p === 'high' && 'bg-orange-500',
+                        p === 'medium' && 'bg-blue-500',
+                        p === 'low' && 'bg-slate-400',
+                      )} />
+                      {t(`priorities.${p}`)}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </>
+        )}
 
         {/* Search */}
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
+        <div className={cn('relative min-w-[180px]', !isListView && 'flex-1 max-w-sm')}>
           <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={tCommon('actions.search')}
-            className="pl-8"
+            className="pl-8 h-8"
           />
         </div>
 
-        {/* Refresh button */}
+        {/* Reset column filters (list view only, shown when filters active) */}
+        {isListView && hasActiveColumnFilters && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={resetColumnFilters}
+                >
+                  <FilterX className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{tCommon('actions.reset_filters')}</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
+
+        {/* Refresh */}
         <Button
           variant="outline"
           size="icon"
+          className="h-8 w-8"
           onClick={() => void activeQuery.refetch()}
           aria-label={tCommon('actions.refresh')}
         >
@@ -1049,6 +1174,12 @@ export function TicketBoardPage() {
           onSort={handleSort}
           onPageChange={setListPage}
           onRefetch={() => void listQuery.refetch()}
+          statusFilter={statusFilter}
+          typeFilter={typeFilter}
+          priorityFilter={priorityFilter}
+          onStatusFilterChange={setStatusFilter}
+          onTypeFilterChange={setTypeFilter}
+          onPriorityFilterChange={setPriorityFilter}
         />
       ) : (
         <>

@@ -176,15 +176,50 @@ export async function listTickets(
       closed_at: tickets.closed_at,
       created_by: tickets.created_by,
       assignee_name: users.display_name,
+      assignee_email: users.email,
+      group_name: assigneeGroups.name,
     })
     .from(tickets)
     .leftJoin(users, eq(tickets.assignee_id, users.id))
+    .leftJoin(assigneeGroups, eq(tickets.assignee_group_id, assigneeGroups.id))
     .where(and(...conditions))
     .orderBy(orderFn(sortColumn))
     .limit(limit)
     .offset(offset);
 
-  return { tickets: rows, total };
+  // Reshape flat rows into nested objects for frontend compatibility
+  const shaped = rows.map((row) => ({
+    id: row.id,
+    tenant_id: row.tenant_id,
+    ticket_number: row.ticket_number,
+    ticket_type: row.ticket_type,
+    subtype: row.subtype,
+    title: row.title,
+    description: row.description,
+    status: row.status,
+    priority: row.priority,
+    impact: row.impact,
+    urgency: row.urgency,
+    asset_id: row.asset_id,
+    assignee_id: row.assignee_id,
+    assignee_group_id: row.assignee_group_id,
+    reporter_id: row.reporter_id,
+    customer_id: row.customer_id,
+    sla_tier: row.sla_tier,
+    sla_response_due: row.sla_response_due,
+    sla_resolve_due: row.sla_resolve_due,
+    sla_breached: row.sla_breached,
+    source: row.source,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    resolved_at: row.resolved_at,
+    closed_at: row.closed_at,
+    created_by: row.created_by,
+    assignee: row.assignee_id ? { id: row.assignee_id, display_name: row.assignee_name ?? '', email: row.assignee_email ?? '' } : null,
+    assignee_group: row.assignee_group_id ? { id: row.assignee_group_id, name: row.group_name ?? '' } : null,
+  }));
+
+  return { tickets: shaped, total };
 }
 
 /**
@@ -243,12 +278,45 @@ export async function getTicket(
     )
     .limit(1);
 
-  const ticket = rows[0];
-  if (!ticket) {
+  const row = rows[0];
+  if (!row) {
     throw new NotFoundError('Ticket not found');
   }
 
-  return ticket;
+  // Reshape flat row into nested objects
+  return {
+    id: row.id,
+    tenant_id: row.tenant_id,
+    ticket_number: row.ticket_number,
+    ticket_type: row.ticket_type,
+    subtype: row.subtype,
+    title: row.title,
+    description: row.description,
+    status: row.status,
+    priority: row.priority,
+    impact: row.impact,
+    urgency: row.urgency,
+    asset_id: row.asset_id,
+    assignee_id: row.assignee_id,
+    assignee_group_id: row.assignee_group_id,
+    reporter_id: row.reporter_id,
+    customer_id: row.customer_id,
+    workflow_instance_id: row.workflow_instance_id,
+    current_step_id: row.current_step_id,
+    sla_tier: row.sla_tier,
+    sla_response_due: row.sla_response_due,
+    sla_resolve_due: row.sla_resolve_due,
+    sla_breached: row.sla_breached,
+    source: row.source,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    resolved_at: row.resolved_at,
+    closed_at: row.closed_at,
+    created_by: row.created_by,
+    assignee: row.assignee_id ? { id: row.assignee_id, display_name: row.assignee_name ?? '', email: row.assignee_email ?? '' } : null,
+    assignee_group: row.assignee_group_id ? { id: row.assignee_group_id, name: row.group_name ?? '' } : null,
+    asset: row.asset_id ? { id: row.asset_id, name: row.asset_name ?? '', display_name: row.asset_name ?? '' } : null,
+  };
 }
 
 /**
@@ -778,12 +846,16 @@ export async function getBoardData(
       assignee_id: tickets.assignee_id,
       assignee_group_id: tickets.assignee_group_id,
       sla_breached: tickets.sla_breached,
+      sla_resolve_due: tickets.sla_resolve_due,
       created_at: tickets.created_at,
       updated_at: tickets.updated_at,
       assignee_name: users.display_name,
+      assignee_email: users.email,
+      group_name: assigneeGroups.name,
     })
     .from(tickets)
     .leftJoin(users, eq(tickets.assignee_id, users.id))
+    .leftJoin(assigneeGroups, eq(tickets.assignee_group_id, assigneeGroups.id))
     .where(and(...conditions))
     .orderBy(desc(tickets.updated_at));
 
@@ -794,9 +866,26 @@ export async function getBoardData(
   }
 
   for (const row of rows) {
+    // Reshape to nested objects
+    const shaped = {
+      id: row.id,
+      ticket_number: row.ticket_number,
+      ticket_type: row.ticket_type,
+      title: row.title,
+      status: row.status,
+      priority: row.priority,
+      assignee_id: row.assignee_id,
+      assignee_group_id: row.assignee_group_id,
+      sla_breached: row.sla_breached,
+      sla_resolve_due: row.sla_resolve_due,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+      assignee: row.assignee_id ? { id: row.assignee_id, display_name: row.assignee_name ?? '', email: row.assignee_email ?? '' } : null,
+      assignee_group: row.assignee_group_id ? { id: row.assignee_group_id, name: row.group_name ?? '' } : null,
+    };
     const col = columnsMap.get(row.status);
     if (col) {
-      col.push(row);
+      col.push(shaped);
     }
   }
 
