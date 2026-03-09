@@ -23,6 +23,10 @@ const pollingIntervals = new Map<string, ReturnType<typeof setInterval>>();
 export async function startEmailPollingWorker(): Promise<void> {
   console.log('[EmailWorker] Starting IMAP polling worker...');
 
+  // Small delay to ensure the DB schema + seed have fully initialised
+  // before we query email_inbound_configs (avoids race on fresh DB)
+  await new Promise((resolve) => setTimeout(resolve, 3000));
+
   let activeConfigs: Array<{
     id: string;
     tenant_id: string;
