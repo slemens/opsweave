@@ -12,8 +12,13 @@ import { WorkflowsPage } from '@/pages/WorkflowsPage';
 import { WorkflowDetailPage } from '@/pages/WorkflowDetailPage';
 import { ServiceCatalogPage } from '@/pages/ServiceCatalogPage';
 import { CompliancePage } from '@/pages/CompliancePage';
+import { KnowledgeBasePage } from '@/pages/KnowledgeBasePage';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
+import { PortalLoginPage } from '@/pages/portal/PortalLoginPage';
+import { PortalLayout } from '@/pages/portal/PortalLayout';
+import { PortalTicketsPage } from '@/pages/portal/PortalTicketsPage';
+import { PortalTicketDetailPage } from '@/pages/portal/PortalTicketDetailPage';
 
 export function App() {
   return (
@@ -34,7 +39,15 @@ export function App() {
             <Route path="/workflows/:id" element={<WorkflowDetailPage />} />
             <Route path="/services" element={<ServiceCatalogPage />} />
             <Route path="/compliance" element={<CompliancePage />} />
+            <Route path="/knowledge-base" element={<KnowledgeBasePage />} />
             <Route path="/settings" element={<SettingsPage />} />
+          </Route>
+
+          {/* Customer Portal (own layout, own auth) */}
+          <Route path="/portal/login" element={<PortalLoginPage />} />
+          <Route path="/portal" element={<PortalLayout />}>
+            <Route path="tickets" element={<PortalTicketsPage />} />
+            <Route path="tickets/:id" element={<PortalTicketDetailPage />} />
           </Route>
 
           {/* 404 */}

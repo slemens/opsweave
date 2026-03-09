@@ -1,0 +1,50 @@
+{
+  "title": "Wissensdatenbank",
+  "subtitle": "Artikel und Anleitungen für IT-Prozesse",
+  "new_article": "Artikel erstellen",
+  "edit_article": "Artikel bearbeiten",
+  "delete_article": "Artikel löschen",
+  "publish_article": "Artikel veröffentlichen",
+  "search_placeholder": "Artikel suchen...",
+  "all_categories": "Alle Kategorien",
+  "all_statuses": "Alle Status",
+  "no_articles": "Keine Artikel gefunden",
+  "no_articles_hint": "Erstellen Sie den ersten Artikel in der Wissensdatenbank.",
+  "article_count": "{{count}} Artikel",
+  "visibility": {
+    "internal": "Intern",
+    "public": "Öffentlich"
+  },
+  "status": {
+    "draft": "Entwurf",
+    "published": "Veröffentlicht",
+    "archived": "Archiviert"
+  },
+  "fields": {
+    "title": "Titel",
+    "slug": "URL-Slug",
+    "content": "Inhalt",
+    "category": "Kategorie",
+    "tags": "Tags",
+    "visibility": "Sichtbarkeit",
+    "status": "Status",
+    "author": "Autor",
+    "created_at": "Erstellt",
+    "updated_at": "Aktualisiert",
+    "published_at": "Veröffentlicht"
+  },
+  "dialogs": {
+    "create_title": "Artikel erstellen",
+    "edit_title": "Artikel bearbeiten",
+    "delete_title": "Artikel löschen?",
+    "delete_body": "Artikel \"{{name}}\" wird dauerhaft gelöscht.",
+    "confirm_delete": "Löschen"
+  },
+  "editor": {
+    "placeholder": "Markdown-Inhalt hier eingeben...",
+    "preview": "Vorschau",
+    "edit": "Bearbeiten"
+  },
+  "link_ticket": "Mit Ticket verknüpfen",
+  "linked_tickets": "Verknüpfte Tickets"
+}

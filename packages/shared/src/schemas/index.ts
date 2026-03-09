@@ -30,6 +30,9 @@ import {
   CATALOG_STATUSES,
   OVERRIDE_TYPES,
   COVERAGE_LEVELS,
+  EMAIL_PROVIDERS,
+  KB_VISIBILITIES,
+  KB_ARTICLE_STATUSES,
 } from '../constants/index.js';
 
 // ---------------------------------------------------------------------------
@@ -512,3 +515,76 @@ export const complianceFilterSchema = paginationSchema.extend({
   q: z.string().optional(),
 });
 export type ComplianceFilterParams = z.infer<typeof complianceFilterSchema>;
+
+// ---------------------------------------------------------------------------
+// Knowledge Base Schemas
+// ---------------------------------------------------------------------------
+
+export const createKbArticleSchema = z.object({
+  title: z.string().min(1).max(500),
+  slug: z.string().min(1).max(200).regex(/^[a-z0-9-]+$/, 'Slug must be lowercase with hyphens').optional(),
+  content: z.string().default(''),
+  category: z.string().max(100).nullable().default(null),
+  tags: z.array(z.string().max(100)).default([]),
+  visibility: z.enum(KB_VISIBILITIES).default('internal'),
+  status: z.enum(KB_ARTICLE_STATUSES).default('draft'),
+});
+export type CreateKbArticleInput = z.infer<typeof createKbArticleSchema>;
+
+export const updateKbArticleSchema = createKbArticleSchema.partial();
+export type UpdateKbArticleInput = z.infer<typeof updateKbArticleSchema>;
+
+export const kbFilterSchema = paginationSchema.extend({
+  q: z.string().optional(),
+  status: z.enum(KB_ARTICLE_STATUSES).optional(),
+  visibility: z.enum(KB_VISIBILITIES).optional(),
+  category: z.string().optional(),
+});
+export type KbFilterParams = z.infer<typeof kbFilterSchema>;
+
+// ---------------------------------------------------------------------------
+// Email Inbound Schemas
+// ---------------------------------------------------------------------------
+
+export const createEmailConfigSchema = z.object({
+  name: z.string().min(1).max(255),
+  provider: z.enum(EMAIL_PROVIDERS),
+  config: z.record(z.unknown()).default({}),
+  target_group_id: uuidSchema.nullable().default(null),
+  default_ticket_type: z.enum(TICKET_TYPES).default('incident'),
+  is_active: z.boolean().default(true),
+});
+export type CreateEmailConfigInput = z.infer<typeof createEmailConfigSchema>;
+
+export const updateEmailConfigSchema = createEmailConfigSchema.partial();
+export type UpdateEmailConfigInput = z.infer<typeof updateEmailConfigSchema>;
+
+export const emailFilterSchema = paginationSchema.extend({
+  config_id: uuidSchema.optional(),
+  processed: z.enum(['true', 'false']).optional(),
+});
+export type EmailFilterParams = z.infer<typeof emailFilterSchema>;
+
+// ---------------------------------------------------------------------------
+// Customer Portal Schemas
+// ---------------------------------------------------------------------------
+
+export const portalLoginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(1),
+  tenantSlug: z.string().min(1),
+});
+export type PortalLoginInput = z.infer<typeof portalLoginSchema>;
+
+export const createPortalTicketSchema = z.object({
+  title: z.string().min(1).max(500),
+  description: z.string().max(50000).default(''),
+  ticket_type: z.enum(TICKET_TYPES).default('incident'),
+  priority: z.enum(['critical', 'high', 'medium', 'low'] as const).default('medium'),
+});
+export type CreatePortalTicketInput = z.infer<typeof createPortalTicketSchema>;
+
+export const createPortalCommentSchema = z.object({
+  content: z.string().min(1).max(50000),
+});
+export type CreatePortalCommentInput = z.infer<typeof createPortalCommentSchema>;

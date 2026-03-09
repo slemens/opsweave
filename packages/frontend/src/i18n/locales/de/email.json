@@ -1,0 +1,53 @@
+{
+  "title": "E-Mail-Eingang",
+  "subtitle": "E-Mail-Konfigurationen und eingegangene Nachrichten",
+  "new_config": "Konfiguration erstellen",
+  "edit_config": "Konfiguration bearbeiten",
+  "delete_config": "Konfiguration löschen",
+  "test_connection": "Verbindung testen",
+  "configs_title": "E-Mail-Konfigurationen",
+  "messages_title": "Eingegangene Nachrichten",
+  "no_configs": "Keine E-Mail-Konfigurationen",
+  "no_configs_hint": "Konfigurieren Sie eine IMAP- oder Webhook-Verbindung.",
+  "no_messages": "Keine E-Mails eingegangen",
+  "providers": {
+    "imap": "IMAP",
+    "webhook_mailgun": "Mailgun Webhook",
+    "webhook_sendgrid": "SendGrid Webhook",
+    "smtp_gateway": "SMTP Gateway"
+  },
+  "fields": {
+    "name": "Name",
+    "provider": "Anbieter",
+    "target_group": "Zielgruppe",
+    "default_ticket_type": "Standard-Ticket-Typ",
+    "is_active": "Aktiv",
+    "from": "Von",
+    "subject": "Betreff",
+    "received_at": "Empfangen",
+    "processed": "Verarbeitet",
+    "ticket": "Ticket",
+    "is_reply": "Antwort"
+  },
+  "dialogs": {
+    "create_title": "E-Mail-Konfiguration erstellen",
+    "edit_title": "E-Mail-Konfiguration bearbeiten",
+    "delete_title": "Konfiguration löschen?",
+    "delete_body": "Konfiguration \"{{name}}\" wird dauerhaft gelöscht.",
+    "confirm_delete": "Löschen",
+    "imap_host": "IMAP-Server",
+    "imap_port": "Port",
+    "imap_user": "Benutzername",
+    "imap_password": "Passwort",
+    "imap_tls": "TLS verwenden",
+    "webhook_secret": "Webhook-Secret"
+  },
+  "status": {
+    "active": "Aktiv",
+    "inactive": "Inaktiv",
+    "processed": "Verarbeitet",
+    "pending": "Ausstehend"
+  },
+  "thread_matched": "Thread erkannt",
+  "new_ticket_created": "Neues Ticket erstellt"
+}

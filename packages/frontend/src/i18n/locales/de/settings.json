@@ -5,7 +5,8 @@
     "appearance": "Darstellung",
     "account": "Konto",
     "license": "Lizenz",
-    "tenant": "Organisation"
+    "tenant": "Organisation",
+    "email": "E-Mail-Eingang"
   },
   "general": {
     "title": "Allgemeine Einstellungen",

@@ -1,0 +1,50 @@
+{
+  "title": "Knowledge Base",
+  "subtitle": "Articles and guides for IT processes",
+  "new_article": "Create article",
+  "edit_article": "Edit article",
+  "delete_article": "Delete article",
+  "publish_article": "Publish article",
+  "search_placeholder": "Search articles...",
+  "all_categories": "All categories",
+  "all_statuses": "All statuses",
+  "no_articles": "No articles found",
+  "no_articles_hint": "Create the first article in the knowledge base.",
+  "article_count": "{{count}} articles",
+  "visibility": {
+    "internal": "Internal",
+    "public": "Public"
+  },
+  "status": {
+    "draft": "Draft",
+    "published": "Published",
+    "archived": "Archived"
+  },
+  "fields": {
+    "title": "Title",
+    "slug": "URL slug",
+    "content": "Content",
+    "category": "Category",
+    "tags": "Tags",
+    "visibility": "Visibility",
+    "status": "Status",
+    "author": "Author",
+    "created_at": "Created",
+    "updated_at": "Updated",
+    "published_at": "Published"
+  },
+  "dialogs": {
+    "create_title": "Create article",
+    "edit_title": "Edit article",
+    "delete_title": "Delete article?",
+    "delete_body": "Article \"{{name}}\" will be permanently deleted.",
+    "confirm_delete": "Delete"
+  },
+  "editor": {
+    "placeholder": "Enter Markdown content here...",
+    "preview": "Preview",
+    "edit": "Edit"
+  },
+  "link_ticket": "Link to ticket",
+  "linked_tickets": "Linked tickets"
+}

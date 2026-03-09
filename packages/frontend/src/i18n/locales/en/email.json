@@ -1,0 +1,53 @@
+{
+  "title": "Email Inbound",
+  "subtitle": "Email configurations and incoming messages",
+  "new_config": "Create configuration",
+  "edit_config": "Edit configuration",
+  "delete_config": "Delete configuration",
+  "test_connection": "Test connection",
+  "configs_title": "Email configurations",
+  "messages_title": "Incoming messages",
+  "no_configs": "No email configurations",
+  "no_configs_hint": "Configure an IMAP or webhook connection.",
+  "no_messages": "No emails received",
+  "providers": {
+    "imap": "IMAP",
+    "webhook_mailgun": "Mailgun Webhook",
+    "webhook_sendgrid": "SendGrid Webhook",
+    "smtp_gateway": "SMTP Gateway"
+  },
+  "fields": {
+    "name": "Name",
+    "provider": "Provider",
+    "target_group": "Target group",
+    "default_ticket_type": "Default ticket type",
+    "is_active": "Active",
+    "from": "From",
+    "subject": "Subject",
+    "received_at": "Received",
+    "processed": "Processed",
+    "ticket": "Ticket",
+    "is_reply": "Reply"
+  },
+  "dialogs": {
+    "create_title": "Create email configuration",
+    "edit_title": "Edit email configuration",
+    "delete_title": "Delete configuration?",
+    "delete_body": "Configuration \"{{name}}\" will be permanently deleted.",
+    "confirm_delete": "Delete",
+    "imap_host": "IMAP server",
+    "imap_port": "Port",
+    "imap_user": "Username",
+    "imap_password": "Password",
+    "imap_tls": "Use TLS",
+    "webhook_secret": "Webhook secret"
+  },
+  "status": {
+    "active": "Active",
+    "inactive": "Inactive",
+    "processed": "Processed",
+    "pending": "Pending"
+  },
+  "thread_matched": "Thread matched",
+  "new_ticket_created": "New ticket created"
+}

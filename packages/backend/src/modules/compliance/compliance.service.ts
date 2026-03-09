@@ -141,7 +141,7 @@ export async function getFramework(
 export async function createFramework(
   tenantId: string,
   data: CreateRegulatoryFrameworkInput,
-  userId: string,
+  _userId: string,
 ): Promise<unknown> {
   const d = db();
 

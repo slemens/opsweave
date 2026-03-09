@@ -6,9 +6,6 @@ import {
   serviceDescriptions,
   horizontalCatalog,
   horizontalCatalogItems,
-  verticalCatalogs,
-  verticalCatalogOverrides,
-  customers,
 } from '../../db/schema/index.js';
 import { NotFoundError, ConflictError } from '../../lib/errors.js';
 import type {

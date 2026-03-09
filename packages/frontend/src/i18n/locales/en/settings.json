@@ -5,7 +5,8 @@
     "appearance": "Appearance",
     "account": "Account",
     "license": "License",
-    "tenant": "Organization"
+    "tenant": "Organization",
+    "email": "Email Inbound"
   },
   "general": {
     "title": "General Settings",

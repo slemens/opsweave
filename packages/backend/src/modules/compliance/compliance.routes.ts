@@ -19,7 +19,6 @@ import {
   updateFramework,
   deleteFramework,
   listRequirements,
-  getRequirement,
   createRequirement,
   updateRequirement,
   deleteRequirement,

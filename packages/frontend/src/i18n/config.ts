@@ -16,6 +16,10 @@ import catalogDe from './locales/de/catalog.json';
 import catalogEn from './locales/en/catalog.json';
 import complianceDe from './locales/de/compliance.json';
 import complianceEn from './locales/en/compliance.json';
+import kbDe from './locales/de/kb.json';
+import kbEn from './locales/en/kb.json';
+import emailDe from './locales/de/email.json';
+import emailEn from './locales/en/email.json';
 
 const resources = {
   de: {
@@ -26,6 +30,8 @@ const resources = {
     workflows: workflowsDe,
     catalog: catalogDe,
     compliance: complianceDe,
+    kb: kbDe,
+    email: emailDe,
   },
   en: {
     common: commonEn,
@@ -35,6 +41,8 @@ const resources = {
     workflows: workflowsEn,
     catalog: catalogEn,
     compliance: complianceEn,
+    kb: kbEn,
+    email: emailEn,
   },
 };
 
@@ -45,7 +53,7 @@ i18n
     resources,
     fallbackLng: 'de',
     defaultNS: 'common',
-    ns: ['common', 'tickets', 'settings', 'cmdb', 'workflows', 'catalog', 'compliance'],
+    ns: ['common', 'tickets', 'settings', 'cmdb', 'workflows', 'catalog', 'compliance', 'kb', 'email'],
     interpolation: {
       escapeValue: false,
     },
