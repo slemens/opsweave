@@ -1,0 +1,76 @@
+{
+  "auth": {
+    "invalid_credentials": "Invalid credentials. Please check your email and password.",
+    "token_expired": "Session expired. Please sign in again.",
+    "unauthorized": "Access denied. Please sign in.",
+    "forbidden": "You do not have the required permissions for this action.",
+    "missing_token": "Authentication token is missing.",
+    "invalid_token": "Invalid authentication token.",
+    "account_inactive": "This account has been deactivated.",
+    "password_mismatch": "The current password is incorrect.",
+    "logout_success": "Successfully signed out."
+  },
+  "validation": {
+    "required": "This field is required.",
+    "invalid_format": "Invalid format.",
+    "invalid_email": "Invalid email address.",
+    "invalid_uuid": "Invalid ID.",
+    "too_short": "Input is too short (minimum {{min}} characters).",
+    "too_long": "Input is too long (maximum {{max}} characters).",
+    "invalid_enum": "Invalid value. Allowed values: {{values}}."
+  },
+  "errors": {
+    "not_found": "The requested resource was not found.",
+    "conflict": "A conflict occurred. The resource already exists.",
+    "internal": "An internal error occurred. Please try again later.",
+    "bad_request": "Bad request.",
+    "method_not_allowed": "This method is not allowed.",
+    "rate_limited": "Too many requests. Please try again later."
+  },
+  "tenant": {
+    "not_found": "Tenant not found.",
+    "inactive": "This tenant is deactivated.",
+    "no_access": "You do not have access to this tenant.",
+    "switch_success": "Tenant switched successfully."
+  },
+  "license": {
+    "limit_reached": "License limit reached ({{current}}/{{limit}}). Upgrade to Enterprise for higher limits.",
+    "expired": "Your Enterprise license has expired. Community limits apply.",
+    "invalid": "Invalid license key.",
+    "activated": "License activated successfully.",
+    "community_edition": "Community Edition — free for up to {{maxAssets}} assets and {{maxUsers}} users."
+  },
+  "tickets": {
+    "not_found": "Ticket not found.",
+    "already_closed": "This ticket is already closed.",
+    "status_transition_invalid": "Invalid status transition from '{{from}}' to '{{to}}'.",
+    "created": "Ticket created successfully.",
+    "updated": "Ticket updated successfully.",
+    "comment_added": "Comment added."
+  },
+  "assets": {
+    "not_found": "Asset not found.",
+    "relation_cycle": "This relation would create a cycle.",
+    "relation_duplicate": "This relation already exists.",
+    "created": "Asset created successfully.",
+    "updated": "Asset updated successfully.",
+    "deleted": "Asset deleted successfully."
+  },
+  "users": {
+    "not_found": "User not found.",
+    "email_exists": "This email address is already in use.",
+    "created": "User created successfully.",
+    "updated": "User updated successfully."
+  },
+  "groups": {
+    "not_found": "Group not found.",
+    "name_exists": "A group with this name already exists.",
+    "created": "Group created successfully.",
+    "updated": "Group updated successfully."
+  },
+  "system": {
+    "healthy": "System is operational.",
+    "db_connected": "Database connection established.",
+    "db_disconnected": "Database connection lost."
+  }
+}

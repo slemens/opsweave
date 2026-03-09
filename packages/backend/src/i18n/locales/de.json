@@ -1,0 +1,76 @@
+{
+  "auth": {
+    "invalid_credentials": "Ungueltige Anmeldedaten. Bitte ueberpruefen Sie E-Mail und Passwort.",
+    "token_expired": "Sitzung abgelaufen. Bitte melden Sie sich erneut an.",
+    "unauthorized": "Zugriff verweigert. Bitte melden Sie sich an.",
+    "forbidden": "Sie haben nicht die erforderlichen Berechtigungen fuer diese Aktion.",
+    "missing_token": "Authentifizierungstoken fehlt.",
+    "invalid_token": "Ungueltiges Authentifizierungstoken.",
+    "account_inactive": "Dieses Konto ist deaktiviert.",
+    "password_mismatch": "Das aktuelle Passwort ist nicht korrekt.",
+    "logout_success": "Erfolgreich abgemeldet."
+  },
+  "validation": {
+    "required": "Dieses Feld ist erforderlich.",
+    "invalid_format": "Ungueltiges Format.",
+    "invalid_email": "Ungueltige E-Mail-Adresse.",
+    "invalid_uuid": "Ungueltige ID.",
+    "too_short": "Eingabe ist zu kurz (mindestens {{min}} Zeichen).",
+    "too_long": "Eingabe ist zu lang (maximal {{max}} Zeichen).",
+    "invalid_enum": "Ungueltiger Wert. Erlaubte Werte: {{values}}."
+  },
+  "errors": {
+    "not_found": "Die angeforderte Ressource wurde nicht gefunden.",
+    "conflict": "Ein Konflikt ist aufgetreten. Die Ressource existiert bereits.",
+    "internal": "Ein interner Fehler ist aufgetreten. Bitte versuchen Sie es spaeter erneut.",
+    "bad_request": "Ungueltige Anfrage.",
+    "method_not_allowed": "Diese Methode ist nicht erlaubt.",
+    "rate_limited": "Zu viele Anfragen. Bitte versuchen Sie es spaeter erneut."
+  },
+  "tenant": {
+    "not_found": "Mandant nicht gefunden.",
+    "inactive": "Dieser Mandant ist deaktiviert.",
+    "no_access": "Sie haben keinen Zugriff auf diesen Mandanten.",
+    "switch_success": "Mandant erfolgreich gewechselt."
+  },
+  "license": {
+    "limit_reached": "Lizenzlimit erreicht ({{current}}/{{limit}}). Erweitern Sie auf Enterprise fuer hoehere Limits.",
+    "expired": "Ihre Enterprise-Lizenz ist abgelaufen. Community-Limits gelten.",
+    "invalid": "Ungueltiger Lizenzschluessel.",
+    "activated": "Lizenz erfolgreich aktiviert.",
+    "community_edition": "Community Edition — kostenlos fuer bis zu {{maxAssets}} Assets und {{maxUsers}} Benutzer."
+  },
+  "tickets": {
+    "not_found": "Ticket nicht gefunden.",
+    "already_closed": "Dieses Ticket ist bereits geschlossen.",
+    "status_transition_invalid": "Ungueltiger Statusuebergang von '{{from}}' nach '{{to}}'.",
+    "created": "Ticket erfolgreich erstellt.",
+    "updated": "Ticket erfolgreich aktualisiert.",
+    "comment_added": "Kommentar hinzugefuegt."
+  },
+  "assets": {
+    "not_found": "Asset nicht gefunden.",
+    "relation_cycle": "Diese Relation wuerde einen Zyklus erzeugen.",
+    "relation_duplicate": "Diese Relation existiert bereits.",
+    "created": "Asset erfolgreich erstellt.",
+    "updated": "Asset erfolgreich aktualisiert.",
+    "deleted": "Asset erfolgreich geloescht."
+  },
+  "users": {
+    "not_found": "Benutzer nicht gefunden.",
+    "email_exists": "Diese E-Mail-Adresse wird bereits verwendet.",
+    "created": "Benutzer erfolgreich erstellt.",
+    "updated": "Benutzer erfolgreich aktualisiert."
+  },
+  "groups": {
+    "not_found": "Gruppe nicht gefunden.",
+    "name_exists": "Eine Gruppe mit diesem Namen existiert bereits.",
+    "created": "Gruppe erfolgreich erstellt.",
+    "updated": "Gruppe erfolgreich aktualisiert."
+  },
+  "system": {
+    "healthy": "System ist betriebsbereit.",
+    "db_connected": "Datenbankverbindung hergestellt.",
+    "db_disconnected": "Datenbankverbindung unterbrochen."
+  }
+}

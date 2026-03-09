@@ -1,0 +1,104 @@
+{
+  "app": {
+    "name": "OpsWeave",
+    "claim": "Weaving your IT operations together"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "tickets": "Tickets",
+    "assets": "Assets / CMDB",
+    "workflows": "Workflows",
+    "services": "Servicekatalog",
+    "compliance": "Compliance",
+    "knowledge_base": "Wissensdatenbank",
+    "settings": "Einstellungen",
+    "monitoring": "Monitoring"
+  },
+  "actions": {
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "delete": "L\u00f6schen",
+    "edit": "Bearbeiten",
+    "create": "Erstellen",
+    "search": "Suchen",
+    "filter": "Filtern",
+    "export": "Exportieren",
+    "refresh": "Aktualisieren",
+    "back": "Zur\u00fcck",
+    "confirm": "Best\u00e4tigen",
+    "close": "Schlie\u00dfen",
+    "add": "Hinzuf\u00fcgen",
+    "remove": "Entfernen",
+    "view": "Ansehen",
+    "retry": "Erneut versuchen"
+  },
+  "status": {
+    "loading": "Wird geladen\u2026",
+    "error": "Fehler aufgetreten",
+    "empty": "Keine Daten vorhanden",
+    "no_results": "Keine Ergebnisse gefunden",
+    "success": "Erfolgreich",
+    "saving": "Wird gespeichert\u2026"
+  },
+  "auth": {
+    "login": "Anmelden",
+    "logout": "Abmelden",
+    "email": "E-Mail-Adresse",
+    "password": "Passwort",
+    "login_title": "Willkommen bei OpsWeave",
+    "login_subtitle": "Melden Sie sich an, um fortzufahren",
+    "invalid_credentials": "Ung\u00fcltige Anmeldedaten",
+    "session_expired": "Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.",
+    "logging_in": "Anmeldung l\u00e4uft\u2026"
+  },
+  "theme": {
+    "light": "Hell",
+    "dark": "Dunkel",
+    "system": "System"
+  },
+  "language": {
+    "de": "Deutsch",
+    "en": "English",
+    "switch": "Sprache wechseln"
+  },
+  "pagination": {
+    "page": "Seite",
+    "of": "von",
+    "showing": "Zeige",
+    "per_page": "pro Seite",
+    "previous": "Vorherige",
+    "next": "N\u00e4chste"
+  },
+  "errors": {
+    "generic": "Ein unerwarteter Fehler ist aufgetreten",
+    "not_found": "Die angeforderte Ressource wurde nicht gefunden",
+    "unauthorized": "Sie sind nicht autorisiert, diese Aktion auszuf\u00fchren",
+    "forbidden": "Zugriff verweigert",
+    "network": "Netzwerkfehler \u2014 bitte pr\u00fcfen Sie Ihre Verbindung",
+    "validation": "Bitte \u00fcberpr\u00fcfen Sie Ihre Eingaben",
+    "server": "Serverfehler \u2014 bitte versuchen Sie es sp\u00e4ter erneut"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Willkommen zur\u00fcck",
+    "open_tickets": "Offene Tickets",
+    "sla_breaches": "SLA-Verletzungen",
+    "assets_total": "Assets gesamt",
+    "pending_changes": "Ausstehende Changes"
+  },
+  "not_found": {
+    "title": "Seite nicht gefunden",
+    "description": "Die gesuchte Seite existiert nicht oder wurde verschoben.",
+    "go_home": "Zur Startseite"
+  },
+  "user_menu": {
+    "profile": "Profil",
+    "settings": "Einstellungen",
+    "switch_tenant": "Organisation wechseln",
+    "notifications": "Benachrichtigungen"
+  },
+  "sidebar": {
+    "collapse": "Seitenleiste einklappen",
+    "expand": "Seitenleiste ausklappen"
+  }
+}

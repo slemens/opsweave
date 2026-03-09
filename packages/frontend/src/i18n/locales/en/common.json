@@ -1,0 +1,104 @@
+{
+  "app": {
+    "name": "OpsWeave",
+    "claim": "Weaving your IT operations together"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "tickets": "Tickets",
+    "assets": "Assets / CMDB",
+    "workflows": "Workflows",
+    "services": "Service Catalog",
+    "compliance": "Compliance",
+    "knowledge_base": "Knowledge Base",
+    "settings": "Settings",
+    "monitoring": "Monitoring"
+  },
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search",
+    "filter": "Filter",
+    "export": "Export",
+    "refresh": "Refresh",
+    "back": "Back",
+    "confirm": "Confirm",
+    "close": "Close",
+    "add": "Add",
+    "remove": "Remove",
+    "view": "View",
+    "retry": "Retry"
+  },
+  "status": {
+    "loading": "Loading\u2026",
+    "error": "An error occurred",
+    "empty": "No data available",
+    "no_results": "No results found",
+    "success": "Success",
+    "saving": "Saving\u2026"
+  },
+  "auth": {
+    "login": "Sign In",
+    "logout": "Sign Out",
+    "email": "Email Address",
+    "password": "Password",
+    "login_title": "Welcome to OpsWeave",
+    "login_subtitle": "Sign in to continue",
+    "invalid_credentials": "Invalid credentials",
+    "session_expired": "Your session has expired. Please sign in again.",
+    "logging_in": "Signing in\u2026"
+  },
+  "theme": {
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "language": {
+    "de": "Deutsch",
+    "en": "English",
+    "switch": "Switch language"
+  },
+  "pagination": {
+    "page": "Page",
+    "of": "of",
+    "showing": "Showing",
+    "per_page": "per page",
+    "previous": "Previous",
+    "next": "Next"
+  },
+  "errors": {
+    "generic": "An unexpected error occurred",
+    "not_found": "The requested resource was not found",
+    "unauthorized": "You are not authorized to perform this action",
+    "forbidden": "Access denied",
+    "network": "Network error \u2014 please check your connection",
+    "validation": "Please check your input",
+    "server": "Server error \u2014 please try again later"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welcome back",
+    "open_tickets": "Open Tickets",
+    "sla_breaches": "SLA Breaches",
+    "assets_total": "Total Assets",
+    "pending_changes": "Pending Changes"
+  },
+  "not_found": {
+    "title": "Page Not Found",
+    "description": "The page you are looking for does not exist or has been moved.",
+    "go_home": "Go to Homepage"
+  },
+  "user_menu": {
+    "profile": "Profile",
+    "settings": "Settings",
+    "switch_tenant": "Switch Organization",
+    "notifications": "Notifications"
+  },
+  "sidebar": {
+    "collapse": "Collapse sidebar",
+    "expand": "Expand sidebar"
+  }
+}

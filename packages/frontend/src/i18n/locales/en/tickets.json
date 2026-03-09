@@ -1,0 +1,83 @@
+{
+  "title": "Tickets",
+  "create": "Create Ticket",
+  "edit": "Edit Ticket",
+  "detail": "Ticket Details",
+  "types": {
+    "incident": "Incident",
+    "problem": "Problem",
+    "change": "Change"
+  },
+  "subtypes": {
+    "standard": "Standard",
+    "emergency": "Emergency",
+    "normal": "Normal",
+    "major": "Major",
+    "minor": "Minor"
+  },
+  "statuses": {
+    "open": "Open",
+    "in_progress": "In Progress",
+    "pending": "Pending",
+    "resolved": "Resolved",
+    "closed": "Closed"
+  },
+  "priorities": {
+    "critical": "Critical",
+    "high": "High",
+    "medium": "Medium",
+    "low": "Low"
+  },
+  "fields": {
+    "title": "Title",
+    "description": "Description",
+    "status": "Status",
+    "priority": "Priority",
+    "impact": "Impact",
+    "urgency": "Urgency",
+    "assignee": "Assignee",
+    "group": "Group",
+    "asset": "Asset",
+    "reporter": "Reporter",
+    "customer": "Customer",
+    "source": "Source",
+    "ticket_number": "Ticket Number",
+    "type": "Type",
+    "subtype": "Subtype",
+    "created_at": "Created at",
+    "updated_at": "Updated at",
+    "resolved_at": "Resolved at",
+    "closed_at": "Closed at",
+    "sla_response_due": "SLA Response Due",
+    "sla_resolve_due": "SLA Resolution Due",
+    "sla_breached": "SLA Breached"
+  },
+  "board": {
+    "title": "Ticket Board",
+    "empty": "No tickets in this column",
+    "drag_hint": "Drag and drop tickets to move them",
+    "view_list": "List View",
+    "view_board": "Board View"
+  },
+  "comments": {
+    "title": "Comments",
+    "add": "Add Comment",
+    "internal": "Internal Comment",
+    "placeholder": "Write a comment\u2026",
+    "no_comments": "No comments yet"
+  },
+  "history": {
+    "title": "History",
+    "changed_by": "Changed by",
+    "field_changed": "Field changed",
+    "old_value": "Old value",
+    "new_value": "New value"
+  },
+  "sources": {
+    "manual": "Manual",
+    "email": "Email",
+    "monitoring": "Monitoring",
+    "api": "API",
+    "portal": "Customer Portal"
+  }
+}

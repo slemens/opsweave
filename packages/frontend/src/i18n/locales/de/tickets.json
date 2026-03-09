@@ -1,0 +1,83 @@
+{
+  "title": "Tickets",
+  "create": "Ticket erstellen",
+  "edit": "Ticket bearbeiten",
+  "detail": "Ticket-Details",
+  "types": {
+    "incident": "Incident",
+    "problem": "Problem",
+    "change": "Change"
+  },
+  "subtypes": {
+    "standard": "Standard",
+    "emergency": "Notfall",
+    "normal": "Normal",
+    "major": "Major",
+    "minor": "Minor"
+  },
+  "statuses": {
+    "open": "Offen",
+    "in_progress": "In Bearbeitung",
+    "pending": "Wartend",
+    "resolved": "Gel\u00f6st",
+    "closed": "Geschlossen"
+  },
+  "priorities": {
+    "critical": "Kritisch",
+    "high": "Hoch",
+    "medium": "Mittel",
+    "low": "Niedrig"
+  },
+  "fields": {
+    "title": "Titel",
+    "description": "Beschreibung",
+    "status": "Status",
+    "priority": "Priorit\u00e4t",
+    "impact": "Auswirkung",
+    "urgency": "Dringlichkeit",
+    "assignee": "Zugewiesen an",
+    "group": "Gruppe",
+    "asset": "Asset",
+    "reporter": "Ersteller",
+    "customer": "Kunde",
+    "source": "Quelle",
+    "ticket_number": "Ticket-Nummer",
+    "type": "Typ",
+    "subtype": "Untertyp",
+    "created_at": "Erstellt am",
+    "updated_at": "Aktualisiert am",
+    "resolved_at": "Gel\u00f6st am",
+    "closed_at": "Geschlossen am",
+    "sla_response_due": "SLA-Reaktion f\u00e4llig",
+    "sla_resolve_due": "SLA-L\u00f6sung f\u00e4llig",
+    "sla_breached": "SLA verletzt"
+  },
+  "board": {
+    "title": "Ticket-Board",
+    "empty": "Keine Tickets in dieser Spalte",
+    "drag_hint": "Tickets per Drag & Drop verschieben",
+    "view_list": "Listenansicht",
+    "view_board": "Boardansicht"
+  },
+  "comments": {
+    "title": "Kommentare",
+    "add": "Kommentar hinzuf\u00fcgen",
+    "internal": "Interner Kommentar",
+    "placeholder": "Kommentar schreiben\u2026",
+    "no_comments": "Noch keine Kommentare"
+  },
+  "history": {
+    "title": "Verlauf",
+    "changed_by": "\u00c4nderung durch",
+    "field_changed": "Feld ge\u00e4ndert",
+    "old_value": "Alter Wert",
+    "new_value": "Neuer Wert"
+  },
+  "sources": {
+    "manual": "Manuell",
+    "email": "E-Mail",
+    "monitoring": "Monitoring",
+    "api": "API",
+    "portal": "Kundenportal"
+  }
+}
