@@ -756,7 +756,10 @@ export async function getTicketComments(
     )
     .orderBy(asc(ticketComments.created_at));
 
-  return comments;
+  return comments.map(({ author_name, author_email, ...c }) => ({
+    ...c,
+    author: author_name ? { id: c.author_id, display_name: author_name, email: author_email ?? '' } : null,
+  }));
 }
 
 /**
@@ -812,6 +815,32 @@ export async function addTicketComment(
       ),
     );
 
+  // Re-fetch with author JOIN so the response includes display_name + email
+  const [withAuthor] = await d
+    .select({
+      id: ticketComments.id,
+      tenant_id: ticketComments.tenant_id,
+      ticket_id: ticketComments.ticket_id,
+      author_id: ticketComments.author_id,
+      content: ticketComments.content,
+      is_internal: ticketComments.is_internal,
+      source: ticketComments.source,
+      created_at: ticketComments.created_at,
+      author_name: users.display_name,
+      author_email: users.email,
+    })
+    .from(ticketComments)
+    .leftJoin(users, eq(ticketComments.author_id, users.id))
+    .where(eq(ticketComments.id, commentId))
+    .limit(1);
+
+  if (withAuthor) {
+    const { author_name, author_email, ...rest } = withAuthor;
+    return {
+      ...rest,
+      author: author_name ? { id: rest.author_id, display_name: author_name, email: author_email ?? '' } : null,
+    };
+  }
   return created;
 }
 

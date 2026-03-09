@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 44" fill="none">
+  <!-- Icon part (40x40, centered vertically in 44px height at x=2) -->
+  <g transform="translate(2, 2)">
+    <!-- Center node -->
+    <circle cx="20" cy="20" r="3" fill="#2563eb"/>
+    <!-- Top node -->
+    <circle cx="20" cy="7" r="2.5" fill="#2563eb"/>
+    <!-- Top-right node -->
+    <circle cx="31.3" cy="13.5" r="2.5" fill="#2563eb"/>
+    <!-- Bottom-right node -->
+    <circle cx="31.3" cy="26.5" r="2.5" fill="#2563eb"/>
+    <!-- Bottom node -->
+    <circle cx="20" cy="33" r="2.5" fill="#2563eb"/>
+    <!-- Bottom-left node -->
+    <circle cx="8.7" cy="26.5" r="2.5" fill="#2563eb"/>
+    <!-- Top-left node -->
+    <circle cx="8.7" cy="13.5" r="2.5" fill="#2563eb"/>
+    <!-- Outer hexagon edges -->
+    <line x1="20" y1="7" x2="31.3" y2="13.5" stroke="#2563eb" stroke-width="1.5" stroke-opacity="0.6"/>
+    <line x1="31.3" y1="13.5" x2="31.3" y2="26.5" stroke="#2563eb" stroke-width="1.5" stroke-opacity="0.6"/>
+    <line x1="31.3" y1="26.5" x2="20" y2="33" stroke="#2563eb" stroke-width="1.5" stroke-opacity="0.6"/>
+    <line x1="20" y1="33" x2="8.7" y2="26.5" stroke="#2563eb" stroke-width="1.5" stroke-opacity="0.6"/>
+    <line x1="8.7" y1="26.5" x2="8.7" y2="13.5" stroke="#2563eb" stroke-width="1.5" stroke-opacity="0.6"/>
+    <line x1="8.7" y1="13.5" x2="20" y2="7" stroke="#2563eb" stroke-width="1.5" stroke-opacity="0.6"/>
+    <!-- Spokes -->
+    <line x1="20" y1="20" x2="20" y2="7" stroke="#2563eb" stroke-width="1.5" stroke-opacity="0.4"/>
+    <line x1="20" y1="20" x2="31.3" y2="13.5" stroke="#2563eb" stroke-width="1.5" stroke-opacity="0.4"/>
+    <line x1="20" y1="20" x2="31.3" y2="26.5" stroke="#2563eb" stroke-width="1.5" stroke-opacity="0.4"/>
+    <line x1="20" y1="20" x2="20" y2="33" stroke="#2563eb" stroke-width="1.5" stroke-opacity="0.4"/>
+    <line x1="20" y1="20" x2="8.7" y2="26.5" stroke="#2563eb" stroke-width="1.5" stroke-opacity="0.4"/>
+    <line x1="20" y1="20" x2="8.7" y2="13.5" stroke="#2563eb" stroke-width="1.5" stroke-opacity="0.4"/>
+  </g>
+  <!-- Wordmark "OpsWeave" -->
+  <text x="52" y="28" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="18" font-weight="600" fill="#0f172a" letter-spacing="-0.3">OpsWeave</text>
+</svg>
