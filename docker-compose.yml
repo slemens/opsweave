@@ -18,8 +18,8 @@ services:
   # ─── Frontend ────────────────────────────────────────────
   frontend:
     build:
-      context: ./packages/frontend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./packages/frontend/Dockerfile
     environment:
       - VITE_API_URL=/api
       - VITE_WS_URL=/ws

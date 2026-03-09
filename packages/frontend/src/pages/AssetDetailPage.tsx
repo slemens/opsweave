@@ -33,7 +33,6 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select,
@@ -74,8 +73,8 @@ import {
 } from '@/api/assets';
 import { useGroups, useCustomers } from '@/api/tickets';
 import type { AssetRelationWithDetails, AssetTicketSummary } from '@/api/assets';
-import type { AssetType, AssetStatus, RelationType } from '@opsweave/shared';
-import { ASSET_TYPES, ASSET_STATUSES, SLA_TIERS, ENVIRONMENTS, RELATION_TYPES } from '@opsweave/shared';
+import type { AssetType, RelationType } from '@opsweave/shared';
+import { ASSET_STATUSES, SLA_TIERS, ENVIRONMENTS, RELATION_TYPES } from '@opsweave/shared';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -88,7 +87,7 @@ const statusColors: Record<string, string> = {
   decommissioned: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
 };
 
-const slaColors: Record<string, string> = {
+const _slaColors: Record<string, string> = {
   platinum: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
   gold: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300',
   silver: 'bg-slate-100 text-slate-600 dark:bg-slate-800/60 dark:text-slate-300',

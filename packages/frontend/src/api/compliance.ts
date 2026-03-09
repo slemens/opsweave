@@ -255,7 +255,7 @@ export function useUpdateRequirement() {
   return useMutation({
     mutationFn: async ({
       rid,
-      frameworkId,
+      frameworkId: _frameworkId,
       ...payload
     }: UpdateRequirementPayload & { rid: string; frameworkId: string }) =>
       apiClient.put<RegulatoryRequirement>(`/compliance/requirements/${rid}`, payload),
