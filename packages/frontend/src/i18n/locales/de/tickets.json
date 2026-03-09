@@ -3,6 +3,24 @@
   "create": "Ticket erstellen",
   "edit": "Ticket bearbeiten",
   "detail": "Ticket-Details",
+  "create_description": "Erstellen Sie ein neues Ticket, um ein Anliegen zu erfassen.",
+  "create_success": "Ticket erfolgreich erstellt",
+  "create_error": "Fehler beim Erstellen des Tickets",
+  "update_success": "Ticket erfolgreich aktualisiert",
+  "update_error": "Fehler beim Aktualisieren des Tickets",
+  "unassigned": "Nicht zugewiesen",
+  "unknown_user": "Unbekannter Benutzer",
+  "no_description": "Keine Beschreibung vorhanden",
+  "sla_approaching": "SLA-Frist naht",
+  "sla_tier": "SLA-Stufe",
+  "sla_yes": "Ja",
+  "sla_no": "Nein",
+  "dates_title": "Zeitangaben",
+  "placeholder_title": "Kurzbeschreibung des Anliegens",
+  "placeholder_description": "Detaillierte Beschreibung des Anliegens\u2026",
+  "select_group": "Gruppe auswahlen",
+  "filter_all_types": "Alle Typen",
+  "filter_all_priorities": "Alle Prioritaten",
   "types": {
     "incident": "Incident",
     "problem": "Problem",
@@ -64,14 +82,18 @@
     "add": "Kommentar hinzuf\u00fcgen",
     "internal": "Interner Kommentar",
     "placeholder": "Kommentar schreiben\u2026",
-    "no_comments": "Noch keine Kommentare"
+    "no_comments": "Noch keine Kommentare",
+    "add_success": "Kommentar erfolgreich hinzugef\u00fcgt",
+    "add_error": "Fehler beim Hinzuf\u00fcgen des Kommentars"
   },
   "history": {
     "title": "Verlauf",
     "changed_by": "\u00c4nderung durch",
+    "changed": "hat ge\u00e4ndert",
     "field_changed": "Feld ge\u00e4ndert",
     "old_value": "Alter Wert",
-    "new_value": "Neuer Wert"
+    "new_value": "Neuer Wert",
+    "no_history": "Noch keine \u00c4nderungen"
   },
   "sources": {
     "manual": "Manuell",
@@ -79,5 +101,8 @@
     "monitoring": "Monitoring",
     "api": "API",
     "portal": "Kundenportal"
+  },
+  "validation": {
+    "title_min_length": "Der Titel muss mindestens 3 Zeichen lang sein"
   }
 }

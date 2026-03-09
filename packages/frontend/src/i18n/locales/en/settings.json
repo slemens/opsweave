@@ -1,0 +1,77 @@
+{
+  "title": "Settings",
+  "tabs": {
+    "general": "General",
+    "appearance": "Appearance",
+    "account": "Account",
+    "license": "License",
+    "tenant": "Organization"
+  },
+  "general": {
+    "title": "General Settings",
+    "language": "Language",
+    "language_hint": "Changes the language of the user interface",
+    "notifications": "Notifications",
+    "email_notifications": "Email Notifications",
+    "email_notifications_hint": "Receive email notifications for ticket changes",
+    "browser_notifications": "Browser Notifications",
+    "browser_notifications_hint": "Show desktop notifications in the browser"
+  },
+  "appearance": {
+    "title": "Appearance",
+    "theme": "Color Scheme",
+    "theme_hint": "Choose between light and dark mode",
+    "theme_light": "Light",
+    "theme_dark": "Dark",
+    "theme_system": "System"
+  },
+  "account": {
+    "title": "Account",
+    "display_name": "Display Name",
+    "email": "Email Address",
+    "change_password": "Change Password",
+    "current_password": "Current Password",
+    "new_password": "New Password",
+    "confirm_password": "Confirm Password",
+    "save_profile": "Save Profile",
+    "save_password": "Change Password"
+  },
+  "license": {
+    "title": "License",
+    "edition": "Edition",
+    "community": "Community",
+    "enterprise": "Enterprise",
+    "status": "Status",
+    "active": "Active",
+    "expired": "Expired",
+    "no_license": "No License",
+    "expires_at": "Valid Until",
+    "activate": "Activate License",
+    "activate_hint": "Enter your Enterprise license key",
+    "license_key": "License Key",
+    "usage": "Usage",
+    "assets": "Assets",
+    "users": "Users",
+    "workflows": "Workflows",
+    "frameworks": "Compliance Frameworks",
+    "monitoring": "Monitoring Sources",
+    "of": "of",
+    "unlimited": "Unlimited",
+    "upgrade_hint": "Upgrade to Enterprise for unlimited usage"
+  },
+  "tenant": {
+    "title": "Organization",
+    "name": "Name",
+    "slug": "URL Identifier",
+    "members": "Members",
+    "save": "Save"
+  },
+  "saved": "Settings saved",
+  "save_error": "Error saving settings",
+  "banner": {
+    "assets_warning": "You are using {{current}} of {{max}} assets.",
+    "users_warning": "You are using {{current}} of {{max}} users.",
+    "upgrade": "Upgrade to Enterprise for unlimited usage.",
+    "dismiss": "Dismiss"
+  }
+}

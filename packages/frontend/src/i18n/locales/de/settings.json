@@ -1,0 +1,77 @@
+{
+  "title": "Einstellungen",
+  "tabs": {
+    "general": "Allgemein",
+    "appearance": "Darstellung",
+    "account": "Konto",
+    "license": "Lizenz",
+    "tenant": "Organisation"
+  },
+  "general": {
+    "title": "Allgemeine Einstellungen",
+    "language": "Sprache",
+    "language_hint": "Ändert die Sprache der Benutzeroberfläche",
+    "notifications": "Benachrichtigungen",
+    "email_notifications": "E-Mail-Benachrichtigungen",
+    "email_notifications_hint": "Benachrichtigungen bei Ticket-Änderungen per E-Mail erhalten",
+    "browser_notifications": "Browser-Benachrichtigungen",
+    "browser_notifications_hint": "Desktop-Benachrichtigungen im Browser anzeigen"
+  },
+  "appearance": {
+    "title": "Darstellung",
+    "theme": "Farbschema",
+    "theme_hint": "Wähle zwischen hellem und dunklem Modus",
+    "theme_light": "Hell",
+    "theme_dark": "Dunkel",
+    "theme_system": "System"
+  },
+  "account": {
+    "title": "Konto",
+    "display_name": "Anzeigename",
+    "email": "E-Mail-Adresse",
+    "change_password": "Passwort ändern",
+    "current_password": "Aktuelles Passwort",
+    "new_password": "Neues Passwort",
+    "confirm_password": "Passwort bestätigen",
+    "save_profile": "Profil speichern",
+    "save_password": "Passwort ändern"
+  },
+  "license": {
+    "title": "Lizenz",
+    "edition": "Edition",
+    "community": "Community",
+    "enterprise": "Enterprise",
+    "status": "Status",
+    "active": "Aktiv",
+    "expired": "Abgelaufen",
+    "no_license": "Keine Lizenz",
+    "expires_at": "Gültig bis",
+    "activate": "Lizenz aktivieren",
+    "activate_hint": "Geben Sie Ihren Enterprise-Lizenzschlüssel ein",
+    "license_key": "Lizenzschlüssel",
+    "usage": "Nutzung",
+    "assets": "Assets",
+    "users": "Benutzer",
+    "workflows": "Workflows",
+    "frameworks": "Compliance-Frameworks",
+    "monitoring": "Monitoring-Quellen",
+    "of": "von",
+    "unlimited": "Unbegrenzt",
+    "upgrade_hint": "Upgrade auf Enterprise für unbegrenzte Nutzung"
+  },
+  "tenant": {
+    "title": "Organisation",
+    "name": "Name",
+    "slug": "URL-Kennung",
+    "members": "Mitglieder",
+    "save": "Speichern"
+  },
+  "saved": "Einstellungen gespeichert",
+  "save_error": "Fehler beim Speichern",
+  "banner": {
+    "assets_warning": "Sie nutzen {{current}} von {{max}} Assets.",
+    "users_warning": "Sie nutzen {{current}} von {{max}} Benutzern.",
+    "upgrade": "Upgrade auf Enterprise für unbegrenzte Nutzung.",
+    "dismiss": "Schließen"
+  }
+}

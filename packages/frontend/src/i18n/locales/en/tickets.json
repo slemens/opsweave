@@ -3,6 +3,24 @@
   "create": "Create Ticket",
   "edit": "Edit Ticket",
   "detail": "Ticket Details",
+  "create_description": "Create a new ticket to capture a request or issue.",
+  "create_success": "Ticket created successfully",
+  "create_error": "Failed to create ticket",
+  "update_success": "Ticket updated successfully",
+  "update_error": "Failed to update ticket",
+  "unassigned": "Unassigned",
+  "unknown_user": "Unknown user",
+  "no_description": "No description provided",
+  "sla_approaching": "SLA deadline approaching",
+  "sla_tier": "SLA Tier",
+  "sla_yes": "Yes",
+  "sla_no": "No",
+  "dates_title": "Dates",
+  "placeholder_title": "Brief summary of the issue",
+  "placeholder_description": "Detailed description of the issue\u2026",
+  "select_group": "Select group",
+  "filter_all_types": "All Types",
+  "filter_all_priorities": "All Priorities",
   "types": {
     "incident": "Incident",
     "problem": "Problem",
@@ -64,14 +82,18 @@
     "add": "Add Comment",
     "internal": "Internal Comment",
     "placeholder": "Write a comment\u2026",
-    "no_comments": "No comments yet"
+    "no_comments": "No comments yet",
+    "add_success": "Comment added successfully",
+    "add_error": "Failed to add comment"
   },
   "history": {
     "title": "History",
     "changed_by": "Changed by",
+    "changed": "changed",
     "field_changed": "Field changed",
     "old_value": "Old value",
-    "new_value": "New value"
+    "new_value": "New value",
+    "no_history": "No changes yet"
   },
   "sources": {
     "manual": "Manual",
@@ -79,5 +101,8 @@
     "monitoring": "Monitoring",
     "api": "API",
     "portal": "Customer Portal"
+  },
+  "validation": {
+    "title_min_length": "Title must be at least 3 characters long"
   }
 }
