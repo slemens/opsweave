@@ -30,6 +30,8 @@ import {
   listCategoriesCtrl,
   createCategoryCtrl,
   updateCategoryCtrl,
+  getTicketTimeline,
+  getTicketsByCustomer,
 } from './tickets.controller.js';
 
 const ticketRouter = Router();
@@ -82,6 +84,20 @@ ticketRouter.get(
   validateQuery(ticketFilterSchema),
   getBoardData,
 );
+
+/**
+ * GET /api/v1/tickets/stats/timeline
+ * Get ticket volume timeline (last N days).
+ * IMPORTANT: must be before /:id to avoid matching 'stats' as an ID.
+ */
+ticketRouter.get('/stats/timeline', getTicketTimeline);
+
+/**
+ * GET /api/v1/tickets/stats/by-customer
+ * Get top N customers by ticket count.
+ * IMPORTANT: must be before /:id to avoid matching 'stats' as an ID.
+ */
+ticketRouter.get('/stats/by-customer', getTicketsByCustomer);
 
 /**
  * GET /api/v1/tickets/categories

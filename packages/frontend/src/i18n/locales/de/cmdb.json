@@ -81,6 +81,8 @@
     "source": "Quelle",
     "target": "Ziel",
     "select_asset": "Asset auswählen",
+    "table_view": "Tabelle",
+    "graph_view": "Graph",
     "runs_on": "Läuft auf",
     "connected_to": "Verbunden mit",
     "stored_on": "Gespeichert auf",

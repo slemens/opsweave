@@ -74,6 +74,25 @@ export interface AssetStats {
   total: number;
 }
 
+export interface AssetGraphNode {
+  id: string;
+  display_name: string;
+  asset_type: string;
+  status: string;
+}
+
+export interface AssetGraphEdge {
+  id: string;
+  source_asset_id: string;
+  target_asset_id: string;
+  relation_type: string;
+}
+
+export interface AssetGraph {
+  nodes: AssetGraphNode[];
+  edges: AssetGraphEdge[];
+}
+
 export interface CreateAssetPayload {
   asset_type: AssetType;
   name: string;
@@ -120,6 +139,7 @@ export const assetKeys = {
   details: () => [...assetKeys.all, 'detail'] as const,
   detail: (id: string) => [...assetKeys.details(), id] as const,
   relations: (id: string) => [...assetKeys.all, 'relations', id] as const,
+  graph: (id: string) => [...assetKeys.all, 'graph', id] as const,
   stats: () => [...assetKeys.all, 'stats'] as const,
   tickets: (id: string) => [...assetKeys.all, 'tickets', id] as const,
 };
@@ -179,6 +199,16 @@ export function useAssetTickets(assetId: string) {
     queryKey: assetKeys.tickets(assetId),
     queryFn: async () => {
       return apiClient.get<AssetTicketSummary[]>(`/assets/${assetId}/tickets`);
+    },
+    enabled: !!assetId,
+  });
+}
+
+export function useAssetGraph(assetId: string) {
+  return useQuery({
+    queryKey: assetKeys.graph(assetId),
+    queryFn: async () => {
+      return apiClient.get<AssetGraph>(`/assets/${assetId}/graph`);
     },
     enabled: !!assetId,
   });

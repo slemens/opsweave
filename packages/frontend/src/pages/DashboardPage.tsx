@@ -11,6 +11,18 @@ import {
   BookOpen,
 } from 'lucide-react';
 import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+} from 'recharts';
+import {
   Card,
   CardContent,
   CardHeader,
@@ -20,9 +32,11 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuthStore } from '@/stores/auth-store';
-import { useTicketStats, useTickets } from '@/api/tickets';
+import { useTicketStats, useTickets, useTicketTimeline, useTicketsByCustomer } from '@/api/tickets';
 import { useAssetStats } from '@/api/assets';
 import { cn, formatRelativeTime } from '@/lib/utils';
+
+const BAR_COLORS = ['#2563eb', '#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe'];
 
 // ---------------------------------------------------------------------------
 // Stat Card Component
@@ -120,8 +134,12 @@ export function DashboardPage() {
     sort: 'created_at',
     order: 'desc',
   });
+  const { data: timelineData, isLoading: isLoadingTimeline } = useTicketTimeline(30);
+  const { data: customerData, isLoading: isLoadingCustomers } = useTicketsByCustomer(5);
 
   const recentTickets = recentTicketsData?.data ?? [];
+  const timelineChartData = timelineData ?? [];
+  const customerChartData = customerData ?? [];
 
   return (
     <div className="space-y-6">
@@ -196,6 +214,97 @@ export function DashboardPage() {
           variant={stats && (stats.by_status?.pending ?? 0) > 0 ? 'warning' : 'default'}
           onClick={() => navigate('/tickets')}
         />
+      </div>
+
+      {/* Chart cards */}
+      <div className="grid gap-4 md:grid-cols-2">
+        {/* Timeline chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">{t('dashboard.ticket_timeline')}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoadingTimeline ? (
+              <Skeleton className="h-[220px] w-full" />
+            ) : timelineChartData.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-[220px] text-center">
+                <Ticket className="h-8 w-8 text-muted-foreground/30 mb-2" />
+                <p className="text-sm text-muted-foreground">{t('status.empty')}</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={220}>
+                <LineChart data={timelineChartData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: 11 }}
+                    tickFormatter={(v: string) => {
+                      const d = new Date(v);
+                      return `${d.getDate()}.${d.getMonth() + 1}.`;
+                    }}
+                    interval="preserveStartEnd"
+                    className="text-muted-foreground"
+                  />
+                  <YAxis tick={{ fontSize: 11 }} allowDecimals={false} className="text-muted-foreground" />
+                  <Tooltip
+                    contentStyle={{ fontSize: 12 }}
+                    labelFormatter={(v) => new Date(String(v)).toLocaleDateString('de-DE')}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="count"
+                    stroke="#2563eb"
+                    strokeWidth={2}
+                    dot={false}
+                    activeDot={{ r: 4 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Top customers chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">{t('dashboard.top_customers')}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoadingCustomers ? (
+              <Skeleton className="h-[220px] w-full" />
+            ) : customerChartData.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-[220px] text-center">
+                <Ticket className="h-8 w-8 text-muted-foreground/30 mb-2" />
+                <p className="text-sm text-muted-foreground">{t('status.empty')}</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart
+                  data={customerChartData}
+                  layout="vertical"
+                  margin={{ top: 4, right: 8, left: 8, bottom: 0 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} className="stroke-muted" />
+                  <XAxis type="number" tick={{ fontSize: 11 }} allowDecimals={false} className="text-muted-foreground" />
+                  <YAxis
+                    type="category"
+                    dataKey="customer_name"
+                    tick={{ fontSize: 11 }}
+                    width={90}
+                    tickFormatter={(v: string) => v.length > 12 ? `${v.slice(0, 12)}…` : v}
+                    className="text-muted-foreground"
+                  />
+                  <Tooltip contentStyle={{ fontSize: 12 }} />
+                  <Bar dataKey="count" radius={[0, 4, 4, 0]}>
+                    {customerChartData.map((_entry, index) => (
+                      <Cell key={`cell-${index}`} fill={BAR_COLORS[index % BAR_COLORS.length]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       {/* Quick overview cards */}

@@ -18,6 +18,10 @@ import { requestIdMiddleware } from './middleware/request-id.js';
 import { languageMiddleware } from './middleware/language.js';
 import { errorHandler } from './middleware/error-handler.js';
 import { apiRouter } from './routes/index.js';
+import {
+  startEmailPollingWorker,
+  stopEmailPollingWorker,
+} from './modules/email-inbound/email-poll.worker.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -123,11 +127,19 @@ async function bootstrap(): Promise<void> {
 ║  Static:   ${String(config.serveStatic).padEnd(37)}║
 ╚══════════════════════════════════════════════════╝
     `.trim());
+
+    // Start background IMAP polling worker after the server is ready
+    startEmailPollingWorker().catch((err: unknown) => {
+      console.error('[Server] Failed to start email polling worker:', err);
+    });
   });
 
   // ── Graceful shutdown ──────────────────────────────────────
   const shutdown = (signal: string) => {
     console.log(`\n[Server] Received ${signal}. Shutting down gracefully...`);
+
+    // Stop IMAP polling before closing the HTTP server
+    stopEmailPollingWorker();
 
     httpServer.close(() => {
       console.log('[Server] HTTP server closed.');

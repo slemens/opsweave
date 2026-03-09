@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import ReactMarkdown from 'react-markdown';
 import {
   Search,
   FileText,
@@ -343,6 +344,89 @@ function ArticleDialog({
 }
 
 // =============================================================================
+// Article Viewer Dialog
+// =============================================================================
+
+interface ArticleViewerDialogProps {
+  article: KbArticle | null;
+  onClose: () => void;
+  onEdit: (article: KbArticle) => void;
+}
+
+function ArticleViewerDialog({ article, onClose, onEdit }: ArticleViewerDialogProps) {
+  const { t } = useTranslation('kb');
+
+  if (!article) return null;
+
+  return (
+    <Dialog open={article !== null} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto dark:bg-slate-900 dark:border-slate-700">
+        <DialogHeader>
+          <DialogTitle className="text-xl font-semibold dark:text-white">
+            {article.title}
+          </DialogTitle>
+          <div className="flex items-center gap-2 flex-wrap pt-1">
+            {article.category && (
+              <Badge variant="outline" className="text-xs dark:border-slate-600 dark:text-slate-300">
+                {article.category}
+              </Badge>
+            )}
+            <StatusBadge status={article.status} />
+            <VisibilityBadge visibility={article.visibility} />
+          </div>
+          {article.tags.length > 0 && (
+            <div className="flex items-center gap-1 flex-wrap pt-1">
+              {article.tags.map((tag) => (
+                <Badge
+                  key={tag}
+                  variant="secondary"
+                  className="text-xs dark:bg-slate-700 dark:text-slate-300"
+                >
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          )}
+        </DialogHeader>
+
+        <div className="border-t border-border dark:border-slate-700 my-2" />
+
+        <div className="py-2">
+          <div className="prose prose-sm dark:prose-invert max-w-none">
+            <ReactMarkdown>{article.content || '*Kein Inhalt vorhanden.*'}</ReactMarkdown>
+          </div>
+        </div>
+
+        <div className="border-t border-border dark:border-slate-700 mt-2 pt-3">
+          <p className="text-xs text-muted-foreground dark:text-slate-500">
+            {t('fields.author')}: {article.author_name ?? '—'} &nbsp;·&nbsp; {t('fields.created_at')}: {formatDate(article.created_at)}
+          </p>
+        </div>
+
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => onClose()}
+            className="dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+          >
+            {t('actions.close', { ns: 'common' })}
+          </Button>
+          <Button
+            onClick={() => {
+              onClose();
+              onEdit(article);
+            }}
+          >
+            <Pencil className="mr-1.5 h-3.5 w-3.5" />
+            {t('edit_article')}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// =============================================================================
 // Main page
 // =============================================================================
 
@@ -361,6 +445,9 @@ export function KnowledgeBasePage() {
 
   // ── Delete confirmation state ──────────────────────────────
   const [deleteTarget, setDeleteTarget] = useState<KbArticle | null>(null);
+
+  // ── Viewer state ───────────────────────────────────────────
+  const [viewingArticle, setViewingArticle] = useState<KbArticle | null>(null);
 
   // ── Data ───────────────────────────────────────────────────
   const queryParams: Record<string, unknown> = {};
@@ -619,7 +706,8 @@ export function KnowledgeBasePage() {
                   : articles.map((article) => (
                     <TableRow
                       key={article.id}
-                      className="transition-colors hover:bg-muted/50 dark:border-slate-700 dark:hover:bg-slate-800/50"
+                      className="transition-colors hover:bg-muted/50 dark:border-slate-700 dark:hover:bg-slate-800/50 cursor-pointer"
+                      onClick={() => setViewingArticle(article)}
                     >
                       {/* Title */}
                       <TableCell>
@@ -743,6 +831,16 @@ export function KnowledgeBasePage() {
           </Table>
         </div>
       )}
+
+      {/* Article viewer dialog */}
+      <ArticleViewerDialog
+        article={viewingArticle}
+        onClose={() => setViewingArticle(null)}
+        onEdit={(article) => {
+          setViewingArticle(null);
+          openEditDialog(article);
+        }}
+      />
 
       {/* Create / Edit dialog */}
       <ArticleDialog

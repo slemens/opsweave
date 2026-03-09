@@ -6,7 +6,10 @@
     "account": "Konto",
     "license": "Lizenz",
     "tenant": "Organisation",
-    "email": "E-Mail-Eingang"
+    "email": "E-Mail-Eingang",
+    "groups": "Gruppen",
+    "customers": "Kunden",
+    "categories": "Kategorien"
   },
   "general": {
     "title": "Allgemeine Einstellungen",
@@ -66,6 +69,54 @@
     "slug": "URL-Kennung",
     "members": "Mitglieder",
     "save": "Speichern"
+  },
+  "groups": {
+    "title": "Gruppen",
+    "create": "Gruppe erstellen",
+    "edit": "Gruppe bearbeiten",
+    "name": "Name",
+    "description": "Beschreibung",
+    "type": "Typ",
+    "members": "Mitglieder",
+    "empty": "Keine Gruppen vorhanden",
+    "empty_hint": "Erstellen Sie die erste Gruppe, um Tickets zuzuweisen.",
+    "delete_confirm": "Möchten Sie diese Gruppe wirklich löschen?",
+    "types": {
+      "support": "Support",
+      "management": "Management",
+      "development": "Entwicklung",
+      "operations": "Betrieb"
+    }
+  },
+  "customers": {
+    "title": "Kunden",
+    "create": "Kunden erstellen",
+    "edit": "Kunden bearbeiten",
+    "name": "Name",
+    "industry": "Branche",
+    "email": "E-Mail-Adresse",
+    "status": "Status",
+    "active": "Aktiv",
+    "inactive": "Inaktiv",
+    "empty": "Keine Kunden vorhanden",
+    "empty_hint": "Erstellen Sie den ersten Kunden.",
+    "delete_confirm": "Möchten Sie diesen Kunden wirklich löschen?"
+  },
+  "categories": {
+    "title": "Kategorien",
+    "create": "Kategorie erstellen",
+    "edit": "Kategorie bearbeiten",
+    "name": "Name",
+    "applies_to": "Gilt für",
+    "empty": "Keine Kategorien vorhanden",
+    "empty_hint": "Erstellen Sie die erste Kategorie.",
+    "delete_confirm": "Möchten Sie diese Kategorie wirklich löschen?",
+    "applies_options": {
+      "all": "Alle Typen",
+      "incident": "Incident",
+      "problem": "Problem",
+      "change": "Change"
+    }
   },
   "saved": "Einstellungen gespeichert",
   "save_error": "Fehler beim Speichern",

@@ -45,6 +45,9 @@
     "preview": "Vorschau",
     "edit": "Bearbeiten"
   },
+  "viewer": {
+    "title": "Artikel anzeigen"
+  },
   "link_ticket": "Mit Ticket verknüpfen",
   "linked_tickets": "Verknüpfte Tickets",
   "ticket_tab": {

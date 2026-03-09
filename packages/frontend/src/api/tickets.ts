@@ -336,6 +336,30 @@ export function useCategories() {
   });
 }
 
+// ─── Timeline & Customer Stats ────────────────────────────
+
+export function useTicketTimeline(days = 30) {
+  return useQuery({
+    queryKey: ['tickets', 'stats', 'timeline', days] as const,
+    queryFn: () =>
+      apiClient.get<{ date: string; count: number }[]>(
+        '/tickets/stats/timeline',
+        { params: { days } },
+      ),
+  });
+}
+
+export function useTicketsByCustomer(limit = 5) {
+  return useQuery({
+    queryKey: ['tickets', 'stats', 'by-customer', limit] as const,
+    queryFn: () =>
+      apiClient.get<{ customer_name: string; count: number }[]>(
+        '/tickets/stats/by-customer',
+        { params: { limit } },
+      ),
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Mutation Hooks
 // ---------------------------------------------------------------------------
@@ -443,6 +467,102 @@ export function useAddComment() {
       void queryClient.invalidateQueries({
         queryKey: ticketKeys.comments(variables.ticketId),
       });
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Group Mutations
+// ---------------------------------------------------------------------------
+
+export function useCreateGroup() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: { name: string; description?: string; group_type?: string }) => {
+      return apiClient.post<AssigneeGroup>('/groups', data);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: groupKeys.all });
+    },
+  });
+}
+
+export function useUpdateGroup() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...data }: { id: string; name?: string; description?: string; group_type?: string }) => {
+      return apiClient.put<AssigneeGroup>(`/groups/${id}`, data);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: groupKeys.all });
+    },
+  });
+}
+
+export function useDeleteGroup() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      return apiClient.delete(`/groups/${id}`);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: groupKeys.all });
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Customer Mutations
+// ---------------------------------------------------------------------------
+
+export function useCreateCustomer() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: { name: string; industry?: string | null; contact_email?: string | null; is_active?: number }) => {
+      return apiClient.post<CustomerSummary>('/customers', data);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: customerKeys.all });
+    },
+  });
+}
+
+export function useUpdateCustomer() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...data }: { id: string; name?: string; industry?: string | null; contact_email?: string | null; is_active?: number }) => {
+      return apiClient.put<CustomerSummary>(`/customers/${id}`, data);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: customerKeys.all });
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Category Mutations
+// ---------------------------------------------------------------------------
+
+export function useCreateCategory() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: { name: string; applies_to?: string }) => {
+      return apiClient.post<CategorySummary>('/tickets/categories', data);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: categoryKeys.all });
+    },
+  });
+}
+
+export function useUpdateCategory() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...data }: { id: string; name?: string; applies_to?: string; is_active?: number }) => {
+      return apiClient.put<CategorySummary>(`/tickets/categories/${id}`, data);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: categoryKeys.all });
     },
   });
 }

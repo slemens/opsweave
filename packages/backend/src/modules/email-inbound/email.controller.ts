@@ -11,6 +11,7 @@ import { getDb, type TypedDb } from '../../config/database.js';
 import { emailInboundConfigs } from '../../db/schema/index.js';
 import * as emailService from './email.service.js';
 import type { InboundEmailData } from './email.service.js';
+import { ImapPoller } from './imap-poller.js';
 import type {
   PaginationParams,
   EmailFilterParams,
@@ -119,6 +120,41 @@ export async function getMessage(
 
   const message = await emailService.getEmailMessage(tenantId, id);
   sendSuccess(res, message);
+}
+
+// ─── Connection Test Controller ───────────────────────────
+
+/**
+ * POST /api/v1/email/configs/:id/test
+ *
+ * Tests connectivity for the given email inbound config.
+ * For IMAP configs: establishes a live connection and returns the list of
+ * available mailboxes.
+ * For webhook-based configs: returns immediately (no server-side connection
+ * to verify).
+ */
+export async function testConnection(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const tenantId = req.tenantId!;
+  const { id } = req.params as { id: string };
+
+  const config = await emailService.getEmailConfig(tenantId, id);
+
+  if (config.provider !== 'imap') {
+    sendSuccess(res, {
+      success: true,
+      message:
+        'Webhook-basierte Provider benötigen keinen Verbindungstest. ' +
+        'Konfigurieren Sie die Webhook-URL in Ihrem E-Mail-Provider.',
+    });
+    return;
+  }
+
+  const poller = new ImapPoller(config);
+  const result = await poller.testConnection();
+  sendSuccess(res, result);
 }
 
 // ─── Webhook Controller ───────────────────────────────────

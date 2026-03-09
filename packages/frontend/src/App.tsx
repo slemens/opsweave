@@ -15,6 +15,7 @@ import { CompliancePage } from '@/pages/CompliancePage';
 import { KnowledgeBasePage } from '@/pages/KnowledgeBasePage';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
+import { MonitoringPage } from '@/pages/MonitoringPage';
 import { PortalLoginPage } from '@/pages/portal/PortalLoginPage';
 import { PortalLayout } from '@/pages/portal/PortalLayout';
 import { PortalTicketsPage } from '@/pages/portal/PortalTicketsPage';
@@ -41,6 +42,7 @@ export function App() {
             <Route path="/services" element={<ServiceCatalogPage />} />
             <Route path="/compliance" element={<CompliancePage />} />
             <Route path="/knowledge-base" element={<KnowledgeBasePage />} />
+            <Route path="/monitoring" element={<MonitoringPage />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Route>
 

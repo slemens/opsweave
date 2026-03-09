@@ -15,6 +15,9 @@ import {
   Pencil,
   Trash2,
   MoreHorizontal,
+  Users,
+  Tag,
+  Briefcase,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -48,6 +51,19 @@ import {
 } from '@/api/email';
 import type { EmailConfig } from '@/api/email';
 import {
+  useGroups,
+  useCreateGroup,
+  useUpdateGroup,
+  useDeleteGroup,
+  useCustomers,
+  useCreateCustomer,
+  useUpdateCustomer,
+  useCategories,
+  useCreateCategory,
+  useUpdateCategory,
+} from '@/api/tickets';
+import type { AssigneeGroup, GroupType } from '@opsweave/shared';
+import {
   Card,
   CardContent,
   CardDescription,
@@ -71,6 +87,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { useThemeStore, type Theme } from '@/stores/theme-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { cn } from '@/lib/utils';
@@ -898,6 +922,553 @@ function EmailTab() {
   );
 }
 
+// ============================================================
+// Groups Tab
+// ============================================================
+
+const BLANK_GROUP_FORM = {
+  name: '',
+  description: '',
+  group_type: 'support' as GroupType,
+};
+
+function GroupsTab() {
+  const { t } = useTranslation(['settings', 'common']);
+  const { t: tCommon } = useTranslation('common');
+  const { data: groupsData, isLoading } = useGroups();
+  const createGroup = useCreateGroup();
+  const updateGroup = useUpdateGroup();
+  const deleteGroup = useDeleteGroup();
+
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editing, setEditing] = useState<AssigneeGroup | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<AssigneeGroup | null>(null);
+  const [form, setForm] = useState({ ...BLANK_GROUP_FORM });
+
+  const groups = groupsData?.data ?? [];
+
+  function openCreate() {
+    setEditing(null);
+    setForm({ ...BLANK_GROUP_FORM });
+    setDialogOpen(true);
+  }
+
+  function openEdit(g: AssigneeGroup) {
+    setEditing(g);
+    setForm({
+      name: g.name,
+      description: g.description ?? '',
+      group_type: g.group_type,
+    });
+    setDialogOpen(true);
+  }
+
+  async function handleSave() {
+    try {
+      if (editing) {
+        await updateGroup.mutateAsync({ id: editing.id, ...form });
+        toast.success(tCommon('saved'));
+      } else {
+        await createGroup.mutateAsync(form);
+        toast.success(tCommon('created'));
+      }
+      setDialogOpen(false);
+    } catch {
+      toast.error(tCommon('error'));
+    }
+  }
+
+  async function handleDelete() {
+    if (!deleteTarget) return;
+    try {
+      await deleteGroup.mutateAsync(deleteTarget.id);
+      toast.success(tCommon('deleted'));
+    } catch {
+      toast.error(tCommon('error'));
+    } finally {
+      setDeleteTarget(null);
+    }
+  }
+
+  const GROUP_TYPES: GroupType[] = ['support', 'management', 'development', 'operations'];
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between pb-3">
+        <div>
+          <CardTitle className="text-base">{t('settings:groups.title')}</CardTitle>
+        </div>
+        <Button size="sm" onClick={openCreate}>
+          <Plus className="h-4 w-4 mr-2" />
+          {t('settings:groups.create')}
+        </Button>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="space-y-2">
+            {[1, 2, 3].map(i => <div key={i} className="h-10 bg-slate-100 dark:bg-slate-800 rounded animate-pulse" />)}
+          </div>
+        ) : groups.length === 0 ? (
+          <div className="text-center py-10 text-slate-400">
+            <Users className="h-10 w-10 mx-auto mb-3 opacity-30" />
+            <p className="text-sm font-medium">{t('settings:groups.empty')}</p>
+            <p className="text-xs mt-1">{t('settings:groups.empty_hint')}</p>
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t('settings:groups.name')}</TableHead>
+                <TableHead>{t('settings:groups.type')}</TableHead>
+                <TableHead>{t('settings:groups.description')}</TableHead>
+                <TableHead className="w-16" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {groups.map((g) => (
+                <TableRow key={g.id}>
+                  <TableCell className="font-medium">{g.name}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="text-xs capitalize">
+                      {t(`settings:groups.types.${g.group_type}`, { defaultValue: g.group_type })}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground max-w-[300px] truncate">
+                    {g.description ?? <span className="italic">—</span>}
+                  </TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-7 w-7">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => openEdit(g)}>
+                          <Pencil className="h-4 w-4 mr-2" />
+                          {tCommon('edit')}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="text-red-600" onClick={() => setDeleteTarget(g)}>
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          {tCommon('delete')}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+
+      {/* Create/Edit Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {editing ? t('settings:groups.edit') : t('settings:groups.create')}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label>{t('settings:groups.name')}</Label>
+              <Input
+                value={form.name}
+                onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                placeholder="Support Team"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t('settings:groups.type')}</Label>
+              <Select value={form.group_type} onValueChange={v => setForm(f => ({ ...f, group_type: v as GroupType }))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {GROUP_TYPES.map(gt => (
+                    <SelectItem key={gt} value={gt}>
+                      {t(`settings:groups.types.${gt}`, { defaultValue: gt })}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t('settings:groups.description')}</Label>
+              <Textarea
+                value={form.description}
+                onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                rows={2}
+                className="resize-none"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>{tCommon('cancel')}</Button>
+            <Button onClick={() => { void handleSave(); }} disabled={!form.name || createGroup.isPending || updateGroup.isPending}>
+              {tCommon('save')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirm */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={o => { if (!o) setDeleteTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{tCommon('confirm_delete')}</AlertDialogTitle>
+            <AlertDialogDescription>{t('settings:groups.delete_confirm')}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{tCommon('cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { void handleDelete(); }} className="bg-red-600 hover:bg-red-700">{tCommon('delete')}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </Card>
+  );
+}
+
+// ============================================================
+// Customers Tab
+// ============================================================
+
+interface CustomerFormData {
+  name: string;
+  industry: string;
+  contact_email: string;
+  is_active: boolean;
+}
+
+const BLANK_CUSTOMER_FORM: CustomerFormData = {
+  name: '',
+  industry: '',
+  contact_email: '',
+  is_active: true,
+};
+
+interface CustomerRow {
+  id: string;
+  name: string;
+  industry: string | null;
+  contact_email: string | null;
+  is_active: number;
+}
+
+function CustomersTab() {
+  const { t } = useTranslation(['settings', 'common']);
+  const { t: tCommon } = useTranslation('common');
+  const { data: customersData, isLoading } = useCustomers();
+  const createCustomer = useCreateCustomer();
+  const updateCustomer = useUpdateCustomer();
+
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editing, setEditing] = useState<CustomerRow | null>(null);
+  const [form, setForm] = useState<CustomerFormData>({ ...BLANK_CUSTOMER_FORM });
+
+  const customers = (customersData?.data ?? []) as CustomerRow[];
+
+  function openCreate() {
+    setEditing(null);
+    setForm({ ...BLANK_CUSTOMER_FORM });
+    setDialogOpen(true);
+  }
+
+  function openEdit(c: CustomerRow) {
+    setEditing(c);
+    setForm({
+      name: c.name,
+      industry: c.industry ?? '',
+      contact_email: c.contact_email ?? '',
+      is_active: c.is_active === 1,
+    });
+    setDialogOpen(true);
+  }
+
+  async function handleSave() {
+    const payload = {
+      name: form.name,
+      industry: form.industry.trim() || null,
+      contact_email: form.contact_email.trim() || null,
+      is_active: form.is_active ? 1 : 0,
+    };
+    try {
+      if (editing) {
+        await updateCustomer.mutateAsync({ id: editing.id, ...payload });
+        toast.success(tCommon('saved'));
+      } else {
+        await createCustomer.mutateAsync(payload);
+        toast.success(tCommon('created'));
+      }
+      setDialogOpen(false);
+    } catch {
+      toast.error(tCommon('error'));
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between pb-3">
+        <div>
+          <CardTitle className="text-base">{t('settings:customers.title')}</CardTitle>
+        </div>
+        <Button size="sm" onClick={openCreate}>
+          <Plus className="h-4 w-4 mr-2" />
+          {t('settings:customers.create')}
+        </Button>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="space-y-2">
+            {[1, 2, 3].map(i => <div key={i} className="h-10 bg-slate-100 dark:bg-slate-800 rounded animate-pulse" />)}
+          </div>
+        ) : customers.length === 0 ? (
+          <div className="text-center py-10 text-slate-400">
+            <Briefcase className="h-10 w-10 mx-auto mb-3 opacity-30" />
+            <p className="text-sm font-medium">{t('settings:customers.empty')}</p>
+            <p className="text-xs mt-1">{t('settings:customers.empty_hint')}</p>
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t('settings:customers.name')}</TableHead>
+                <TableHead>{t('settings:customers.industry')}</TableHead>
+                <TableHead>{t('settings:customers.email')}</TableHead>
+                <TableHead>{t('settings:customers.status')}</TableHead>
+                <TableHead className="w-16" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {customers.map((c) => (
+                <TableRow key={c.id}>
+                  <TableCell className="font-medium">{c.name}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{c.industry ?? '—'}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{c.contact_email ?? '—'}</TableCell>
+                  <TableCell>
+                    <Badge className={c.is_active ? 'bg-green-500/15 text-green-600 dark:text-green-400' : 'bg-slate-500/15 text-slate-500'}>
+                      {c.is_active ? t('settings:customers.active') : t('settings:customers.inactive')}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(c)}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+
+      {/* Create/Edit Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {editing ? t('settings:customers.edit') : t('settings:customers.create')}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label>{t('settings:customers.name')}</Label>
+              <Input
+                value={form.name}
+                onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                placeholder="Acme Corp"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t('settings:customers.industry')}</Label>
+              <Input
+                value={form.industry}
+                onChange={e => setForm(f => ({ ...f, industry: e.target.value }))}
+                placeholder="IT"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t('settings:customers.email')}</Label>
+              <Input
+                type="email"
+                value={form.contact_email}
+                onChange={e => setForm(f => ({ ...f, contact_email: e.target.value }))}
+                placeholder="contact@acme.com"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch checked={form.is_active} onCheckedChange={v => setForm(f => ({ ...f, is_active: v }))} />
+              <Label>{t('settings:customers.active')}</Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>{tCommon('cancel')}</Button>
+            <Button onClick={() => { void handleSave(); }} disabled={!form.name || createCustomer.isPending || updateCustomer.isPending}>
+              {tCommon('save')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </Card>
+  );
+}
+
+// ============================================================
+// Categories Tab
+// ============================================================
+
+interface CategoryRow {
+  id: string;
+  name: string;
+  applies_to: string;
+  is_active: number;
+}
+
+const BLANK_CATEGORY_FORM = {
+  name: '',
+  applies_to: 'all',
+};
+
+function CategoriesTab() {
+  const { t } = useTranslation(['settings', 'common']);
+  const { t: tCommon } = useTranslation('common');
+  const { data: categoriesData, isLoading } = useCategories();
+  const createCategory = useCreateCategory();
+  const updateCategory = useUpdateCategory();
+
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editing, setEditing] = useState<CategoryRow | null>(null);
+  const [form, setForm] = useState({ ...BLANK_CATEGORY_FORM });
+
+  const categories = (categoriesData?.data ?? []) as CategoryRow[];
+
+  function openCreate() {
+    setEditing(null);
+    setForm({ ...BLANK_CATEGORY_FORM });
+    setDialogOpen(true);
+  }
+
+  function openEdit(c: CategoryRow) {
+    setEditing(c);
+    setForm({ name: c.name, applies_to: c.applies_to });
+    setDialogOpen(true);
+  }
+
+  async function handleSave() {
+    try {
+      if (editing) {
+        await updateCategory.mutateAsync({ id: editing.id, ...form });
+        toast.success(tCommon('saved'));
+      } else {
+        await createCategory.mutateAsync(form);
+        toast.success(tCommon('created'));
+      }
+      setDialogOpen(false);
+    } catch {
+      toast.error(tCommon('error'));
+    }
+  }
+
+  const APPLIES_OPTIONS = ['all', 'incident', 'problem', 'change'] as const;
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between pb-3">
+        <div>
+          <CardTitle className="text-base">{t('settings:categories.title')}</CardTitle>
+        </div>
+        <Button size="sm" onClick={openCreate}>
+          <Plus className="h-4 w-4 mr-2" />
+          {t('settings:categories.create')}
+        </Button>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="space-y-2">
+            {[1, 2, 3].map(i => <div key={i} className="h-10 bg-slate-100 dark:bg-slate-800 rounded animate-pulse" />)}
+          </div>
+        ) : categories.length === 0 ? (
+          <div className="text-center py-10 text-slate-400">
+            <Tag className="h-10 w-10 mx-auto mb-3 opacity-30" />
+            <p className="text-sm font-medium">{t('settings:categories.empty')}</p>
+            <p className="text-xs mt-1">{t('settings:categories.empty_hint')}</p>
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t('settings:categories.name')}</TableHead>
+                <TableHead>{t('settings:categories.applies_to')}</TableHead>
+                <TableHead className="w-16" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {categories.map((c) => (
+                <TableRow key={c.id}>
+                  <TableCell className="font-medium">{c.name}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="text-xs">
+                      {t(`settings:categories.applies_options.${c.applies_to}`, { defaultValue: c.applies_to })}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(c)}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+
+      {/* Create/Edit Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>
+              {editing ? t('settings:categories.edit') : t('settings:categories.create')}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label>{t('settings:categories.name')}</Label>
+              <Input
+                value={form.name}
+                onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                placeholder="Hardware"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t('settings:categories.applies_to')}</Label>
+              <Select value={form.applies_to} onValueChange={v => setForm(f => ({ ...f, applies_to: v }))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {APPLIES_OPTIONS.map(opt => (
+                    <SelectItem key={opt} value={opt}>
+                      {t(`settings:categories.applies_options.${opt}`, { defaultValue: opt })}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>{tCommon('cancel')}</Button>
+            <Button onClick={() => { void handleSave(); }} disabled={!form.name || createCategory.isPending || updateCategory.isPending}>
+              {tCommon('save')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </Card>
+  );
+}
+
 // Main Settings Page
 // ============================================================
 export function SettingsPage() {
@@ -910,6 +1481,9 @@ export function SettingsPage() {
     { value: 'license', icon: KeyRound },
     { value: 'tenant', icon: Building2 },
     { value: 'email', icon: Mail },
+    { value: 'groups', icon: Users },
+    { value: 'customers', icon: Briefcase },
+    { value: 'categories', icon: Tag },
   ] as const;
 
   return (
@@ -958,6 +1532,18 @@ export function SettingsPage() {
 
         <TabsContent value="email">
           <EmailTab />
+        </TabsContent>
+
+        <TabsContent value="groups">
+          <GroupsTab />
+        </TabsContent>
+
+        <TabsContent value="customers">
+          <CustomersTab />
+        </TabsContent>
+
+        <TabsContent value="categories">
+          <CategoriesTab />
         </TabsContent>
       </Tabs>
     </div>

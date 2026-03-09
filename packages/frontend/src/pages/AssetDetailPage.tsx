@@ -9,7 +9,16 @@ import {
   Link2,
   Plus,
   ExternalLink,
+  List,
+  GitGraph,
 } from 'lucide-react';
+import ReactFlow, {
+  Controls,
+  MiniMap,
+  Background,
+  MarkerType,
+} from 'reactflow';
+import 'reactflow/dist/style.css';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
@@ -59,6 +68,7 @@ import {
   useCreateAssetRelation,
   useDeleteAssetRelation,
   useAssets,
+  useAssetGraph,
 } from '@/api/assets';
 import { useGroups, useCustomers } from '@/api/tickets';
 import type { AssetRelationWithDetails, AssetTicketSummary } from '@/api/assets';
@@ -117,6 +127,7 @@ export function AssetDetailPage() {
   const { data: asset, isLoading, isError, refetch } = useAsset(id ?? '');
   const { data: relations } = useAssetRelations(id ?? '');
   const { data: linkedTickets } = useAssetTickets(id ?? '');
+  const { data: graphData } = useAssetGraph(id ?? '');
   const { data: groupsData } = useGroups();
   const { data: customersData } = useCustomers();
 
@@ -127,6 +138,9 @@ export function AssetDetailPage() {
 
   // For relation dialog — need all assets to pick from
   const { data: allAssetsData } = useAssets({ limit: 100 });
+
+  // ── Graph View Toggle ─────────────────────────────────────
+  const [graphView, setGraphView] = useState(false);
 
   // ── Relation Dialog ───────────────────────────────────────
   const [relationOpen, setRelationOpen] = useState(false);
@@ -332,13 +346,98 @@ export function AssetDetailPage() {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-3">
                   <CardTitle className="text-base">{t('relations.title')}</CardTitle>
-                  <Button size="sm" onClick={() => setRelationOpen(true)}>
-                    <Plus className="mr-1.5 h-3.5 w-3.5" />
-                    {t('relations.add')}
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant={graphView ? 'outline' : 'default'}
+                      size="sm"
+                      onClick={() => setGraphView(false)}
+                    >
+                      <List className="h-4 w-4 mr-1" />
+                      {t('relations.table_view')}
+                    </Button>
+                    <Button
+                      variant={graphView ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setGraphView(true)}
+                    >
+                      <GitGraph className="h-4 w-4 mr-1" />
+                      {t('relations.graph_view')}
+                    </Button>
+                    <Button size="sm" onClick={() => setRelationOpen(true)}>
+                      <Plus className="mr-1.5 h-3.5 w-3.5" />
+                      {t('relations.add')}
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  {relationsData.length === 0 ? (
+                  {graphView ? (
+                    graphData && graphData.nodes.length > 0 ? (
+                      <div style={{ height: 400 }} className="border rounded-lg overflow-hidden">
+                        <ReactFlow
+                          nodes={[
+                            // Central node — highlighted in brand blue
+                            {
+                              id: asset.id,
+                              position: { x: 300, y: 180 },
+                              data: { label: asset.display_name },
+                              style: {
+                                background: '#2563eb',
+                                color: 'white',
+                                borderRadius: 8,
+                                padding: '8px 14px',
+                                fontWeight: 600,
+                                fontSize: 13,
+                                border: 'none',
+                              },
+                            },
+                            // Neighbour nodes arranged in a circle around the centre
+                            ...graphData.nodes
+                              .filter((n) => n.id !== asset.id)
+                              .map((n, i, arr) => {
+                                const angle = (i / Math.max(arr.length, 1)) * 2 * Math.PI - Math.PI / 2;
+                                const radius = 180;
+                                return {
+                                  id: n.id,
+                                  position: {
+                                    x: 300 + radius * Math.cos(angle),
+                                    y: 180 + radius * Math.sin(angle),
+                                  },
+                                  data: { label: `${n.display_name}\n${n.asset_type}` },
+                                  style: {
+                                    background: '#f1f5f9',
+                                    borderRadius: 8,
+                                    padding: '6px 12px',
+                                    fontSize: 12,
+                                    border: '1px solid #e2e8f0',
+                                  },
+                                };
+                              }),
+                          ]}
+                          edges={graphData.edges.map((e) => ({
+                            id: e.id,
+                            source: e.source_asset_id,
+                            target: e.target_asset_id,
+                            label: e.relation_type,
+                            markerEnd: { type: MarkerType.ArrowClosed },
+                            style: { stroke: '#94a3b8' },
+                            labelStyle: { fontSize: 11, fill: '#64748b' },
+                            labelBgStyle: { fill: '#ffffff', fillOpacity: 0.85 },
+                          }))}
+                          fitView
+                          fitViewOptions={{ padding: 0.25 }}
+                        >
+                          <Controls />
+                          <MiniMap nodeColor={() => '#2563eb'} />
+                          <Background />
+                        </ReactFlow>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center py-10 text-center">
+                        <GitGraph className="h-8 w-8 text-muted-foreground mb-3" />
+                        <p className="text-sm text-muted-foreground">{t('relations.no_relations')}</p>
+                      </div>
+                    )
+                  ) : relationsData.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-10 text-center">
                       <Link2 className="h-8 w-8 text-muted-foreground mb-3" />
                       <p className="text-sm text-muted-foreground">{t('relations.no_relations')}</p>

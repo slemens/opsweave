@@ -1,7 +1,8 @@
-import { eq, and, count, like, or, asc, desc } from 'drizzle-orm';
+import { eq, and, count, like, or, asc, desc, sql } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 
 import { getDb, type TypedDb } from '../../config/database.js';
+import { slaEngine } from '../../lib/sla-engine.js';
 import {
   tickets,
   ticketCategories,
@@ -406,6 +407,19 @@ export async function createTicket(
     ? calculatePriority(impact, urgency)
     : (data.priority ?? 'medium');
 
+  // SLA-Vererbung: falls asset_id gesetzt → effektives SLA-Tier aus Asset-Hierarchie ableiten.
+  // Das Ticket hat kein eigenes sla_tier-Eingabefeld; der Wert wird immer vom Asset geerbt.
+  let effectiveSlaTier: string | null = null;
+
+  if (data.asset_id) {
+    try {
+      effectiveSlaTier = await slaEngine.resolveSlaTier(tenantId, data.asset_id);
+    } catch (err) {
+      // SLA resolution is best-effort — never fail ticket creation because of it
+      console.warn('SLA resolution failed for asset', data.asset_id, err);
+    }
+  }
+
   const [created] = await d
     .insert(tickets)
     .values({
@@ -427,6 +441,7 @@ export async function createTicket(
       customer_id: data.customer_id ?? null,
       category_id: data.category_id ?? null,
       parent_ticket_id: data.parent_ticket_id ?? null,
+      sla_tier: effectiveSlaTier ?? null,
       sla_breached: 0,
       source: data.source ?? 'manual',
       created_at: now,
@@ -1120,6 +1135,60 @@ export async function getChildTickets(
     updated_at: row.updated_at,
     assignee: row.assignee_id ? { id: row.assignee_id, display_name: row.assignee_name ?? '' } : null,
     assignee_group: row.assignee_group_id ? { id: row.assignee_group_id, name: row.group_name ?? '' } : null,
+  }));
+}
+
+// ─── Ticket Timeline Stats ──────────────────────────────────────────
+
+/**
+ * Get ticket creation counts grouped by day for the last N days.
+ */
+export async function getTicketTimeline(
+  tenantId: string,
+  days: number,
+): Promise<{ date: string; count: number }[]> {
+  const d = db();
+  const safeDays = Math.abs(Math.floor(days));
+
+  // Use Drizzle's sql tag for SQLite strftime date grouping
+  const rows = await d.all<{ date: string; count: number }>(
+    sql`SELECT strftime('%Y-%m-%d', created_at) as date, COUNT(*) as count
+        FROM tickets
+        WHERE tenant_id = ${tenantId}
+          AND created_at >= datetime('now', ${`-${safeDays} days`})
+        GROUP BY strftime('%Y-%m-%d', created_at)
+        ORDER BY date ASC`,
+  );
+
+  return rows.map((r) => ({
+    date: String(r.date),
+    count: Number(r.count),
+  }));
+}
+
+/**
+ * Get ticket counts grouped by customer (top N).
+ */
+export async function getTicketsByCustomer(
+  tenantId: string,
+  limit: number,
+): Promise<{ customer_name: string; count: number }[]> {
+  const d = db();
+  const safeLimit = Math.abs(Math.floor(limit));
+
+  const rows = await d.all<{ customer_name: string; count: number }>(
+    sql`SELECT COALESCE(c.name, 'Kein Kunde') as customer_name, COUNT(t.id) as count
+        FROM tickets t
+        LEFT JOIN customers c ON t.customer_id = c.id
+        WHERE t.tenant_id = ${tenantId}
+        GROUP BY t.customer_id, c.name
+        ORDER BY count DESC
+        LIMIT ${safeLimit}`,
+  );
+
+  return rows.map((r) => ({
+    customer_name: String(r.customer_name),
+    count: Number(r.count),
   }));
 }
 

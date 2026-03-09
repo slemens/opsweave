@@ -6,7 +6,10 @@
     "account": "Account",
     "license": "License",
     "tenant": "Organization",
-    "email": "Email Inbound"
+    "email": "Email Inbound",
+    "groups": "Groups",
+    "customers": "Customers",
+    "categories": "Categories"
   },
   "general": {
     "title": "General Settings",
@@ -66,6 +69,54 @@
     "slug": "URL Identifier",
     "members": "Members",
     "save": "Save"
+  },
+  "groups": {
+    "title": "Groups",
+    "create": "Create Group",
+    "edit": "Edit Group",
+    "name": "Name",
+    "description": "Description",
+    "type": "Type",
+    "members": "Members",
+    "empty": "No groups found",
+    "empty_hint": "Create the first group to assign tickets.",
+    "delete_confirm": "Are you sure you want to delete this group?",
+    "types": {
+      "support": "Support",
+      "management": "Management",
+      "development": "Development",
+      "operations": "Operations"
+    }
+  },
+  "customers": {
+    "title": "Customers",
+    "create": "Create Customer",
+    "edit": "Edit Customer",
+    "name": "Name",
+    "industry": "Industry",
+    "email": "Email Address",
+    "status": "Status",
+    "active": "Active",
+    "inactive": "Inactive",
+    "empty": "No customers found",
+    "empty_hint": "Create the first customer.",
+    "delete_confirm": "Are you sure you want to delete this customer?"
+  },
+  "categories": {
+    "title": "Categories",
+    "create": "Create Category",
+    "edit": "Edit Category",
+    "name": "Name",
+    "applies_to": "Applies to",
+    "empty": "No categories found",
+    "empty_hint": "Create the first category.",
+    "delete_confirm": "Are you sure you want to delete this category?",
+    "applies_options": {
+      "all": "All Types",
+      "incident": "Incident",
+      "problem": "Problem",
+      "change": "Change"
+    }
   },
   "saved": "Settings saved",
   "save_error": "Error saving settings",

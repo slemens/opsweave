@@ -87,7 +87,14 @@
     "assets_total": "Assets gesamt",
     "pending_changes": "Ausstehende Changes",
     "kb_articles": "KB-Artikel",
-    "recent_tickets": "Neueste Tickets"
+    "recent_tickets": "Neueste Tickets",
+    "ticket_timeline": "Ticket-Volumen (30 Tage)",
+    "top_customers": "Top 5 Kunden"
+  },
+  "monitoring": {
+    "title": "Monitoring",
+    "coming_soon": "In Entwicklung",
+    "description": "Die Check_MK Integration (v1 Livestatus + v2 REST API) ist in Planung. Sobald verfügbar, werden hier Monitoring-Quellen verwaltet, Events angezeigt und automatisch Incidents aus Alerts erstellt."
   },
   "not_found": {
     "title": "Seite nicht gefunden",

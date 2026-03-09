@@ -19,6 +19,7 @@ import {
   createAssetRelation,
   deleteAssetRelation,
   getAssetStats,
+  getAssetGraph,
   getAssetTickets,
 } from './assets.controller.js';
 
@@ -54,6 +55,17 @@ assetRouter.post(
 assetRouter.get(
   '/stats',
   getAssetStats,
+);
+
+/**
+ * GET /api/v1/assets/:id/graph
+ * Get 1-hop asset graph (nodes + edges).
+ * IMPORTANT: must be before /:id to avoid routing conflicts.
+ */
+assetRouter.get(
+  '/:id/graph',
+  validateParams(idParamSchema),
+  getAssetGraph,
 );
 
 /**

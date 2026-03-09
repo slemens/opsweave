@@ -17,6 +17,7 @@ import {
   createConfig,
   updateConfig,
   deleteConfig,
+  testConnection,
   listMessages,
   getMessage,
   processWebhook,
@@ -97,6 +98,19 @@ emailRouter.delete(
   requireRole('admin'),
   validateParams(idParamSchema),
   deleteConfig,
+);
+
+/**
+ * POST /api/v1/email/configs/:id/test
+ * Test the connection for an email inbound config.
+ * For IMAP: verifies credentials and returns available mailboxes.
+ * For webhook-based providers: returns a static success message.
+ */
+emailRouter.post(
+  '/configs/:id/test',
+  requireRole('admin', 'manager'),
+  validateParams(idParamSchema),
+  testConnection,
 );
 
 // ─── Message Routes ───────────────────────────────────────
