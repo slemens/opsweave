@@ -1,0 +1,73 @@
+# ══════════════════════════════════════════════════════════
+# OpsWeave — Single-Container Build
+# Usage: docker run -d -p 8080:8080 -v opsweave-data:/data opsweave
+# ══════════════════════════════════════════════════════════
+
+# ─── Stage 1: Build Shared Package ───────────────────────
+FROM node:20-alpine AS shared-build
+WORKDIR /build/packages/shared
+COPY packages/shared/package*.json ./
+RUN npm ci
+COPY packages/shared/ ./
+RUN npm run build
+
+# ─── Stage 2: Build Frontend ────────────────────────────
+FROM node:20-alpine AS frontend-build
+WORKDIR /build
+COPY packages/frontend/package*.json ./packages/frontend/
+COPY --from=shared-build /build/packages/shared ./packages/shared
+RUN cd packages/frontend && npm ci
+COPY packages/frontend/ ./packages/frontend/
+RUN cd packages/frontend && npm run build
+
+# ─── Stage 3: Build Backend ─────────────────────────────
+FROM node:20-alpine AS backend-build
+WORKDIR /build
+COPY packages/backend/package*.json ./packages/backend/
+COPY --from=shared-build /build/packages/shared ./packages/shared
+RUN cd packages/backend && npm ci
+COPY packages/backend/ ./packages/backend/
+RUN cd packages/backend && npm run build
+
+# ─── Stage 4: Production Image ──────────────────────────
+FROM node:20-alpine AS production
+
+LABEL org.opencontainers.image.title="OpsWeave"
+LABEL org.opencontainers.image.description="Open Source ITSM Platform"
+LABEL org.opencontainers.image.source="https://github.com/slemens/opsweave"
+LABEL org.opencontainers.image.licenses="AGPL-3.0"
+
+RUN apk add --no-cache tini
+
+WORKDIR /app
+
+# Copy built backend + dependencies
+COPY --from=backend-build /build/packages/backend/dist ./dist
+COPY --from=backend-build /build/packages/backend/node_modules ./node_modules
+COPY --from=backend-build /build/packages/backend/package.json ./
+
+# Copy built frontend as static files
+COPY --from=frontend-build /build/packages/frontend/dist ./public
+
+# Create data directory
+RUN mkdir -p /data && chown -R node:node /data /app
+
+USER node
+
+# Environment for single-container mode
+ENV NODE_ENV=production
+ENV DB_DRIVER=sqlite
+ENV DATABASE_URL=file:/data/opsweave.db
+ENV PORT=8080
+ENV SERVE_STATIC=true
+ENV QUEUE_DRIVER=better-queue
+ENV LOG_LEVEL=info
+
+EXPOSE 8080
+VOLUME /data
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s \
+  CMD wget -q --spider http://localhost:8080/api/v1/system/health || exit 1
+
+ENTRYPOINT ["/sbin/tini", "--"]
+CMD ["node", "dist/server.js"]

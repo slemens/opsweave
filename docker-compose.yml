@@ -1,0 +1,99 @@
+version: "3.9"
+
+services:
+  # ─── Reverse Proxy ───────────────────────────────────────
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - opsweave-net
+    restart: unless-stopped
+
+  # ─── Frontend ────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./packages/frontend
+      dockerfile: Dockerfile
+    environment:
+      - VITE_API_URL=/api
+      - VITE_WS_URL=/ws
+    networks:
+      - opsweave-net
+    restart: unless-stopped
+
+  # ─── Backend API ─────────────────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: ./packages/backend/Dockerfile
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DB_DRIVER=pg
+      - DATABASE_URL=postgresql://opsweave:opsweave_secret@postgres:5432/opsweave_db
+      - REDIS_URL=redis://redis:6379
+      - QUEUE_DRIVER=bullmq
+      - SESSION_SECRET=${SESSION_SECRET:-change-me-in-production}
+      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost}
+      - DEFAULT_LANGUAGE=${DEFAULT_LANGUAGE:-de}
+      # Enterprise Auth (optional)
+      - OIDC_ENABLED=${OIDC_ENABLED:-false}
+      - OIDC_ISSUER=${OIDC_ISSUER:-}
+      - OIDC_CLIENT_ID=${OIDC_CLIENT_ID:-}
+      - OIDC_CLIENT_SECRET=${OIDC_CLIENT_SECRET:-}
+      - OIDC_REDIRECT_URI=${OIDC_REDIRECT_URI:-http://localhost/api/v1/auth/oidc/callback}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - opsweave-net
+    restart: unless-stopped
+
+  # ─── PostgreSQL ──────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=opsweave
+      - POSTGRES_PASSWORD=opsweave_secret
+      - POSTGRES_DB=opsweave_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U opsweave -d opsweave_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - opsweave-net
+    restart: unless-stopped
+
+  # ─── Redis (BullMQ Queues) ──────────────────────────────
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - opsweave-net
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  opsweave-net:
+    driver: bridge

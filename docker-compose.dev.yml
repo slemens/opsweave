@@ -1,0 +1,39 @@
+version: "3.9"
+
+# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+# Adds: hot reload, port exposure, volume mounts for development
+
+services:
+  frontend:
+    build:
+      context: ./packages/frontend
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./packages/frontend/src:/app/src
+      - ./packages/frontend/index.html:/app/index.html
+      - ./packages/shared/src:/shared/src
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:3000/api
+
+  backend:
+    build:
+      context: .
+      dockerfile: ./packages/backend/Dockerfile.dev
+    volumes:
+      - ./packages/backend/src:/app/packages/backend/src
+      - ./packages/shared/src:/app/packages/shared/src
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - LOG_LEVEL=debug
+
+  postgres:
+    ports:
+      - "5432:5432"
+
+  redis:
+    ports:
+      - "6379:6379"
