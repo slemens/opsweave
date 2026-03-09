@@ -1,0 +1,1667 @@
+openapi: "3.0.3"
+info:
+  title: OpsWeave API
+  version: "0.1.0"
+  description: >-
+    OpsWeave is a modular, asset-centric open-source IT Service Management system.
+    It provides ITIL-conformant processes (Incident, Problem, Change), a CMDB,
+    service catalogs, compliance mapping, and monitoring integration.
+  license:
+    name: AGPL-3.0
+    url: https://www.gnu.org/licenses/agpl-3.0.html
+  contact:
+    name: OpsWeave
+    url: https://github.com/slemens/opsweave
+
+servers:
+  - url: http://localhost:3000
+    description: Local development server
+
+tags:
+  - name: Auth
+  - name: Tenants
+  - name: Users
+  - name: Groups
+  - name: Tickets
+  - name: Assets
+  - name: Workflows
+  - name: Service Catalog
+  - name: Compliance
+  - name: Monitoring
+  - name: Email
+  - name: Knowledge Base
+  - name: Customer Portal
+  - name: Settings
+  - name: License
+  - name: System
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: session
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - cookieAuth: []
+  - bearerAuth: []
+
+paths:
+  /api/v1/auth/login:
+    post:
+      summary: Login with local credentials
+      tags:
+        - Auth
+      operationId: postapi_v1_auth_login
+        responses:
+          "200":
+            description: Created
+          "401":
+            description: Unauthorized
+  /api/v1/auth/logout:
+    post:
+      summary: Logout current session
+      tags:
+        - Auth
+      operationId: postapi_v1_auth_logout
+        responses:
+          "200":
+            description: Created
+          "401":
+            description: Unauthorized
+  /api/v1/auth/refresh:
+    post:
+      summary: Refresh authentication token
+      tags:
+        - Auth
+      operationId: postapi_v1_auth_refresh
+        responses:
+          "200":
+            description: Created
+          "401":
+            description: Unauthorized
+  /api/v1/auth/me:
+    get:
+      summary: Get current user with tenants
+      tags:
+        - Auth
+      operationId: getapi_v1_auth_me
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/auth/switch-tenant:
+    post:
+      summary: Switch active tenant
+      tags:
+        - Auth
+      operationId: postapi_v1_auth_switch_tenant
+        responses:
+          "200":
+            description: Created
+          "401":
+            description: Unauthorized
+  /api/v1/auth/oidc/login:
+    get:
+      summary: Initiate OIDC login (Enterprise)
+      tags:
+        - Auth
+      operationId: getapi_v1_auth_oidc_login
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/auth/oidc/callback:
+    get:
+      summary: OIDC callback (Enterprise)
+      tags:
+        - Auth
+      operationId: getapi_v1_auth_oidc_callback
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/tenants:
+    get:
+      summary: List all tenants (Super-Admin)
+      tags:
+        - Tenants
+      operationId: getapi_v1_tenants
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+    post:
+      summary: Create a new tenant
+      tags:
+        - Tenants
+      operationId: postapi_v1_tenants
+        responses:
+          "200":
+            description: Created
+          "401":
+            description: Unauthorized
+  /api/v1/tenants/{id}:
+    get:
+      summary: Get tenant by ID
+      tags:
+        - Tenants
+      operationId: getapi_v1_tenants_id
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+    put:
+      summary: Update tenant
+      tags:
+        - Tenants
+      operationId: putapi_v1_tenants_id
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/tenants/{id}/members:
+    get:
+      summary: List tenant members
+      tags:
+        - Tenants
+      operationId: getapi_v1_tenants_id_members
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+    post:
+      summary: Add member to tenant
+      tags:
+        - Tenants
+      operationId: postapi_v1_tenants_id_members
+        responses:
+          "200":
+            description: Created
+          "401":
+            description: Unauthorized
+  /api/v1/tenants/{id}/members/{uid}:
+    delete:
+      summary: Remove member from tenant
+      tags:
+        - Tenants
+      operationId: deleteapi_v1_tenants_id_members_uid
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/users:
+    get:
+      summary: List users
+      tags:
+        - Users
+      operationId: getapi_v1_users
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+    post:
+      summary: Create a new user
+      tags:
+        - Users
+      operationId: postapi_v1_users
+        responses:
+          "200":
+            description: Created
+          "401":
+            description: Unauthorized
+  /api/v1/users/{id}:
+    get:
+      summary: Get user by ID
+      tags:
+        - Users
+      operationId: getapi_v1_users_id
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+    put:
+      summary: Update user
+      tags:
+        - Users
+      operationId: putapi_v1_users_id
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+    delete:
+      summary: Delete user
+      tags:
+        - Users
+      operationId: deleteapi_v1_users_id
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/users/{id}/language:
+    patch:
+      summary: Update user language preference
+      tags:
+        - Users
+      operationId: patchapi_v1_users_id_language
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/groups:
+    get:
+      summary: List assignee groups
+      tags:
+        - Groups
+      operationId: getapi_v1_groups
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+    post:
+      summary: Create a new group
+      tags:
+        - Groups
+      operationId: postapi_v1_groups
+        responses:
+          "200":
+            description: Created
+          "401":
+            description: Unauthorized
+  /api/v1/groups/{id}:
+    get:
+      summary: Get group by ID
+      tags:
+        - Groups
+      operationId: getapi_v1_groups_id
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+    put:
+      summary: Update group
+      tags:
+        - Groups
+      operationId: putapi_v1_groups_id
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+    delete:
+      summary: Delete group
+      tags:
+        - Groups
+      operationId: deleteapi_v1_groups_id
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/groups/{id}/members:
+    get:
+      summary: List group members
+      tags:
+        - Groups
+      operationId: getapi_v1_groups_id_members
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+    post:
+      summary: Add member to group
+      tags:
+        - Groups
+      operationId: postapi_v1_groups_id_members
+        responses:
+          "200":
+            description: Created
+          "401":
+            description: Unauthorized
+  /api/v1/groups/{id}/members/{uid}:
+    delete:
+      summary: Remove member from group
+      tags:
+        - Groups
+      operationId: deleteapi_v1_groups_id_members_uid
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/groups/{id}/tickets:
+    get:
+      summary: List tickets assigned to group
+      tags:
+        - Groups
+      operationId: getapi_v1_groups_id_tickets
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/tickets:
+    get:
+      summary: List tickets with filters and pagination
+      tags:
+        - Tickets
+      operationId: getapi_v1_tickets
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+    post:
+      summary: Create a new ticket
+      tags:
+        - Tickets
+      operationId: postapi_v1_tickets
+        responses:
+          "200":
+            description: Created
+          "401":
+            description: Unauthorized
+  /api/v1/tickets/{id}:
+    get:
+      summary: Get ticket by ID
+      tags:
+        - Tickets
+      operationId: getapi_v1_tickets_id
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+    put:
+      summary: Update ticket
+      tags:
+        - Tickets
+      operationId: putapi_v1_tickets_id
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/tickets/{id}/status:
+    patch:
+      summary: Update ticket status
+      tags:
+        - Tickets
+      operationId: patchapi_v1_tickets_id_status
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/tickets/{id}/assign:
+    patch:
+      summary: Assign ticket to user or group
+      tags:
+        - Tickets
+      operationId: patchapi_v1_tickets_id_assign
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/tickets/{id}/priority:
+    patch:
+      summary: Update ticket priority
+      tags:
+        - Tickets
+      operationId: patchapi_v1_tickets_id_priority
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/tickets/{id}/comments:
+    get:
+      summary: List ticket comments
+      tags:
+        - Tickets
+      operationId: getapi_v1_tickets_id_comments
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+    post:
+      summary: Add comment to ticket
+      tags:
+        - Tickets
+      operationId: postapi_v1_tickets_id_comments
+        responses:
+          "200":
+            description: Created
+          "401":
+            description: Unauthorized
+  /api/v1/tickets/{id}/history:
+    get:
+      summary: Get ticket change history
+      tags:
+        - Tickets
+      operationId: getapi_v1_tickets_id_history
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/tickets/{id}/workflow:
+    get:
+      summary: Get ticket workflow state
+      tags:
+        - Tickets
+      operationId: getapi_v1_tickets_id_workflow
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/tickets/stats:
+    get:
+      summary: Get ticket statistics
+      tags:
+        - Tickets
+      operationId: getapi_v1_tickets_stats
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/tickets/board:
+    get:
+      summary: Get ticket board view
+      tags:
+        - Tickets
+      operationId: getapi_v1_tickets_board
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/assets:
+    get:
+      summary: List assets with filters
+      tags:
+        - Assets
+      operationId: getapi_v1_assets
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+    post:
+      summary: Create a new asset
+      tags:
+        - Assets
+      operationId: postapi_v1_assets
+        responses:
+          "200":
+            description: Created
+          "401":
+            description: Unauthorized
+  /api/v1/assets/{id}:
+    get:
+      summary: Get asset by ID
+      tags:
+        - Assets
+      operationId: getapi_v1_assets_id
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+    put:
+      summary: Update asset
+      tags:
+        - Assets
+      operationId: putapi_v1_assets_id
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+    delete:
+      summary: Delete asset
+      tags:
+        - Assets
+      operationId: deleteapi_v1_assets_id
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/assets/{id}/relations:
+    get:
+      summary: List asset relations
+      tags:
+        - Assets
+      operationId: getapi_v1_assets_id_relations
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+    post:
+      summary: Create asset relation
+      tags:
+        - Assets
+      operationId: postapi_v1_assets_id_relations
+        responses:
+          "200":
+            description: Created
+          "401":
+            description: Unauthorized
+  /api/v1/assets/{id}/relations/{rid}:
+    delete:
+      summary: Delete asset relation
+      tags:
+        - Assets
+      operationId: deleteapi_v1_assets_id_relations_rid
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/assets/{id}/sla-chain:
+    get:
+      summary: Get SLA inheritance chain
+      tags:
+        - Assets
+      operationId: getapi_v1_assets_id_sla_chain
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/assets/{id}/tickets:
+    get:
+      summary: List tickets linked to asset
+      tags:
+        - Assets
+      operationId: getapi_v1_assets_id_tickets
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/assets/{id}/services:
+    get:
+      summary: List services linked to asset
+      tags:
+        - Assets
+      operationId: getapi_v1_assets_id_services
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/assets/{id}/compliance:
+    get:
+      summary: Get asset compliance status
+      tags:
+        - Assets
+      operationId: getapi_v1_assets_id_compliance
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/assets/{id}/graph:
+    get:
+      summary: Get asset topology graph
+      tags:
+        - Assets
+      operationId: getapi_v1_assets_id_graph
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/assets/search:
+    get:
+      summary: Search assets
+      tags:
+        - Assets
+      operationId: getapi_v1_assets_search
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/assets/types:
+    get:
+      summary: List available asset types
+      tags:
+        - Assets
+      operationId: getapi_v1_assets_types
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/assets/stats:
+    get:
+      summary: Get asset statistics
+      tags:
+        - Assets
+      operationId: getapi_v1_assets_stats
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/workflows/templates:
+    get:
+      summary: List workflow templates
+      tags:
+        - Workflows
+      operationId: getapi_v1_workflows_templates
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+    post:
+      summary: Create workflow template
+      tags:
+        - Workflows
+      operationId: postapi_v1_workflows_templates
+        responses:
+          "200":
+            description: Created
+          "401":
+            description: Unauthorized
+  /api/v1/workflows/templates/{id}:
+    get:
+      summary: Get workflow template by ID
+      tags:
+        - Workflows
+      operationId: getapi_v1_workflows_templates_id
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+    put:
+      summary: Update workflow template
+      tags:
+        - Workflows
+      operationId: putapi_v1_workflows_templates_id
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+    delete:
+      summary: Delete workflow template
+      tags:
+        - Workflows
+      operationId: deleteapi_v1_workflows_templates_id
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/workflows/instantiate:
+    post:
+      summary: Instantiate a workflow from template
+      tags:
+        - Workflows
+      operationId: postapi_v1_workflows_instantiate
+        responses:
+          "200":
+            description: Created
+          "401":
+            description: Unauthorized
+  /api/v1/workflows/instances/{id}:
+    get:
+      summary: Get workflow instance status
+      tags:
+        - Workflows
+      operationId: getapi_v1_workflows_instances_id
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/workflows/instances/{id}/steps/{sid}/complete:
+    post:
+      summary: Complete a workflow step
+      tags:
+        - Workflows
+      operationId: postapi_v1_workflows_instances_id_steps_sid_complete
+        responses:
+          "200":
+            description: Created
+          "401":
+            description: Unauthorized
+  /api/v1/workflows/instances/{id}/steps/{sid}/route:
+    post:
+      summary: Route a workflow step
+      tags:
+        - Workflows
+      operationId: postapi_v1_workflows_instances_id_steps_sid_route
+        responses:
+          "200":
+            description: Created
+          "401":
+            description: Unauthorized
+  /api/v1/workflows/instances/{id}/cancel:
+    post:
+      summary: Cancel a workflow instance
+      tags:
+        - Workflows
+      operationId: postapi_v1_workflows_instances_id_cancel
+        responses:
+          "200":
+            description: Created
+          "401":
+            description: Unauthorized
+  /api/v1/services/descriptions:
+    get:
+      summary: List service descriptions
+      tags:
+        - Service Catalog
+      operationId: getapi_v1_services_descriptions
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+    post:
+      summary: Create service description
+      tags:
+        - Service Catalog
+      operationId: postapi_v1_services_descriptions
+        responses:
+          "200":
+            description: Created
+          "401":
+            description: Unauthorized
+  /api/v1/services/descriptions/{id}:
+    get:
+      summary: Get service description by ID
+      tags:
+        - Service Catalog
+      operationId: getapi_v1_services_descriptions_id
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+    put:
+      summary: Update service description
+      tags:
+        - Service Catalog
+      operationId: putapi_v1_services_descriptions_id
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/services/catalogs/horizontal:
+    get:
+      summary: List horizontal catalogs
+      tags:
+        - Service Catalog
+      operationId: getapi_v1_services_catalogs_horizontal
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+    post:
+      summary: Create horizontal catalog
+      tags:
+        - Service Catalog
+      operationId: postapi_v1_services_catalogs_horizontal
+        responses:
+          "200":
+            description: Created
+          "401":
+            description: Unauthorized
+  /api/v1/services/catalogs/horizontal/{id}:
+    get:
+      summary: Get horizontal catalog by ID
+      tags:
+        - Service Catalog
+      operationId: getapi_v1_services_catalogs_horizontal_id
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+    put:
+      summary: Update horizontal catalog
+      tags:
+        - Service Catalog
+      operationId: putapi_v1_services_catalogs_horizontal_id
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/services/catalogs/horizontal/{id}/items:
+    get:
+      summary: List items in horizontal catalog
+      tags:
+        - Service Catalog
+      operationId: getapi_v1_services_catalogs_horizontal_id_items
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+    post:
+      summary: Add item to horizontal catalog
+      tags:
+        - Service Catalog
+      operationId: postapi_v1_services_catalogs_horizontal_id_items
+        responses:
+          "200":
+            description: Created
+          "401":
+            description: Unauthorized
+    delete:
+      summary: Remove item from horizontal catalog
+      tags:
+        - Service Catalog
+      operationId: deleteapi_v1_services_catalogs_horizontal_id_items
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/services/catalogs/vertical:
+    get:
+      summary: List vertical catalogs (Enterprise)
+      tags:
+        - Service Catalog
+      operationId: getapi_v1_services_catalogs_vertical
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+    post:
+      summary: Create vertical catalog (Enterprise)
+      tags:
+        - Service Catalog
+      operationId: postapi_v1_services_catalogs_vertical
+        responses:
+          "200":
+            description: Created
+          "401":
+            description: Unauthorized
+  /api/v1/services/catalogs/vertical/{id}:
+    get:
+      summary: Get vertical catalog by ID
+      tags:
+        - Service Catalog
+      operationId: getapi_v1_services_catalogs_vertical_id
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+    put:
+      summary: Update vertical catalog
+      tags:
+        - Service Catalog
+      operationId: putapi_v1_services_catalogs_vertical_id
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/services/catalogs/vertical/{id}/effective:
+    get:
+      summary: Get effective catalog with overrides
+      tags:
+        - Service Catalog
+      operationId: getapi_v1_services_catalogs_vertical_id_effective
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/compliance/frameworks:
+    get:
+      summary: List regulatory frameworks
+      tags:
+        - Compliance
+      operationId: getapi_v1_compliance_frameworks
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+    post:
+      summary: Create regulatory framework
+      tags:
+        - Compliance
+      operationId: postapi_v1_compliance_frameworks
+        responses:
+          "200":
+            description: Created
+          "401":
+            description: Unauthorized
+  /api/v1/compliance/frameworks/{id}:
+    get:
+      summary: Get framework by ID
+      tags:
+        - Compliance
+      operationId: getapi_v1_compliance_frameworks_id
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/compliance/frameworks/{id}/requirements:
+    get:
+      summary: List framework requirements
+      tags:
+        - Compliance
+      operationId: getapi_v1_compliance_frameworks_id_requirements
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+    post:
+      summary: Add requirement to framework
+      tags:
+        - Compliance
+      operationId: postapi_v1_compliance_frameworks_id_requirements
+        responses:
+          "200":
+            description: Created
+          "401":
+            description: Unauthorized
+  /api/v1/compliance/frameworks/{id}/matrix:
+    get:
+      summary: Get compliance matrix
+      tags:
+        - Compliance
+      operationId: getapi_v1_compliance_frameworks_id_matrix
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/compliance/frameworks/{id}/gaps:
+    get:
+      summary: Get compliance gap analysis
+      tags:
+        - Compliance
+      operationId: getapi_v1_compliance_frameworks_id_gaps
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/compliance/mappings:
+    post:
+      summary: Create requirement-service mapping
+      tags:
+        - Compliance
+      operationId: postapi_v1_compliance_mappings
+        responses:
+          "200":
+            description: Created
+          "401":
+            description: Unauthorized
+    delete:
+      summary: Delete requirement-service mapping
+      tags:
+        - Compliance
+      operationId: deleteapi_v1_compliance_mappings
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/compliance/assets/{id}:
+    get:
+      summary: Get compliance status for asset
+      tags:
+        - Compliance
+      operationId: getapi_v1_compliance_assets_id
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/monitoring/sources:
+    get:
+      summary: List monitoring sources
+      tags:
+        - Monitoring
+      operationId: getapi_v1_monitoring_sources
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+    post:
+      summary: Create monitoring source
+      tags:
+        - Monitoring
+      operationId: postapi_v1_monitoring_sources
+        responses:
+          "200":
+            description: Created
+          "401":
+            description: Unauthorized
+  /api/v1/monitoring/sources/{id}:
+    put:
+      summary: Update monitoring source
+      tags:
+        - Monitoring
+      operationId: putapi_v1_monitoring_sources_id
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/monitoring/events:
+    post:
+      summary: Receive monitoring event (webhook)
+      tags:
+        - Monitoring
+      operationId: postapi_v1_monitoring_events
+        responses:
+          "200":
+            description: Created
+          "401":
+            description: Unauthorized
+    get:
+      summary: List monitoring events
+      tags:
+        - Monitoring
+      operationId: getapi_v1_monitoring_events
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/email/configs:
+    get:
+      summary: List email inbound configurations
+      tags:
+        - Email
+      operationId: getapi_v1_email_configs
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+    post:
+      summary: Create email inbound configuration
+      tags:
+        - Email
+      operationId: postapi_v1_email_configs
+        responses:
+          "200":
+            description: Created
+          "401":
+            description: Unauthorized
+  /api/v1/email/configs/{id}:
+    get:
+      summary: Get email config by ID
+      tags:
+        - Email
+      operationId: getapi_v1_email_configs_id
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+    put:
+      summary: Update email config
+      tags:
+        - Email
+      operationId: putapi_v1_email_configs_id
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+    delete:
+      summary: Delete email config
+      tags:
+        - Email
+      operationId: deleteapi_v1_email_configs_id
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/email/configs/{id}/test:
+    post:
+      summary: Test email connection
+      tags:
+        - Email
+      operationId: postapi_v1_email_configs_id_test
+        responses:
+          "200":
+            description: Created
+          "401":
+            description: Unauthorized
+  /api/v1/email/messages:
+    get:
+      summary: List received email messages
+      tags:
+        - Email
+      operationId: getapi_v1_email_messages
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/email/messages/{id}:
+    get:
+      summary: Get email message by ID
+      tags:
+        - Email
+      operationId: getapi_v1_email_messages_id
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/email/webhook:
+    post:
+      summary: Inbound email webhook (Mailgun/SendGrid)
+      tags:
+        - Email
+      operationId: postapi_v1_email_webhook
+        responses:
+          "200":
+            description: Created
+          "401":
+            description: Unauthorized
+  /api/v1/kb/articles:
+    get:
+      summary: List knowledge base articles
+      tags:
+        - Knowledge Base
+      operationId: getapi_v1_kb_articles
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+    post:
+      summary: Create knowledge base article
+      tags:
+        - Knowledge Base
+      operationId: postapi_v1_kb_articles
+        responses:
+          "200":
+            description: Created
+          "401":
+            description: Unauthorized
+  /api/v1/kb/articles/{id}:
+    get:
+      summary: Get article by ID
+      tags:
+        - Knowledge Base
+      operationId: getapi_v1_kb_articles_id
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+    put:
+      summary: Update article
+      tags:
+        - Knowledge Base
+      operationId: putapi_v1_kb_articles_id
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+    delete:
+      summary: Delete article
+      tags:
+        - Knowledge Base
+      operationId: deleteapi_v1_kb_articles_id
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/kb/articles/search:
+    get:
+      summary: Search knowledge base
+      tags:
+        - Knowledge Base
+      operationId: getapi_v1_kb_articles_search
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/kb/articles/{id}/link/{ticketId}:
+    post:
+      summary: Link article to ticket
+      tags:
+        - Knowledge Base
+      operationId: postapi_v1_kb_articles_id_link_ticketId
+        responses:
+          "200":
+            description: Created
+          "401":
+            description: Unauthorized
+  /api/v1/kb/categories:
+    get:
+      summary: List KB categories
+      tags:
+        - Knowledge Base
+      operationId: getapi_v1_kb_categories
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/portal/auth/login:
+    post:
+      summary: Portal customer login
+      tags:
+        - Customer Portal
+      operationId: postapi_v1_portal_auth_login
+        responses:
+          "200":
+            description: Created
+          "401":
+            description: Unauthorized
+  /api/v1/portal/auth/logout:
+    post:
+      summary: Portal customer logout
+      tags:
+        - Customer Portal
+      operationId: postapi_v1_portal_auth_logout
+        responses:
+          "200":
+            description: Created
+          "401":
+            description: Unauthorized
+  /api/v1/portal/auth/me:
+    get:
+      summary: Get current portal user
+      tags:
+        - Customer Portal
+      operationId: getapi_v1_portal_auth_me
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/portal/tickets:
+    get:
+      summary: List customer tickets
+      tags:
+        - Customer Portal
+      operationId: getapi_v1_portal_tickets
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+    post:
+      summary: Create ticket from portal
+      tags:
+        - Customer Portal
+      operationId: postapi_v1_portal_tickets
+        responses:
+          "200":
+            description: Created
+          "401":
+            description: Unauthorized
+  /api/v1/portal/tickets/{id}:
+    get:
+      summary: Get customer ticket by ID
+      tags:
+        - Customer Portal
+      operationId: getapi_v1_portal_tickets_id
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/portal/tickets/{id}/comments:
+    post:
+      summary: Add customer comment to ticket
+      tags:
+        - Customer Portal
+      operationId: postapi_v1_portal_tickets_id_comments
+        responses:
+          "200":
+            description: Created
+          "401":
+            description: Unauthorized
+  /api/v1/portal/kb/articles:
+    get:
+      summary: List public KB articles
+      tags:
+        - Customer Portal
+      operationId: getapi_v1_portal_kb_articles
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/settings:
+    get:
+      summary: Get all settings
+      tags:
+        - Settings
+      operationId: getapi_v1_settings
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/settings/{key}:
+    put:
+      summary: Update a setting
+      tags:
+        - Settings
+      operationId: putapi_v1_settings_key
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/settings/branding:
+    get:
+      summary: Get branding settings
+      tags:
+        - Settings
+      operationId: getapi_v1_settings_branding
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+    put:
+      summary: Update branding settings
+      tags:
+        - Settings
+      operationId: putapi_v1_settings_branding
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/license:
+    get:
+      summary: Get current license info
+      tags:
+        - License
+      operationId: getapi_v1_license
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/license/activate:
+    post:
+      summary: Activate license with JWT key
+      tags:
+        - License
+      operationId: postapi_v1_license_activate
+        responses:
+          "200":
+            description: Created
+          "401":
+            description: Unauthorized
+  /api/v1/license/usage:
+    get:
+      summary: Get license usage statistics
+      tags:
+        - License
+      operationId: getapi_v1_license_usage
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/system/health:
+    get:
+      summary: Health check
+      tags:
+        - System
+      operationId: getapi_v1_system_health
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found
+  /api/v1/system/info:
+    get:
+      summary: System information
+      tags:
+        - System
+      operationId: getapi_v1_system_info
+        responses:
+          "200":
+            description: OK
+          "401":
+            description: Unauthorized
+          "404":
+            description: Not Found

@@ -11,7 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { portalApi, setPortalAuth } from '@/api/portal';
+import { setPortalAuth } from '@/api/portal';
 import type { PortalAuth } from '@/api/portal';
 
 export function PortalLoginPage() {

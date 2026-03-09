@@ -6,8 +6,8 @@ version: "3.9"
 services:
   frontend:
     build:
-      context: ./packages/frontend
-      dockerfile: Dockerfile.dev
+      context: .
+      dockerfile: ./packages/frontend/Dockerfile.dev
     volumes:
       - ./packages/frontend/src:/app/src
       - ./packages/frontend/index.html:/app/index.html

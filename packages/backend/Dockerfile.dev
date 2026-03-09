@@ -1,0 +1,37 @@
+# Build context: project root (.)
+# docker-compose.dev.yml: context: . / dockerfile: ./packages/backend/Dockerfile.dev
+FROM node:22-alpine
+
+WORKDIR /app
+
+# Install build dependencies for native modules (better-sqlite3)
+RUN apk add --no-cache python3 make g++
+
+# Install tsx globally for watch mode
+RUN npm install -g tsx
+
+# Copy root workspace config
+COPY package.json package-lock.json* ./
+
+# Copy workspace package.json files
+COPY packages/shared/package.json ./packages/shared/package.json
+COPY packages/backend/package.json ./packages/backend/package.json
+
+# Stub frontend workspace
+RUN mkdir -p packages/frontend && \
+    echo '{"name":"@opsweave/frontend","version":"0.1.0","private":true}' > packages/frontend/package.json
+
+RUN npm ci
+
+# Copy and build shared
+COPY packages/shared/ ./packages/shared/
+RUN npm run build -w packages/shared
+
+# Copy backend source (overridden by volume mounts in dev compose)
+COPY packages/backend/ ./packages/backend/
+
+ENV NODE_ENV=development
+
+EXPOSE 3000
+
+CMD ["npx", "tsx", "watch", "packages/backend/src/server.ts"]

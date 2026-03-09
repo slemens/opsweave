@@ -71,7 +71,7 @@ import {
 } from '@/api/tickets';
 import type { TicketCommentWithAuthor, HistoryWithUser, ChildTicketSummary } from '@/api/tickets';
 import type { TicketStatus, TicketPriority } from '@opsweave/shared';
-import { TICKET_STATUSES, TICKET_PRIORITIES, TICKET_IMPACTS, TICKET_URGENCIES, calculatePriority } from '@opsweave/shared';
+import { TICKET_STATUSES, TICKET_PRIORITIES, TICKET_IMPACTS, TICKET_URGENCIES } from '@opsweave/shared';
 import {
   useTicketWorkflow,
   useWorkflowTemplates,

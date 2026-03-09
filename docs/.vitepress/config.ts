@@ -15,6 +15,7 @@ export default defineConfig({
     ['meta', { property: 'og:type', content: 'website' }],
     ['meta', { property: 'og:title', content: 'OpsWeave — IT Service Management' }],
     ['meta', { property: 'og:description', content: 'Asset-zentriertes, workflow-gesteuertes Open-Source ITSM' }],
+    ['meta', { property: 'og:image', content: '/opsweave/og-image.svg' }],
   ],
 
   themeConfig: {

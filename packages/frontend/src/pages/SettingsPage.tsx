@@ -597,7 +597,6 @@ function LicenseTab() {
 // ============================================================
 function TenantTab() {
   const { t } = useTranslation(['settings', 'common']);
-  const user = useAuthStore((s) => s.user);
   const tenants = useAuthStore((s) => s.tenants);
   const tenantId = useAuthStore((s) => s.tenantId);
 
