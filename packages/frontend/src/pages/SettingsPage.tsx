@@ -18,8 +18,18 @@ import {
   Users,
   Tag,
   Briefcase,
+  Server,
+  Shield,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  useLicenseInfo,
+  useLicenseUsage,
+  useActivateLicense,
+  useDeactivateLicense,
+  useRuntimeConfig,
+} from '@/api/settings';
+import type { LicenseInfo as LicenseInfoType } from '@/api/settings';
 import {
   Dialog,
   DialogContent,
@@ -98,38 +108,6 @@ import {
 import { useThemeStore, type Theme } from '@/stores/theme-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { cn } from '@/lib/utils';
-
-// ---------- Mock license data (until API is ready) ----------
-interface UsageBucket {
-  current: number;
-  max: number;
-}
-
-interface LicenseInfo {
-  edition: 'community' | 'enterprise';
-  status: 'active' | 'expired' | 'none';
-  expiresAt: string | null;
-  usage: {
-    assets: UsageBucket;
-    users: UsageBucket;
-    workflows: UsageBucket;
-    frameworks: UsageBucket;
-    monitoring: UsageBucket;
-  };
-}
-
-const MOCK_LICENSE: LicenseInfo = {
-  edition: 'community',
-  status: 'active',
-  expiresAt: null,
-  usage: {
-    assets: { current: 12, max: 50 },
-    users: { current: 3, max: 5 },
-    workflows: { current: 1, max: 3 },
-    frameworks: { current: 1, max: 1 },
-    monitoring: { current: 0, max: 1 },
-  },
-};
 
 // ---------- Helper: usage percentage to variant ----------
 function usageVariant(current: number, max: number): 'success' | 'warning' | 'danger' {
@@ -463,20 +441,61 @@ function LicenseTab() {
   const { t } = useTranslation(['settings', 'common']);
   const [licenseKey, setLicenseKey] = useState('');
 
-  const license = MOCK_LICENSE;
-  const isEnterprise = license.edition === 'enterprise';
+  const { data: license, isLoading: licenseLoading } = useLicenseInfo();
+  const { data: usage, isLoading: usageLoading } = useLicenseUsage();
+  const activateMutation = useActivateLicense();
+  const deactivateMutation = useDeactivateLicense();
+
+  const isEnterprise = license?.edition === 'enterprise';
+  const isLoading = licenseLoading || usageLoading;
 
   const usageItems: Array<{
     labelKey: string;
     current: number;
     max: number;
-  }> = [
-    { labelKey: 'settings:license.assets', current: license.usage.assets.current, max: license.usage.assets.max },
-    { labelKey: 'settings:license.users', current: license.usage.users.current, max: license.usage.users.max },
-    { labelKey: 'settings:license.workflows', current: license.usage.workflows.current, max: license.usage.workflows.max },
-    { labelKey: 'settings:license.frameworks', current: license.usage.frameworks.current, max: license.usage.frameworks.max },
-    { labelKey: 'settings:license.monitoring', current: license.usage.monitoring.current, max: license.usage.monitoring.max },
-  ];
+  }> = usage
+    ? [
+        { labelKey: 'settings:license.assets', current: usage.assets.current, max: usage.assets.max },
+        { labelKey: 'settings:license.users', current: usage.users.current, max: usage.users.max },
+        { labelKey: 'settings:license.workflows', current: usage.workflows.current, max: usage.workflows.max },
+        { labelKey: 'settings:license.frameworks', current: usage.frameworks.current, max: usage.frameworks.max },
+        { labelKey: 'settings:license.monitoring', current: usage.monitoring.current, max: usage.monitoring.max },
+      ]
+    : [];
+
+  async function handleActivate() {
+    if (!licenseKey.trim()) return;
+    try {
+      await activateMutation.mutateAsync(licenseKey.trim());
+      toast.success(t('settings:license.activated_success'));
+      setLicenseKey('');
+    } catch {
+      toast.error(t('settings:license.activated_error'));
+    }
+  }
+
+  async function handleDeactivate() {
+    try {
+      await deactivateMutation.mutateAsync();
+      toast.success(t('settings:license.deactivated_success'));
+    } catch {
+      toast.error(t('common:error'));
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        {[1, 2, 3].map((i) => (
+          <Card key={i}>
+            <CardContent className="py-8">
+              <div className="h-20 animate-pulse rounded bg-muted" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -505,31 +524,53 @@ function LicenseTab() {
               </p>
               <Badge
                 variant={
-                  license.status === 'active'
+                  license?.status === 'active'
                     ? 'success'
-                    : license.status === 'expired'
+                    : license?.status === 'expired'
                       ? 'destructive'
                       : 'secondary'
                 }
                 className="text-sm"
               >
-                {license.status === 'active'
+                {license?.status === 'active'
                   ? t('settings:license.active')
-                  : license.status === 'expired'
+                  : license?.status === 'expired'
                     ? t('settings:license.expired')
                     : t('settings:license.no_license')}
               </Badge>
             </div>
-            {license.expiresAt && (
-              <div className="space-y-1 sm:col-span-2">
+            {license?.subject && (
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">
+                  {t('settings:license.licensed_to')}
+                </p>
+                <p className="text-sm font-medium">{license.subject}</p>
+              </div>
+            )}
+            {license?.expiresAt && (
+              <div className="space-y-1">
                 <p className="text-sm text-muted-foreground">
                   {t('settings:license.expires_at')}
                 </p>
-                <p className="text-sm font-medium">{license.expiresAt}</p>
+                <p className="text-sm font-medium">
+                  {new Date(license.expiresAt).toLocaleDateString()}
+                </p>
               </div>
             )}
           </div>
         </CardContent>
+        {isEnterprise && (
+          <CardFooter className="justify-end border-t pt-6">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDeactivate}
+              disabled={deactivateMutation.isPending}
+            >
+              {t('settings:license.deactivate')}
+            </Button>
+          </CardFooter>
+        )}
       </Card>
 
       {/* Usage */}
@@ -558,11 +599,47 @@ function LicenseTab() {
         </CardContent>
       </Card>
 
+      {/* Enterprise Features */}
+      {isEnterprise && license?.features && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Shield className="h-4 w-4" />
+              {t('settings:license.features')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {Object.entries(license.features).map(([key, enabled]) => (
+                <div
+                  key={key}
+                  className={cn(
+                    'flex items-center gap-2 rounded-md px-3 py-2 text-sm',
+                    enabled
+                      ? 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400'
+                      : 'bg-muted text-muted-foreground',
+                  )}
+                >
+                  {enabled ? (
+                    <Check className="h-3.5 w-3.5" />
+                  ) : (
+                    <span className="h-3.5 w-3.5" />
+                  )}
+                  {t(`settings:license.feature_${key}`)}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Activate License */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">
-            {t('settings:license.activate')}
+            {isEnterprise
+              ? t('settings:license.update_license')
+              : t('settings:license.activate')}
           </CardTitle>
           <CardDescription>
             {t('settings:license.activate_hint')}
@@ -583,8 +660,13 @@ function LicenseTab() {
           </div>
         </CardContent>
         <CardFooter className="justify-end border-t pt-6">
-          <Button disabled={!licenseKey.trim()}>
-            {t('settings:license.activate')}
+          <Button
+            disabled={!licenseKey.trim() || activateMutation.isPending}
+            onClick={handleActivate}
+          >
+            {activateMutation.isPending
+              ? t('common:status.loading')
+              : t('settings:license.activate')}
           </Button>
         </CardFooter>
       </Card>
@@ -1468,6 +1550,76 @@ function CategoriesTab() {
   );
 }
 
+// ============================================================
+// System / Runtime Tab
+// ============================================================
+function SystemTab() {
+  const { t } = useTranslation(['settings', 'common']);
+  const { data: runtime, isLoading } = useRuntimeConfig();
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="py-8">
+          <div className="h-40 animate-pulse rounded bg-muted" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!runtime) {
+    return (
+      <Card>
+        <CardContent className="py-8 text-center text-muted-foreground">
+          {t('common:error')}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const items: Array<{ label: string; value: string; badge?: boolean; variant?: 'default' | 'secondary' | 'outline' }> = [
+    { label: t('settings:system.node_env'), value: runtime.nodeEnv, badge: true, variant: runtime.nodeEnv === 'production' ? 'default' : 'secondary' },
+    { label: t('settings:system.port'), value: String(runtime.port) },
+    { label: t('settings:system.db_driver'), value: runtime.dbDriver, badge: true },
+    { label: t('settings:system.queue_driver'), value: runtime.queueDriver, badge: true },
+    { label: t('settings:system.default_language'), value: runtime.defaultLanguage },
+    { label: t('settings:system.cors_origin'), value: runtime.corsOrigin },
+    { label: t('settings:system.serve_static'), value: runtime.serveStatic ? t('settings:system.yes') : t('settings:system.no') },
+    { label: t('settings:system.oidc_enabled'), value: runtime.oidcEnabled ? t('settings:system.yes') : t('settings:system.no') },
+    { label: t('settings:system.jwt_expires_in'), value: runtime.jwtExpiresIn },
+  ];
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base flex items-center gap-2">
+          <Server className="h-4 w-4" />
+          {t('settings:system.title')}
+        </CardTitle>
+        <CardDescription>
+          {t('settings:system.description')}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="divide-y">
+          {items.map((item) => (
+            <div key={item.label} className="flex items-center justify-between py-3">
+              <span className="text-sm text-muted-foreground">{item.label}</span>
+              {item.badge ? (
+                <Badge variant={item.variant ?? 'outline'} className="font-mono text-xs">
+                  {item.value}
+                </Badge>
+              ) : (
+                <span className="text-sm font-medium font-mono">{item.value}</span>
+              )}
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 // Main Settings Page
 // ============================================================
 export function SettingsPage() {
@@ -1483,6 +1635,7 @@ export function SettingsPage() {
     { value: 'groups', icon: Users },
     { value: 'customers', icon: Briefcase },
     { value: 'categories', icon: Tag },
+    { value: 'system', icon: Server },
   ] as const;
 
   return (
@@ -1543,6 +1696,10 @@ export function SettingsPage() {
 
         <TabsContent value="categories">
           <CategoriesTab />
+        </TabsContent>
+
+        <TabsContent value="system">
+          <SystemTab />
         </TabsContent>
       </Tabs>
     </div>
