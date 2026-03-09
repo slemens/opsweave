@@ -1,0 +1,84 @@
+{
+  "title": "Compliance",
+  "frameworks": {
+    "title": "Regulatorische Frameworks",
+    "subtitle": "Standards und Regulierungen",
+    "create": "Framework erstellen",
+    "edit": "Framework bearbeiten",
+    "empty": "Keine Frameworks vorhanden",
+    "empty_hint": "Erstellen Sie Ihr erstes regulatorisches Framework.",
+    "total": "{{count}} Frameworks",
+    "community_limit": "Community Edition: maximal 1 Framework.",
+    "community_limit_hint": "Upgraden Sie auf Enterprise für unbegrenzte Frameworks."
+  },
+  "requirements": {
+    "title": "Anforderungen",
+    "subtitle": "Anforderungen für {{framework}}",
+    "create": "Anforderung erstellen",
+    "edit": "Anforderung bearbeiten",
+    "empty": "Keine Anforderungen vorhanden",
+    "empty_hint": "Fügen Sie Anforderungen zu diesem Framework hinzu.",
+    "total": "{{count}} Anforderungen",
+    "select_framework": "Framework auswählen"
+  },
+  "matrix": {
+    "title": "Compliance-Matrix",
+    "subtitle": "Abdeckungsgrad der Anforderungen durch Services",
+    "empty": "Bitte wählen Sie ein Framework aus.",
+    "coverage": "Abdeckung",
+    "gaps": "Lücken",
+    "full_coverage": "Vollständig abgedeckt",
+    "partial_coverage": "Teilweise abgedeckt",
+    "no_coverage": "Nicht abgedeckt",
+    "not_applicable": "Nicht anwendbar",
+    "set_coverage": "Abdeckung setzen"
+  },
+  "fields": {
+    "name": "Name",
+    "version": "Version",
+    "description": "Beschreibung",
+    "effective_date": "Gültig ab",
+    "code": "Code",
+    "title": "Titel",
+    "category": "Kategorie",
+    "coverage_level": "Abdeckungsgrad",
+    "evidence_notes": "Nachweise / Notizen",
+    "reviewed_at": "Geprüft am",
+    "reviewed_by": "Geprüft von",
+    "requirements_count": "Anforderungen",
+    "created_at": "Erstellt"
+  },
+  "coverage_levels": {
+    "full": "Vollständig",
+    "partial": "Teilweise",
+    "none": "Nicht abgedeckt",
+    "not_applicable": "Nicht anwendbar"
+  },
+  "filters": {
+    "all_categories": "Alle Kategorien",
+    "search_placeholder": "Code, Titel suchen…"
+  },
+  "dialogs": {
+    "create_framework": {
+      "title": "Framework erstellen",
+      "description": "Erstellen Sie ein neues regulatorisches Framework."
+    },
+    "edit_framework": {
+      "title": "Framework bearbeiten",
+      "description": "Framework-Details bearbeiten."
+    },
+    "create_requirement": {
+      "title": "Anforderung erstellen",
+      "description": "Fügen Sie eine neue Anforderung zu diesem Framework hinzu."
+    },
+    "edit_requirement": {
+      "title": "Anforderung bearbeiten",
+      "description": "Anforderungs-Details bearbeiten."
+    },
+    "set_coverage": {
+      "title": "Abdeckung setzen",
+      "description": "Legen Sie den Abdeckungsgrad für diese Anforderung fest."
+    },
+    "delete_confirm": "Sind Sie sicher? Diese Aktion kann nicht rückgängig gemacht werden."
+  }
+}

@@ -1,0 +1,116 @@
+{
+  "title": "Workflows",
+  "create": "Template erstellen",
+  "edit": "Template bearbeiten",
+  "detail": "Workflow-Template",
+  "no_workflows": "Keine Workflow-Templates gefunden",
+  "empty_hint": "Erstellen Sie Ihr erstes Workflow-Template.",
+  "create_success": "Template erfolgreich erstellt",
+  "create_error": "Fehler beim Erstellen des Templates",
+  "update_success": "Template erfolgreich aktualisiert",
+  "update_error": "Fehler beim Aktualisieren des Templates",
+  "delete_success": "Template erfolgreich gelöscht",
+  "delete_error": "Fehler beim Löschen des Templates",
+  "delete_confirm": "Möchten Sie dieses Template wirklich löschen?",
+  "delete_confirm_detail": "Diese Aktion kann nicht rückgängig gemacht werden.",
+  "delete_blocked": "Template kann nicht gelöscht werden — es gibt aktive Instanzen.",
+  "instantiate_success": "Workflow gestartet",
+  "instantiate_error": "Fehler beim Starten des Workflows",
+  "complete_step_success": "Schritt abgeschlossen",
+  "complete_step_error": "Fehler beim Abschließen des Schritts",
+  "cancel_success": "Workflow abgebrochen",
+  "cancel_error": "Fehler beim Abbrechen des Workflows",
+  "community_limit": "Community Edition: max. 3 Workflow-Templates",
+  "trigger_types": {
+    "ticket_created": "Ticket erstellt",
+    "ticket_updated": "Ticket aktualisiert",
+    "manual": "Manuell"
+  },
+  "step_types": {
+    "form": "Formular",
+    "routing": "Weiterleitung",
+    "approval": "Genehmigung",
+    "condition": "Bedingung",
+    "automatic": "Automatisch"
+  },
+  "instance_statuses": {
+    "active": "Aktiv",
+    "completed": "Abgeschlossen",
+    "cancelled": "Abgebrochen",
+    "failed": "Fehlgeschlagen"
+  },
+  "step_statuses": {
+    "pending": "Ausstehend",
+    "in_progress": "In Bearbeitung",
+    "completed": "Abgeschlossen",
+    "skipped": "Übersprungen",
+    "failed": "Fehlgeschlagen"
+  },
+  "fields": {
+    "name": "Name",
+    "description": "Beschreibung",
+    "trigger_type": "Auslöser",
+    "trigger_subtype": "Ticket-Typ",
+    "is_active": "Aktiv",
+    "steps": "Schritte",
+    "timeout_hours": "Timeout (Stunden)",
+    "version": "Version",
+    "step_type": "Schritt-Typ",
+    "step_name": "Schritt-Name",
+    "config": "Konfiguration"
+  },
+  "steps": {
+    "title": "Schritte",
+    "add": "Schritt hinzufügen",
+    "remove": "Schritt entfernen",
+    "remove_confirm": "Möchten Sie diesen Schritt wirklich entfernen?",
+    "no_steps": "Keine Schritte definiert",
+    "no_steps_hint": "Fügen Sie Schritte hinzu, um den Workflow zu definieren.",
+    "drag_to_reorder": "Ziehen zum Sortieren",
+    "step_number": "Schritt {{number}}",
+    "config": {
+      "form_fields": "Formular-Felder",
+      "approver_group": "Genehmigungs-Gruppe",
+      "require_all": "Alle Genehmiger erforderlich",
+      "routing_options": "Weiterleitungsoptionen",
+      "condition_field": "Bedingungsfeld",
+      "condition_operator": "Operator",
+      "condition_value": "Wert",
+      "next_step_true": "Nächster Schritt (Wahr)",
+      "next_step_false": "Nächster Schritt (Falsch)",
+      "action": "Aktion"
+    }
+  },
+  "instances": {
+    "title": "Instanzen",
+    "no_instances": "Keine Instanzen vorhanden",
+    "current_step": "Aktueller Schritt",
+    "progress": "Fortschritt",
+    "started_at": "Gestartet am",
+    "completed_at": "Abgeschlossen am",
+    "cancel": "Workflow abbrechen",
+    "start": "Workflow starten",
+    "no_active": "Kein Workflow aktiv",
+    "no_active_hint": "Starten Sie einen Workflow für dieses Ticket.",
+    "select_template": "Template auswählen",
+    "complete_step": "Schritt abschließen",
+    "step_history": "Schritt-History",
+    "completed_by": "Abgeschlossen von"
+  },
+  "list": {
+    "showing": "{{count}} Templates",
+    "page_info": "Seite {{page}} von {{pages}}",
+    "steps_count": "{{count}} Schritte",
+    "active": "Aktiv",
+    "inactive": "Inaktiv"
+  },
+  "filter_all_triggers": "Alle Auslöser",
+  "filter_active": "Aktiv",
+  "filter_inactive": "Inaktiv",
+  "filter_all_status": "Alle Status",
+  "tabs": {
+    "steps": "Schritte",
+    "flow": "Flussdiagramm",
+    "instances": "Instanzen"
+  }
+}

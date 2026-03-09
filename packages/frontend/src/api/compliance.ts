@@ -1,0 +1,349 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiClient } from '@/api/client';
+
+// =============================================================================
+// Types
+// =============================================================================
+
+export interface RegulatoryFramework {
+  id: string;
+  tenant_id: string;
+  name: string;
+  version: string | null;
+  description: string | null;
+  effective_date: string | null;
+  created_at: string;
+  requirement_count?: number;
+  requirements?: RegulatoryRequirement[];
+}
+
+export interface RegulatoryRequirement {
+  id: string;
+  framework_id: string;
+  code: string;
+  title: string;
+  description: string | null;
+  category: string | null;
+  created_at: string;
+  mappings?: RequirementMapping[];
+}
+
+export interface RequirementMapping {
+  requirement_id: string;
+  service_desc_id: string;
+  tenant_id: string;
+  coverage_level: 'full' | 'partial' | 'none' | 'not_applicable';
+  evidence_notes: string | null;
+  reviewed_at: string | null;
+  reviewed_by: string | null;
+  service_title?: string;
+  service_code?: string;
+}
+
+export interface ComplianceMatrix {
+  framework: RegulatoryFramework;
+  requirements: Array<RegulatoryRequirement & { mappings: RequirementMapping[] }>;
+}
+
+export interface AssetFlag {
+  asset_id: string;
+  framework_id: string;
+  tenant_id: string;
+  reason: string | null;
+  flagged_at: string;
+  flagged_by: string;
+  asset?: {
+    id: string;
+    name: string;
+    display_name: string;
+    asset_type: string;
+    status: string;
+  };
+}
+
+export interface FrameworkListParams {
+  page?: number;
+  limit?: number;
+  q?: string;
+}
+
+export interface FrameworkListResponse {
+  data: RegulatoryFramework[];
+  meta: { total: number; page: number; limit: number; pages: number };
+}
+
+export interface RequirementListParams {
+  page?: number;
+  limit?: number;
+  q?: string;
+  category?: string;
+}
+
+export interface RequirementListResponse {
+  data: RegulatoryRequirement[];
+  meta: { total: number; page: number; limit: number; pages: number };
+}
+
+export interface CreateFrameworkPayload {
+  name: string;
+  version?: string | null;
+  description?: string | null;
+  effective_date?: string | null;
+}
+
+export interface UpdateFrameworkPayload extends Partial<CreateFrameworkPayload> {}
+
+export interface CreateRequirementPayload {
+  code: string;
+  title: string;
+  description?: string | null;
+  category?: string | null;
+}
+
+export interface UpdateRequirementPayload extends Partial<CreateRequirementPayload> {}
+
+export interface UpsertMappingPayload {
+  coverage_level: 'full' | 'partial' | 'none' | 'not_applicable';
+  evidence_notes?: string | null;
+}
+
+export interface FlagAssetPayload {
+  asset_id: string;
+  reason?: string | null;
+}
+
+// =============================================================================
+// Query Keys
+// =============================================================================
+
+export const complianceKeys = {
+  all: ['compliance'] as const,
+  frameworks: (params?: FrameworkListParams) =>
+    [...complianceKeys.all, 'frameworks', params] as const,
+  framework: (id: string) => [...complianceKeys.all, 'framework', id] as const,
+  requirements: (frameworkId: string, params?: RequirementListParams) =>
+    [...complianceKeys.all, 'requirements', frameworkId, params] as const,
+  requirement: (id: string) => [...complianceKeys.all, 'requirement', id] as const,
+  matrix: (frameworkId: string) => [...complianceKeys.all, 'matrix', frameworkId] as const,
+  assets: (frameworkId: string) => [...complianceKeys.all, 'assets', frameworkId] as const,
+};
+
+// =============================================================================
+// Query Hooks
+// =============================================================================
+
+export function useFrameworks(params: FrameworkListParams = {}) {
+  return useQuery({
+    queryKey: complianceKeys.frameworks(params),
+    queryFn: async () => {
+      const cleanParams: Record<string, string | number> = {};
+      for (const [k, v] of Object.entries(params)) {
+        if (v !== undefined && v !== '') cleanParams[k] = v as string | number;
+      }
+      return apiClient.get<FrameworkListResponse>('/compliance/frameworks', {
+        params: cleanParams,
+      });
+    },
+  });
+}
+
+export function useFramework(id: string | undefined) {
+  return useQuery({
+    queryKey: complianceKeys.framework(id ?? ''),
+    queryFn: async () => apiClient.get<RegulatoryFramework>(`/compliance/frameworks/${id!}`),
+    enabled: !!id,
+  });
+}
+
+export function useRequirements(frameworkId: string | undefined, params: RequirementListParams = {}) {
+  return useQuery({
+    queryKey: complianceKeys.requirements(frameworkId ?? '', params),
+    queryFn: async () => {
+      const cleanParams: Record<string, string | number> = {};
+      for (const [k, v] of Object.entries(params)) {
+        if (v !== undefined && v !== '') cleanParams[k] = v as string | number;
+      }
+      return apiClient.get<RequirementListResponse>(
+        `/compliance/frameworks/${frameworkId!}/requirements`,
+        { params: cleanParams },
+      );
+    },
+    enabled: !!frameworkId,
+  });
+}
+
+export function useMatrix(frameworkId: string | undefined) {
+  return useQuery({
+    queryKey: complianceKeys.matrix(frameworkId ?? ''),
+    queryFn: async () =>
+      apiClient.get<ComplianceMatrix>(`/compliance/frameworks/${frameworkId!}/matrix`),
+    enabled: !!frameworkId,
+  });
+}
+
+export function useFrameworkAssets(frameworkId: string | undefined) {
+  return useQuery({
+    queryKey: complianceKeys.assets(frameworkId ?? ''),
+    queryFn: async () =>
+      apiClient.get<AssetFlag[]>(`/compliance/frameworks/${frameworkId!}/assets`),
+    enabled: !!frameworkId,
+  });
+}
+
+// =============================================================================
+// Mutation Hooks — Frameworks
+// =============================================================================
+
+export function useCreateFramework() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: CreateFrameworkPayload) =>
+      apiClient.post<RegulatoryFramework>('/compliance/frameworks', payload),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: complianceKeys.frameworks() });
+    },
+  });
+}
+
+export function useUpdateFramework() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...payload }: UpdateFrameworkPayload & { id: string }) =>
+      apiClient.put<RegulatoryFramework>(`/compliance/frameworks/${id}`, payload),
+    onSuccess: (_data, vars) => {
+      void queryClient.invalidateQueries({ queryKey: complianceKeys.frameworks() });
+      void queryClient.invalidateQueries({ queryKey: complianceKeys.framework(vars.id) });
+    },
+  });
+}
+
+export function useDeleteFramework() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => apiClient.delete(`/compliance/frameworks/${id}`),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: complianceKeys.frameworks() });
+    },
+  });
+}
+
+// =============================================================================
+// Mutation Hooks — Requirements
+// =============================================================================
+
+export function useCreateRequirement() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      frameworkId,
+      ...payload
+    }: CreateRequirementPayload & { frameworkId: string }) =>
+      apiClient.post<RegulatoryRequirement>(
+        `/compliance/frameworks/${frameworkId}/requirements`,
+        payload,
+      ),
+    onSuccess: (_data, vars) => {
+      void queryClient.invalidateQueries({
+        queryKey: complianceKeys.requirements(vars.frameworkId),
+      });
+    },
+  });
+}
+
+export function useUpdateRequirement() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      rid,
+      frameworkId,
+      ...payload
+    }: UpdateRequirementPayload & { rid: string; frameworkId: string }) =>
+      apiClient.put<RegulatoryRequirement>(`/compliance/requirements/${rid}`, payload),
+    onSuccess: (_data, vars) => {
+      void queryClient.invalidateQueries({
+        queryKey: complianceKeys.requirements(vars.frameworkId),
+      });
+      void queryClient.invalidateQueries({ queryKey: complianceKeys.requirement(vars.rid) });
+    },
+  });
+}
+
+export function useDeleteRequirement() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ rid }: { rid: string; frameworkId: string }) =>
+      apiClient.delete(`/compliance/requirements/${rid}`),
+    onSuccess: (_data, vars) => {
+      void queryClient.invalidateQueries({
+        queryKey: complianceKeys.requirements(vars.frameworkId),
+      });
+    },
+  });
+}
+
+// =============================================================================
+// Mutation Hooks — Mappings
+// =============================================================================
+
+export function useUpsertMapping() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      rid,
+      sid,
+      ...payload
+    }: UpsertMappingPayload & { rid: string; sid: string; frameworkId: string }) =>
+      apiClient.post<RequirementMapping>(
+        `/compliance/requirements/${rid}/mappings/${sid}`,
+        payload,
+      ),
+    onSuccess: (_data, vars) => {
+      void queryClient.invalidateQueries({
+        queryKey: complianceKeys.matrix(vars.frameworkId),
+      });
+    },
+  });
+}
+
+export function useDeleteMapping() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ rid, sid }: { rid: string; sid: string; frameworkId: string }) =>
+      apiClient.delete(`/compliance/requirements/${rid}/mappings/${sid}`),
+    onSuccess: (_data, vars) => {
+      void queryClient.invalidateQueries({
+        queryKey: complianceKeys.matrix(vars.frameworkId),
+      });
+    },
+  });
+}
+
+// =============================================================================
+// Mutation Hooks — Asset Flags
+// =============================================================================
+
+export function useFlagAsset() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ frameworkId, ...payload }: FlagAssetPayload & { frameworkId: string }) =>
+      apiClient.post<AssetFlag>(`/compliance/frameworks/${frameworkId}/assets`, payload),
+    onSuccess: (_data, vars) => {
+      void queryClient.invalidateQueries({
+        queryKey: complianceKeys.assets(vars.frameworkId),
+      });
+    },
+  });
+}
+
+export function useUnflagAsset() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ frameworkId, aid }: { frameworkId: string; aid: string }) =>
+      apiClient.delete(`/compliance/frameworks/${frameworkId}/assets/${aid}`),
+    onSuccess: (_data, vars) => {
+      void queryClient.invalidateQueries({
+        queryKey: complianceKeys.assets(vars.frameworkId),
+      });
+    },
+  });
+}

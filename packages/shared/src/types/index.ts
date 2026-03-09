@@ -78,17 +78,37 @@ export interface UserGroupMembership {
 // ---------------------------------------------------------------------------
 
 export type AssetType =
+  // Compute
   | 'server_physical'
   | 'server_virtual'
+  | 'virtualization_host'
+  | 'container'
+  | 'container_host'
+  // Network
   | 'network_switch'
   | 'network_router'
   | 'network_firewall'
-  | 'storage'
+  | 'network_load_balancer'
+  | 'network_wap'
+  // Storage
+  | 'storage_san'
+  | 'storage_nas'
+  | 'storage_backup'
+  // Infrastructure
+  | 'rack'
+  | 'pdu'
+  | 'ups'
+  // Software
   | 'database'
   | 'application'
   | 'service'
+  | 'middleware'
   | 'cluster'
-  | 'load_balancer'
+  // End User
+  | 'workstation'
+  | 'laptop'
+  | 'printer'
+  // Other
   | 'other';
 
 export type AssetStatus = 'active' | 'inactive' | 'maintenance' | 'decommissioned';
@@ -176,11 +196,13 @@ export interface Ticket {
   assignee_group_id: string | null;
   reporter_id: string;
   customer_id: string | null;
+  category_id: string | null;
   workflow_instance_id: string | null;
   current_step_id: string | null;
   sla_tier: SlaTier | null;
   sla_response_due: string | null;
   sla_resolve_due: string | null;
+  parent_ticket_id: string | null;
   sla_breached: number; // 0 | 1
   source: TicketSource;
   created_at: string;
@@ -188,6 +210,15 @@ export interface Ticket {
   resolved_at: string | null;
   closed_at: string | null;
   created_by: string;
+}
+
+export interface TicketCategory {
+  id: string;
+  tenant_id: string;
+  name: string;
+  applies_to: string; // 'incident'|'change'|'problem'|'all'
+  is_active: number; // 0 | 1
+  created_at: string;
 }
 
 export type CommentSource = 'agent' | 'customer' | 'email' | 'system';

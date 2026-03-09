@@ -1,0 +1,84 @@
+{
+  "title": "Compliance",
+  "frameworks": {
+    "title": "Regulatory Frameworks",
+    "subtitle": "Standards and regulations",
+    "create": "Create Framework",
+    "edit": "Edit Framework",
+    "empty": "No frameworks found",
+    "empty_hint": "Create your first regulatory framework.",
+    "total": "{{count}} frameworks",
+    "community_limit": "Community Edition: maximum 1 framework.",
+    "community_limit_hint": "Upgrade to Enterprise for unlimited frameworks."
+  },
+  "requirements": {
+    "title": "Requirements",
+    "subtitle": "Requirements for {{framework}}",
+    "create": "Create Requirement",
+    "edit": "Edit Requirement",
+    "empty": "No requirements found",
+    "empty_hint": "Add requirements to this framework.",
+    "total": "{{count}} requirements",
+    "select_framework": "Select a framework"
+  },
+  "matrix": {
+    "title": "Compliance Matrix",
+    "subtitle": "Coverage of requirements by services",
+    "empty": "Please select a framework.",
+    "coverage": "Coverage",
+    "gaps": "Gaps",
+    "full_coverage": "Fully covered",
+    "partial_coverage": "Partially covered",
+    "no_coverage": "Not covered",
+    "not_applicable": "Not applicable",
+    "set_coverage": "Set coverage"
+  },
+  "fields": {
+    "name": "Name",
+    "version": "Version",
+    "description": "Description",
+    "effective_date": "Effective Date",
+    "code": "Code",
+    "title": "Title",
+    "category": "Category",
+    "coverage_level": "Coverage Level",
+    "evidence_notes": "Evidence / Notes",
+    "reviewed_at": "Reviewed At",
+    "reviewed_by": "Reviewed By",
+    "requirements_count": "Requirements",
+    "created_at": "Created"
+  },
+  "coverage_levels": {
+    "full": "Full",
+    "partial": "Partial",
+    "none": "Not covered",
+    "not_applicable": "Not applicable"
+  },
+  "filters": {
+    "all_categories": "All Categories",
+    "search_placeholder": "Search code, title…"
+  },
+  "dialogs": {
+    "create_framework": {
+      "title": "Create Framework",
+      "description": "Create a new regulatory framework."
+    },
+    "edit_framework": {
+      "title": "Edit Framework",
+      "description": "Edit framework details."
+    },
+    "create_requirement": {
+      "title": "Create Requirement",
+      "description": "Add a new requirement to this framework."
+    },
+    "edit_requirement": {
+      "title": "Edit Requirement",
+      "description": "Edit requirement details."
+    },
+    "set_coverage": {
+      "title": "Set Coverage",
+      "description": "Set the coverage level for this requirement."
+    },
+    "delete_confirm": "Are you sure? This action cannot be undone."
+  }
+}

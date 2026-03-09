@@ -25,7 +25,7 @@ export async function listTickets(
   res: Response,
 ): Promise<void> {
   const tenantId = req.tenantId!;
-  const params = ((req as Record<string, unknown>)['parsedQuery'] ?? req.query) as unknown as TicketFilterParams;
+  const params = ((req as unknown as Record<string, unknown>)['parsedQuery'] ?? req.query) as unknown as TicketFilterParams;
 
   const { tickets, total } = await ticketsService.listTickets(tenantId, params);
   sendPaginated(res, tickets, total, params.page ?? 1, params.limit ?? 25);
@@ -236,4 +236,61 @@ export async function getBoardData(
 
   const board = await ticketsService.getBoardData(tenantId, params);
   sendSuccess(res, board);
+}
+
+// ─── Child Tickets ──────────────────────────────────────
+
+/**
+ * GET /api/v1/tickets/:id/children
+ */
+export async function getChildTickets(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const tenantId = req.tenantId!;
+  const { id } = req.params as { id: string };
+
+  const children = await ticketsService.getChildTickets(tenantId, id);
+  sendSuccess(res, children);
+}
+
+// ─── Categories ────────────────────────────────────────
+
+/**
+ * GET /api/v1/tickets/categories
+ */
+export async function listCategoriesCtrl(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const tenantId = req.tenantId!;
+  const categories = await ticketsService.listCategories(tenantId);
+  sendSuccess(res, categories);
+}
+
+/**
+ * POST /api/v1/tickets/categories
+ */
+export async function createCategoryCtrl(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const tenantId = req.tenantId!;
+  const { name, applies_to } = req.body as { name: string; applies_to?: string };
+  const category = await ticketsService.createCategory(tenantId, { name, applies_to });
+  sendCreated(res, category);
+}
+
+/**
+ * PUT /api/v1/tickets/categories/:id
+ */
+export async function updateCategoryCtrl(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const tenantId = req.tenantId!;
+  const { id } = req.params as { id: string };
+  const data = req.body as { name?: string; applies_to?: string; is_active?: number };
+  const category = await ticketsService.updateCategory(tenantId, id, data);
+  sendSuccess(res, category);
 }

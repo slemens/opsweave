@@ -38,6 +38,22 @@ export const TICKET_SOURCES = [
 ] as const;
 export type TicketSourceConst = (typeof TICKET_SOURCES)[number];
 
+// ---------------------------------------------------------------------------
+// ITIL Priority Matrix (Impact × Urgency → Priority)
+// ---------------------------------------------------------------------------
+// Rows = Impact, Columns = Urgency
+
+export const PRIORITY_MATRIX: Record<string, Record<string, TicketPriorityConst>> = {
+  critical: { critical: 'critical', high: 'critical', medium: 'high',   low: 'high' },
+  high:     { critical: 'critical', high: 'high',     medium: 'high',   low: 'medium' },
+  medium:   { critical: 'high',     high: 'high',     medium: 'medium', low: 'medium' },
+  low:      { critical: 'high',     high: 'medium',   medium: 'medium', low: 'low' },
+};
+
+export function calculatePriority(impact: string, urgency: string): TicketPriorityConst {
+  return PRIORITY_MATRIX[impact]?.[urgency] ?? 'medium';
+}
+
 export const TICKET_SUBTYPES = [
   'standard',
   'emergency',
@@ -52,17 +68,37 @@ export type TicketSubtypeConst = (typeof TICKET_SUBTYPES)[number];
 // ---------------------------------------------------------------------------
 
 export const ASSET_TYPES = [
+  // Compute
   'server_physical',
   'server_virtual',
+  'virtualization_host',
+  'container',
+  'container_host',
+  // Network
   'network_switch',
   'network_router',
   'network_firewall',
-  'storage',
+  'network_load_balancer',
+  'network_wap',
+  // Storage
+  'storage_san',
+  'storage_nas',
+  'storage_backup',
+  // Infrastructure
+  'rack',
+  'pdu',
+  'ups',
+  // Software
   'database',
   'application',
   'service',
+  'middleware',
   'cluster',
-  'load_balancer',
+  // End User
+  'workstation',
+  'laptop',
+  'printer',
+  // Other
   'other',
 ] as const;
 export type AssetTypeConst = (typeof ASSET_TYPES)[number];

@@ -1,0 +1,82 @@
+{
+  "title": "Servicekatalog",
+  "descriptions": {
+    "title": "Leistungsbeschreibungen",
+    "subtitle": "Alle verfügbaren Servicebeschreibungen",
+    "create": "Leistungsbeschreibung erstellen",
+    "edit": "Leistungsbeschreibung bearbeiten",
+    "empty": "Keine Leistungsbeschreibungen vorhanden",
+    "empty_hint": "Erstellen Sie Ihre erste Leistungsbeschreibung.",
+    "total": "{{count}} Leistungsbeschreibungen"
+  },
+  "horizontal": {
+    "title": "Horizontale Kataloge",
+    "subtitle": "Basis-Servicekataloge für alle Kunden",
+    "create": "Katalog erstellen",
+    "edit": "Katalog bearbeiten",
+    "empty": "Keine Kataloge vorhanden",
+    "empty_hint": "Erstellen Sie Ihren ersten horizontalen Katalog.",
+    "items": "Einträge",
+    "add_item": "Leistungsbeschreibung hinzufügen",
+    "remove_item": "Entfernen",
+    "no_items": "Keine Leistungsbeschreibungen im Katalog",
+    "no_items_hint": "Fügen Sie Leistungsbeschreibungen zu diesem Katalog hinzu."
+  },
+  "vertical": {
+    "title": "Vertikale Kataloge",
+    "subtitle": "Kundenspezifische Kataloge (Enterprise)",
+    "enterprise_only": "Vertikale Kataloge sind eine Enterprise-Funktion.",
+    "upgrade_hint": "Upgraden Sie auf Enterprise, um kundenspezifische Katalog-Overrides zu nutzen."
+  },
+  "fields": {
+    "code": "Code",
+    "title": "Titel",
+    "description": "Beschreibung",
+    "scope_included": "Im Leistungsumfang enthalten",
+    "scope_excluded": "Nicht im Leistungsumfang",
+    "compliance_tags": "Compliance-Tags",
+    "version": "Version",
+    "status": "Status",
+    "name": "Name",
+    "base_catalog": "Basis-Katalog",
+    "customer": "Kunde",
+    "industry": "Branche",
+    "items_count": "Einträge",
+    "created_at": "Erstellt"
+  },
+  "statuses": {
+    "draft": "Entwurf",
+    "published": "Veröffentlicht",
+    "archived": "Archiviert",
+    "active": "Aktiv",
+    "inactive": "Inaktiv"
+  },
+  "filters": {
+    "all_statuses": "Alle Status",
+    "search_placeholder": "Code, Titel suchen…"
+  },
+  "dialogs": {
+    "create_description": {
+      "title": "Leistungsbeschreibung erstellen",
+      "description": "Erstellen Sie eine neue Leistungsbeschreibung für Ihren Servicekatalog."
+    },
+    "edit_description": {
+      "title": "Leistungsbeschreibung bearbeiten",
+      "description": "Passen Sie die Leistungsbeschreibung an."
+    },
+    "create_catalog": {
+      "title": "Katalog erstellen",
+      "description": "Erstellen Sie einen neuen horizontalen Servicekatalog."
+    },
+    "edit_catalog": {
+      "title": "Katalog bearbeiten",
+      "description": "Katalogdetails bearbeiten."
+    },
+    "add_item": {
+      "title": "Leistungsbeschreibung hinzufügen",
+      "description": "Wählen Sie eine Leistungsbeschreibung für diesen Katalog aus."
+    },
+    "delete_confirm": "Sind Sie sicher? Diese Aktion kann nicht rückgängig gemacht werden.",
+    "select_description": "Leistungsbeschreibung auswählen"
+  }
+}

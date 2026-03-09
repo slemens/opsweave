@@ -26,6 +26,10 @@ import {
   getTicketHistory,
   getTicketStats,
   getBoardData,
+  getChildTickets,
+  listCategoriesCtrl,
+  createCategoryCtrl,
+  updateCategoryCtrl,
 } from './tickets.controller.js';
 
 const ticketRouter = Router();
@@ -78,6 +82,24 @@ ticketRouter.get(
   validateQuery(ticketFilterSchema),
   getBoardData,
 );
+
+/**
+ * GET /api/v1/tickets/categories
+ * List ticket categories.
+ */
+ticketRouter.get('/categories', listCategoriesCtrl);
+
+/**
+ * POST /api/v1/tickets/categories
+ * Create a ticket category.
+ */
+ticketRouter.post('/categories', createCategoryCtrl);
+
+/**
+ * PUT /api/v1/tickets/categories/:id
+ * Update a ticket category.
+ */
+ticketRouter.put('/categories/:id', validateParams(idParamSchema), updateCategoryCtrl);
 
 /**
  * GET /api/v1/tickets/:id
@@ -162,6 +184,16 @@ ticketRouter.get(
   '/:id/history',
   validateParams(idParamSchema),
   getTicketHistory,
+);
+
+/**
+ * GET /api/v1/tickets/:id/children
+ * Get child tickets.
+ */
+ticketRouter.get(
+  '/:id/children',
+  validateParams(idParamSchema),
+  getChildTickets,
 );
 
 export { ticketRouter };

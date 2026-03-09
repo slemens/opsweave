@@ -5,6 +5,28 @@ import { assets } from './assets.js';
 import { customers } from './customers.js';
 
 // =============================================================================
+// ticket_categories
+// =============================================================================
+
+export const ticketCategories = sqliteTable(
+  'ticket_categories',
+  {
+    id: text('id').primaryKey(),
+    tenant_id: text('tenant_id')
+      .notNull()
+      .references(() => tenants.id),
+    name: text('name').notNull(),
+    applies_to: text('applies_to').notNull().default('all'), // 'incident'|'change'|'problem'|'all'
+    is_active: integer('is_active').notNull().default(1),
+    created_at: text('created_at').notNull(),
+  },
+  (t) => [
+    index('idx_tc_cat_tenant').on(t.tenant_id),
+    index('idx_tc_cat_tenant_active').on(t.tenant_id, t.is_active),
+  ],
+);
+
+// =============================================================================
 // tickets
 // =============================================================================
 
@@ -31,12 +53,14 @@ export const tickets = sqliteTable(
       .notNull()
       .references(() => users.id),
     customer_id: text('customer_id').references(() => customers.id),
+    category_id: text('category_id').references(() => ticketCategories.id),
     workflow_instance_id: text('workflow_instance_id'),
     current_step_id: text('current_step_id'),
     sla_tier: text('sla_tier'),
     sla_response_due: text('sla_response_due'),
     sla_resolve_due: text('sla_resolve_due'),
     sla_breached: integer('sla_breached').notNull().default(0),
+    parent_ticket_id: text('parent_ticket_id'),
     source: text('source').notNull().default('manual'),
     created_at: text('created_at').notNull(),
     updated_at: text('updated_at').notNull(),
@@ -55,6 +79,8 @@ export const tickets = sqliteTable(
     index('idx_ticket_tenant_priority').on(t.tenant_id, t.priority),
     index('idx_ticket_number').on(t.tenant_id, t.ticket_number),
     index('idx_ticket_sla_breached').on(t.tenant_id, t.sla_breached),
+    index('idx_ticket_parent').on(t.tenant_id, t.parent_ticket_id),
+    index('idx_ticket_tenant_category').on(t.tenant_id, t.category_id),
   ],
 );
 

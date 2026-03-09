@@ -22,7 +22,7 @@ export { customers, customerPortalUsers } from './customers.js';
 export { assets, assetRelations } from './assets.js';
 
 // Tickets
-export { tickets, ticketComments, ticketHistory } from './tickets.js';
+export { tickets, ticketCategories, ticketComments, ticketHistory } from './tickets.js';
 
 // Workflow Engine
 export {

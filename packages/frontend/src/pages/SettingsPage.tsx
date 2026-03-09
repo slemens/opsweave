@@ -538,9 +538,10 @@ function LicenseTab() {
 function TenantTab() {
   const { t } = useTranslation(['settings', 'common']);
   const user = useAuthStore((s) => s.user);
+  const tenants = useAuthStore((s) => s.tenants);
   const tenantId = useAuthStore((s) => s.tenantId);
 
-  const activeTenant = user?.tenants.find((tenant) => tenant.id === tenantId);
+  const activeTenant = tenants.find((tenant) => tenant.id === tenantId);
   const [tenantName, setTenantName] = useState(activeTenant?.name ?? '');
 
   return (
@@ -579,7 +580,7 @@ function TenantTab() {
             {t('settings:tenant.members')}
           </Label>
           <p className="text-sm text-muted-foreground">
-            {user?.tenants.length ?? 0}
+            {tenants.length}
           </p>
         </div>
       </CardContent>

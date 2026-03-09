@@ -7,6 +7,11 @@ import { DashboardPage } from '@/pages/DashboardPage';
 import { TicketBoardPage } from '@/pages/TicketBoardPage';
 import { TicketDetailPage } from '@/pages/TicketDetailPage';
 import { AssetsPage } from '@/pages/AssetsPage';
+import { AssetDetailPage } from '@/pages/AssetDetailPage';
+import { WorkflowsPage } from '@/pages/WorkflowsPage';
+import { WorkflowDetailPage } from '@/pages/WorkflowDetailPage';
+import { ServiceCatalogPage } from '@/pages/ServiceCatalogPage';
+import { CompliancePage } from '@/pages/CompliancePage';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 
@@ -24,6 +29,11 @@ export function App() {
             <Route path="/tickets" element={<TicketBoardPage />} />
             <Route path="/tickets/:id" element={<TicketDetailPage />} />
             <Route path="/assets" element={<AssetsPage />} />
+            <Route path="/assets/:id" element={<AssetDetailPage />} />
+            <Route path="/workflows" element={<WorkflowsPage />} />
+            <Route path="/workflows/:id" element={<WorkflowDetailPage />} />
+            <Route path="/services" element={<ServiceCatalogPage />} />
+            <Route path="/compliance" element={<CompliancePage />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Route>
 

@@ -8,6 +8,11 @@ import { tenantRouter } from '../modules/tenants/tenants.routes.js';
 import { userRouter } from '../modules/users/users.routes.js';
 import { groupRouter } from '../modules/groups/groups.routes.js';
 import { ticketRouter } from '../modules/tickets/tickets.routes.js';
+import { customerRouter } from '../modules/customers/customers.routes.js';
+import { assetRouter } from '../modules/assets/assets.routes.js';
+import { workflowRouter } from '../modules/workflows/workflows.routes.js';
+import { serviceCatalogRouter } from '../modules/services/services.routes.js';
+import { complianceRouter } from '../modules/compliance/compliance.routes.js';
 
 // ─── Central API Router ────────────────────────────────────
 const apiRouter = Router();
@@ -31,12 +36,14 @@ protectedRouter.use(tenantMiddleware);
 protectedRouter.use('/users', userRouter);
 protectedRouter.use('/groups', groupRouter);
 protectedRouter.use('/tickets', ticketRouter);
+protectedRouter.use('/customers', customerRouter);
+
+protectedRouter.use('/assets', assetRouter);
+protectedRouter.use('/workflows', workflowRouter);
+protectedRouter.use('/services', serviceCatalogRouter);
+protectedRouter.use('/compliance', complianceRouter);
 
 // TODO: mount remaining module routes as they are implemented
-// protectedRouter.use('/assets', assetRouter);
-// protectedRouter.use('/workflows', workflowRouter);
-// protectedRouter.use('/services', serviceCatalogRouter);
-// protectedRouter.use('/compliance', complianceRouter);
 // protectedRouter.use('/monitoring', monitoringRouter);
 // protectedRouter.use('/email', emailRouter);
 // protectedRouter.use('/kb', knowledgeBaseRouter);

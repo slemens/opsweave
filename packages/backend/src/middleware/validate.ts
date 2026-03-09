@@ -44,7 +44,7 @@ export function validateQuery<T>(schema: ZodSchema<T>) {
     }
 
     // Store on a custom property since Express 5 query is read-only
-    (req as Record<string, unknown>)['parsedQuery'] = result.data;
+    (req as unknown as Record<string, unknown>)['parsedQuery'] = result.data;
     next();
   };
 }

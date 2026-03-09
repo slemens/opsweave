@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   ArrowLeft,
@@ -11,6 +11,11 @@ import {
   ShieldAlert,
   MessageSquare,
   History,
+  GitBranch,
+  Plus,
+  ExternalLink,
+  CheckCircle2,
+  XCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -29,6 +34,14 @@ import { Switch } from '@/components/ui/switch';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -40,16 +53,28 @@ import {
   useTicket,
   useTicketComments,
   useTicketHistory,
+  useChildTickets,
   useUpdateTicketStatus,
   useUpdateTicketPriority,
   useAssignTicket,
   useAddComment,
   useGroups,
   useUsers,
+  useCustomers,
+  useCategories,
+  useUpdateTicket,
 } from '@/api/tickets';
-import type { TicketCommentWithAuthor, HistoryWithUser } from '@/api/tickets';
+import type { TicketCommentWithAuthor, HistoryWithUser, ChildTicketSummary } from '@/api/tickets';
 import type { TicketStatus, TicketPriority } from '@opsweave/shared';
-import { TICKET_STATUSES, TICKET_PRIORITIES } from '@opsweave/shared';
+import { TICKET_STATUSES, TICKET_PRIORITIES, TICKET_IMPACTS, TICKET_URGENCIES, calculatePriority } from '@opsweave/shared';
+import {
+  useTicketWorkflow,
+  useWorkflowTemplates,
+  useInstantiateWorkflow,
+  useCompleteWorkflowStep,
+  useCancelWorkflowInstance,
+} from '@/api/workflows';
+import type { WorkflowInstanceFull } from '@/api/workflows';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -353,6 +378,123 @@ function SidebarField({ label, children, showSeparator = true }: SidebarFieldPro
 }
 
 // ---------------------------------------------------------------------------
+// Workflow Instance View
+// ---------------------------------------------------------------------------
+
+const stepTypeColors: Record<string, string> = {
+  form: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+  routing: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
+  approval: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+  condition: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300',
+  automatic: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
+};
+
+const wfInstanceStatusColors: Record<string, string> = {
+  active: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+  completed: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
+  cancelled: 'bg-slate-100 text-slate-600 dark:bg-slate-800/60 dark:text-slate-300',
+  failed: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
+};
+
+interface WorkflowInstanceViewProps {
+  instance: WorkflowInstanceFull;
+  onCompleteStep: () => void;
+  onCancel: () => void;
+  tWf: (key: string, opts?: Record<string, unknown>) => string;
+}
+
+function WorkflowInstanceView({ instance, onCompleteStep, onCancel, tWf }: WorkflowInstanceViewProps) {
+  const stepInstances = instance.step_instances ?? [];
+  const completedCount = stepInstances.filter((si) => si.status === 'completed' || si.status === 'skipped').length;
+  const totalCount = stepInstances.length;
+  const progressPct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+
+  const activeStep = stepInstances.find((si) => si.status === 'in_progress' || si.status === 'pending');
+  const completedSteps = stepInstances.filter((si) => si.status === 'completed' || si.status === 'skipped');
+
+  return (
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-sm">{instance.template_name}</span>
+          <Badge className={wfInstanceStatusColors[instance.status] ?? ''} variant="secondary">
+            {tWf(`instance_statuses.${instance.status}`)}
+          </Badge>
+        </div>
+        {instance.status === 'active' && (
+          <Button variant="ghost" size="sm" onClick={onCancel} className="text-muted-foreground h-7 text-xs">
+            <XCircle className="mr-1 h-3.5 w-3.5" />
+            {tWf('instances.cancel')}
+          </Button>
+        )}
+      </div>
+
+      {/* Progress bar */}
+      <div className="space-y-1">
+        <div className="flex justify-between text-xs text-muted-foreground">
+          <span>{tWf('instances.progress')}</span>
+          <span>{completedCount}/{totalCount}</span>
+        </div>
+        <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+          <div
+            className="h-full rounded-full bg-primary transition-all"
+            style={{ width: `${progressPct}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Active step */}
+      {activeStep && instance.status === 'active' && (
+        <div className="rounded-lg border bg-muted/40 p-3 space-y-2">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            {tWf('instances.current_step')}
+          </p>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-sm">{activeStep.step?.name}</span>
+              {activeStep.step?.step_type && (
+                <Badge className={stepTypeColors[activeStep.step.step_type] ?? ''} variant="secondary" style={{ fontSize: '11px' }}>
+                  {tWf(`step_types.${activeStep.step.step_type}`)}
+                </Badge>
+              )}
+            </div>
+            <Button size="sm" onClick={onCompleteStep} className="shrink-0 h-7 text-xs">
+              <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
+              {tWf('instances.complete_step')}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Step history */}
+      {completedSteps.length > 0 && (
+        <div className="space-y-1">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            {tWf('instances.step_history')}
+          </p>
+          <div className="divide-y rounded-lg border">
+            {completedSteps.map((si) => (
+              <div key={si.id} className="flex items-center justify-between px-3 py-2">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                  <span className="text-sm">{si.step?.name}</span>
+                </div>
+                {si.completed_at && (
+                  <span className="text-xs text-muted-foreground">
+                    {new Intl.DateTimeFormat(undefined, { dateStyle: 'short', timeStyle: 'short' }).format(new Date(si.completed_at))}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main Page Component
 // ---------------------------------------------------------------------------
 
@@ -360,25 +502,89 @@ export function TicketDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { t, i18n } = useTranslation('tickets');
   const { t: tCommon } = useTranslation();
+  const { t: tWf } = useTranslation('workflows');
   const navigate = useNavigate();
-  const locale = i18n.language === 'de' ? 'de-DE' : 'en-US';
+  const locale = i18n.language?.startsWith('de') ? 'de-DE' : 'en-US';
 
   const { data: ticketData, isLoading, isError, refetch } = useTicket(id ?? '');
   const { data: commentsData, isLoading: commentsLoading } = useTicketComments(id ?? '');
   const { data: historyData, isLoading: historyLoading } = useTicketHistory(id ?? '');
+  const { data: childrenData, isLoading: childrenLoading } = useChildTickets(id ?? '', !!ticketData && (ticketData.child_ticket_count ?? 0) > 0);
 
   const updateStatus = useUpdateTicketStatus();
   const updatePriority = useUpdateTicketPriority();
   const assignTicket = useAssignTicket();
+  const updateTicket = useUpdateTicket();
   const { data: groupsData } = useGroups();
   const { data: usersData } = useUsers();
-
-  const groups = groupsData?.data ?? [];
-  const users = usersData?.data ?? [];
+  const { data: customersData } = useCustomers();
+  const { data: categoriesData } = useCategories();
 
   const ticket = ticketData;
   const comments = commentsData ?? [];
   const history = historyData ?? [];
+  const children = childrenData ?? [];
+
+  const groups = groupsData?.data ?? [];
+  const users = usersData?.data ?? [];
+  const customers = (customersData?.data ?? []).filter((c) => c.is_active);
+  const categories = (categoriesData?.data ?? []).filter(
+    (c) => c.is_active && (c.applies_to === 'all' || c.applies_to === ticket?.ticket_type),
+  );
+
+  // ── Workflow ───────────────────────────────────────────────
+  const { data: workflowInstance, isLoading: workflowLoading } = useTicketWorkflow(id);
+  const { data: templatesData } = useWorkflowTemplates({ is_active: 'true', limit: 50 });
+  const instantiateMutation = useInstantiateWorkflow();
+  const completeStepMutation = useCompleteWorkflowStep();
+  const cancelInstanceMutation = useCancelWorkflowInstance();
+
+  const [startWfOpen, setStartWfOpen] = useState(false);
+  const [selectedTemplateId, setSelectedTemplateId] = useState('');
+  const [completeStepOpen, setCompleteStepOpen] = useState(false);
+  const [cancelWfOpen, setCancelWfOpen] = useState(false);
+
+  const availableTemplates = templatesData?.data ?? [];
+
+  const handleStartWorkflow = useCallback(async () => {
+    if (!id || !selectedTemplateId) return;
+    try {
+      await instantiateMutation.mutateAsync({ template_id: selectedTemplateId, ticket_id: id });
+      toast.success(tWf('instantiate_success'));
+      setStartWfOpen(false);
+      setSelectedTemplateId('');
+    } catch {
+      toast.error(tWf('instantiate_error'));
+    }
+  }, [id, selectedTemplateId, instantiateMutation, tWf]);
+
+  const handleCompleteStep = useCallback(async () => {
+    if (!workflowInstance) return;
+    const activeStep = workflowInstance.step_instances?.find((si) => si.status === 'in_progress' || si.status === 'pending');
+    if (!activeStep) return;
+    try {
+      await completeStepMutation.mutateAsync({
+        instanceId: workflowInstance.id,
+        stepInstanceId: activeStep.id,
+        form_data: {},
+      });
+      toast.success(tWf('complete_step_success'));
+      setCompleteStepOpen(false);
+    } catch {
+      toast.error(tWf('complete_step_error'));
+    }
+  }, [workflowInstance, completeStepMutation, tWf]);
+
+  const handleCancelWorkflow = useCallback(async () => {
+    if (!workflowInstance) return;
+    try {
+      await cancelInstanceMutation.mutateAsync(workflowInstance.id);
+      toast.success(tWf('cancel_success'));
+      setCancelWfOpen(false);
+    } catch {
+      toast.error(tWf('cancel_error'));
+    }
+  }, [workflowInstance, cancelInstanceMutation, tWf]);
 
   const handleAssigneeChange = useCallback(async (userId: string) => {
     if (!id) return;
@@ -408,6 +614,32 @@ export function TicketDetailPage() {
     }
   }, [id, assignTicket, ticket?.assignee_id, t]);
 
+  const handleCustomerChange = useCallback(async (custId: string) => {
+    if (!id) return;
+    try {
+      await updateTicket.mutateAsync({
+        id,
+        customer_id: custId === '__none__' ? null : custId,
+      });
+      toast.success(t('update_success'));
+    } catch {
+      toast.error(t('update_error'));
+    }
+  }, [id, updateTicket, t]);
+
+  const handleCategoryChange = useCallback(async (catId: string) => {
+    if (!id) return;
+    try {
+      await updateTicket.mutateAsync({
+        id,
+        category_id: catId === '__none__' ? null : catId,
+      });
+      toast.success(t('update_success'));
+    } catch {
+      toast.error(t('update_error'));
+    }
+  }, [id, updateTicket, t]);
+
   const handleStatusChange = useCallback(async (newStatus: string) => {
     if (!id) return;
     try {
@@ -417,6 +649,32 @@ export function TicketDetailPage() {
       toast.error(t('update_error'));
     }
   }, [id, updateStatus, t]);
+
+  const handleImpactChange = useCallback(async (value: string) => {
+    if (!id) return;
+    try {
+      await updateTicket.mutateAsync({
+        id,
+        impact: value === '__none__' ? null : value,
+      });
+      toast.success(t('update_success'));
+    } catch {
+      toast.error(t('update_error'));
+    }
+  }, [id, updateTicket, t]);
+
+  const handleUrgencyChange = useCallback(async (value: string) => {
+    if (!id) return;
+    try {
+      await updateTicket.mutateAsync({
+        id,
+        urgency: value === '__none__' ? null : value,
+      });
+      toast.success(t('update_success'));
+    } catch {
+      toast.error(t('update_error'));
+    }
+  }, [id, updateTicket, t]);
 
   const handlePriorityChange = useCallback(async (newPriority: string) => {
     if (!id) return;
@@ -491,6 +749,24 @@ export function TicketDetailPage() {
         </div>
       </div>
 
+      {/* Parent Ticket Link */}
+      {ticket.parent_ticket && (
+        <div className="flex items-center gap-2 text-sm bg-muted/50 border rounded-lg px-3 py-2">
+          <GitBranch className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+          <span className="text-muted-foreground">{t('parent_child.linked_to_parent')}</span>
+          <Link
+            to={`/tickets/${ticket.parent_ticket.id}`}
+            className="inline-flex items-center gap-1.5 font-medium text-primary hover:underline"
+          >
+            <Badge variant="outline" className="font-mono text-xs">
+              {ticket.parent_ticket.ticket_number}
+            </Badge>
+            <span className="truncate max-w-[300px]">{ticket.parent_ticket.title}</span>
+            <ExternalLink className="h-3 w-3 shrink-0" />
+          </Link>
+        </div>
+      )}
+
       <div className="grid gap-6 lg:grid-cols-3">
         {/* ============================================================= */}
         {/* Left column: Description, Comments, History                    */}
@@ -514,9 +790,81 @@ export function TicketDetailPage() {
             </CardContent>
           </Card>
 
-          {/* Tabs: Comments / History */}
+          {/* Child Tickets */}
+          {((ticket.child_ticket_count ?? 0) > 0 || children.length > 0) && (
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <GitBranch className="h-4 w-4 text-muted-foreground" />
+                    {t('parent_child.children')}
+                    <Badge variant="secondary" className="ml-1 text-[10px] h-4 px-1">
+                      {children.length}
+                    </Badge>
+                  </CardTitle>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={() => navigate(`/tickets?parent=${id}&type=${ticket.ticket_type}`)}
+                  >
+                    <Plus className="mr-1.5 h-3 w-3" />
+                    {t('parent_child.create_child')}
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {childrenLoading ? (
+                  <div className="space-y-2">
+                    {[1, 2].map((i) => (
+                      <Skeleton key={i} className="h-10 w-full" />
+                    ))}
+                  </div>
+                ) : children.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">{t('parent_child.no_children')}</p>
+                ) : (
+                  <div className="divide-y">
+                    {children.map((child: ChildTicketSummary) => (
+                      <Link
+                        key={child.id}
+                        to={`/tickets/${child.id}`}
+                        className="flex items-center gap-3 py-2.5 hover:bg-muted/50 -mx-2 px-2 rounded-md transition-colors"
+                      >
+                        <Badge
+                          variant="outline"
+                          className={cn('font-mono text-[10px] shrink-0', ticketTypeBadgeColors[child.ticket_type])}
+                        >
+                          {child.ticket_number}
+                        </Badge>
+                        <span className="text-sm truncate flex-1">{child.title}</span>
+                        <Badge className={cn('text-[10px] shrink-0', statusColors[child.status as TicketStatus])}>
+                          {t(`statuses.${child.status}`)}
+                        </Badge>
+                        <span className={cn('h-2 w-2 rounded-full shrink-0', priorityDotColors[child.priority as TicketPriority])} />
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Create Child Button (when no children yet) */}
+          {(ticket.child_ticket_count ?? 0) === 0 && children.length === 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={() => navigate(`/tickets?parent=${id}&type=${ticket.ticket_type}`)}
+            >
+              <GitBranch className="mr-2 h-3.5 w-3.5" />
+              {t('parent_child.create_child')}
+            </Button>
+          )}
+
+          {/* Tabs: Comments / History / Workflow */}
           <Tabs defaultValue="comments" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 max-w-[300px]">
+            <TabsList className="grid w-full grid-cols-3 max-w-[450px]">
               <TabsTrigger value="comments" className="gap-1.5">
                 <MessageSquare className="h-3.5 w-3.5" />
                 {t('comments.title')}
@@ -532,6 +880,15 @@ export function TicketDetailPage() {
                 {history.length > 0 && (
                   <Badge variant="secondary" className="ml-1 text-[10px] h-4 px-1">
                     {history.length}
+                  </Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="workflow" className="gap-1.5">
+                <GitBranch className="h-3.5 w-3.5" />
+                {tWf('title')}
+                {workflowInstance?.status === 'active' && (
+                  <Badge variant="secondary" className="ml-1 text-[10px] h-4 px-1 bg-blue-100 text-blue-700">
+                    {tWf('instance_statuses.active')}
                   </Badge>
                 )}
               </TabsTrigger>
@@ -615,7 +972,103 @@ export function TicketDetailPage() {
                 </CardContent>
               </Card>
             </TabsContent>
+
+            {/* Workflow Tab */}
+            <TabsContent value="workflow">
+              <Card>
+                <CardContent className="pt-4">
+                  {workflowLoading ? (
+                    <div className="space-y-3">
+                      <Skeleton className="h-4 w-48" />
+                      <Skeleton className="h-10 w-full" />
+                      <Skeleton className="h-4 w-32" />
+                    </div>
+                  ) : !workflowInstance ? (
+                    /* No active instance */
+                    <div className="flex flex-col items-center justify-center py-8 text-center">
+                      <GitBranch className="h-8 w-8 text-muted-foreground/30 mb-2" />
+                      <p className="text-sm font-medium mb-1">{tWf('instances.no_active')}</p>
+                      <p className="text-sm text-muted-foreground mb-4">{tWf('instances.no_active_hint')}</p>
+                      <Button size="sm" onClick={() => setStartWfOpen(true)} disabled={availableTemplates.length === 0}>
+                        <Plus className="mr-1.5 h-3.5 w-3.5" />
+                        {tWf('instances.start')}
+                      </Button>
+                    </div>
+                  ) : (
+                    /* Active instance */
+                    <WorkflowInstanceView
+                      instance={workflowInstance}
+                      onCompleteStep={() => setCompleteStepOpen(true)}
+                      onCancel={() => setCancelWfOpen(true)}
+                      tWf={tWf}
+                    />
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
           </Tabs>
+
+          {/* Start Workflow Dialog */}
+          <Dialog open={startWfOpen} onOpenChange={setStartWfOpen}>
+            <DialogContent className="max-w-sm">
+              <DialogHeader>
+                <DialogTitle>{tWf('instances.start')}</DialogTitle>
+                <DialogDescription>{tWf('instances.select_template')}</DialogDescription>
+              </DialogHeader>
+              <div className="py-2">
+                <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={tWf('instances.select_template')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableTemplates.map((tmpl) => (
+                      <SelectItem key={tmpl.id} value={tmpl.id}>{tmpl.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setStartWfOpen(false)}>{tCommon('actions.cancel')}</Button>
+                <Button onClick={handleStartWorkflow} disabled={!selectedTemplateId || instantiateMutation.isPending}>
+                  {tWf('instances.start')}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Complete Step Dialog */}
+          <Dialog open={completeStepOpen} onOpenChange={setCompleteStepOpen}>
+            <DialogContent className="max-w-sm">
+              <DialogHeader>
+                <DialogTitle>{tWf('instances.complete_step')}</DialogTitle>
+                <DialogDescription>{tWf('complete_step_success')}</DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setCompleteStepOpen(false)}>{tCommon('actions.cancel')}</Button>
+                <Button onClick={handleCompleteStep} disabled={completeStepMutation.isPending}>
+                  <CheckCircle2 className="mr-1.5 h-4 w-4" />
+                  {tWf('instances.complete_step')}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Cancel Workflow Dialog */}
+          <Dialog open={cancelWfOpen} onOpenChange={setCancelWfOpen}>
+            <DialogContent className="max-w-sm">
+              <DialogHeader>
+                <DialogTitle>{tWf('instances.cancel')}</DialogTitle>
+                <DialogDescription>{tWf('delete_confirm_detail')}</DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setCancelWfOpen(false)}>{tCommon('actions.cancel')}</Button>
+                <Button variant="destructive" onClick={handleCancelWorkflow} disabled={cancelInstanceMutation.isPending}>
+                  <XCircle className="mr-1.5 h-4 w-4" />
+                  {tWf('instances.cancel')}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
 
         {/* ============================================================= */}
@@ -648,27 +1101,86 @@ export function TicketDetailPage() {
                 </Select>
               </SidebarField>
 
-              {/* Priority */}
-              <SidebarField label={t('fields.priority')}>
+              {/* Impact */}
+              <SidebarField label={t('fields.impact')}>
                 <Select
-                  value={ticket.priority}
-                  onValueChange={handlePriorityChange}
-                  disabled={updatePriority.isPending}
+                  value={ticket.impact ?? '__none__'}
+                  onValueChange={handleImpactChange}
                 >
-                  <SelectTrigger className="h-7 w-[130px] text-xs">
-                    <SelectValue />
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="-" />
                   </SelectTrigger>
                   <SelectContent>
-                    {TICKET_PRIORITIES.map((p) => (
-                      <SelectItem key={p} value={p}>
-                        <span className="flex items-center gap-2">
-                          <span className={cn('h-2 w-2 rounded-full', priorityDotColors[p])} />
-                          {t(`priorities.${p}`)}
-                        </span>
+                    <SelectItem value="__none__">
+                      <span className="text-muted-foreground">-</span>
+                    </SelectItem>
+                    {TICKET_IMPACTS.map((v) => (
+                      <SelectItem key={v} value={v}>
+                        {t(`impacts.${v}`)}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+              </SidebarField>
+
+              {/* Urgency */}
+              <SidebarField label={t('fields.urgency')}>
+                <Select
+                  value={ticket.urgency ?? '__none__'}
+                  onValueChange={handleUrgencyChange}
+                >
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="-" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">
+                      <span className="text-muted-foreground">-</span>
+                    </SelectItem>
+                    {TICKET_URGENCIES.map((v) => (
+                      <SelectItem key={v} value={v}>
+                        {t(`urgencies.${v}`)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </SidebarField>
+
+              {/* Priority */}
+              <SidebarField label={t('fields.priority')}>
+                {ticket.impact && ticket.urgency ? (
+                  <div className="space-y-1">
+                    <Badge
+                      variant="outline"
+                      className={cn('text-xs', priorityColors[ticket.priority])}
+                    >
+                      <span className={cn('mr-1.5 h-2 w-2 rounded-full', priorityDotColors[ticket.priority])} />
+                      {t(`priorities.${ticket.priority}`)}
+                    </Badge>
+                    <p className="text-[10px] text-muted-foreground leading-tight">
+                      {t('priority_auto_calculated')}
+                    </p>
+                  </div>
+                ) : (
+                  <Select
+                    value={ticket.priority}
+                    onValueChange={handlePriorityChange}
+                    disabled={updatePriority.isPending}
+                  >
+                    <SelectTrigger className="h-7 w-[130px] text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TICKET_PRIORITIES.map((p) => (
+                        <SelectItem key={p} value={p}>
+                          <span className="flex items-center gap-2">
+                            <span className={cn('h-2 w-2 rounded-full', priorityDotColors[p])} />
+                            {t(`priorities.${p}`)}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </SidebarField>
 
               {/* Type */}
@@ -735,7 +1247,7 @@ export function TicketDetailPage() {
               </SidebarField>
 
               {/* Asset */}
-              <SidebarField label={t('fields.asset')} showSeparator={false}>
+              <SidebarField label={t('fields.asset')}>
                 <span className="text-sm">
                   {ticket.asset ? (
                     <span className="font-mono text-xs">{ticket.asset.display_name}</span>
@@ -744,6 +1256,73 @@ export function TicketDetailPage() {
                   )}
                 </span>
               </SidebarField>
+
+              {/* Customer */}
+              <SidebarField label={t('fields.customer')}>
+                <Select
+                  value={ticket.customer_id ?? '__none__'}
+                  onValueChange={handleCustomerChange}
+                >
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder={t('no_customer')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">
+                      <span className="text-muted-foreground italic">{t('no_customer')}</span>
+                    </SelectItem>
+                    {customers.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </SidebarField>
+
+              {/* Category */}
+              <SidebarField label={t('fields.category')}>
+                <Select
+                  value={ticket.category_id ?? '__none__'}
+                  onValueChange={handleCategoryChange}
+                >
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder={t('no_category')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">
+                      <span className="text-muted-foreground italic">{t('no_category')}</span>
+                    </SelectItem>
+                    {categories.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </SidebarField>
+
+              {/* Parent Ticket */}
+              <SidebarField label={t('fields.parent_ticket')} showSeparator={!!ticket.parent_ticket_id}>
+                {ticket.parent_ticket ? (
+                  <Link
+                    to={`/tickets/${ticket.parent_ticket.id}`}
+                    className="text-xs font-mono text-primary hover:underline"
+                  >
+                    {ticket.parent_ticket.ticket_number}
+                  </Link>
+                ) : (
+                  <span className="text-sm text-muted-foreground">-</span>
+                )}
+              </SidebarField>
+
+              {/* Child Tickets Count */}
+              {(ticket.child_ticket_count ?? 0) > 0 && (
+                <SidebarField label={t('fields.child_tickets')} showSeparator={false}>
+                  <Badge variant="secondary" className="text-xs">
+                    {t('parent_child.child_count', { count: ticket.child_ticket_count })}
+                  </Badge>
+                </SidebarField>
+              )}
             </CardContent>
           </Card>
 

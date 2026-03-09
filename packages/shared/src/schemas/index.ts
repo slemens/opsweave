@@ -24,6 +24,12 @@ import {
   SUPPORTED_LANGUAGES,
   PAGINATION_DEFAULTS,
   COMMENT_SOURCES,
+  WORKFLOW_TRIGGER_TYPES,
+  WORKFLOW_STEP_TYPES,
+  SERVICE_DESCRIPTION_STATUSES,
+  CATALOG_STATUSES,
+  OVERRIDE_TYPES,
+  COVERAGE_LEVELS,
 } from '../constants/index.js';
 
 // ---------------------------------------------------------------------------
@@ -199,6 +205,8 @@ export const createTicketSchema = z.object({
   assignee_id: uuidSchema.nullable().default(null),
   assignee_group_id: uuidSchema.nullable().default(null),
   customer_id: uuidSchema.nullable().default(null),
+  category_id: uuidSchema.nullable().default(null),
+  parent_ticket_id: uuidSchema.nullable().default(null),
   source: z.enum(TICKET_SOURCES).default('manual'),
 });
 
@@ -216,6 +224,8 @@ export const updateTicketSchema = z.object({
   assignee_id: uuidSchema.nullable().optional(),
   assignee_group_id: uuidSchema.nullable().optional(),
   customer_id: uuidSchema.nullable().optional(),
+  category_id: uuidSchema.nullable().optional(),
+  parent_ticket_id: uuidSchema.nullable().optional(),
   sla_tier: z.enum(SLA_TIERS).nullable().optional(),
 });
 
@@ -328,6 +338,7 @@ export const ticketFilterSchema = paginationSchema.extend({
   assignee_group_id: uuidSchema.optional(),
   asset_id: uuidSchema.optional(),
   customer_id: uuidSchema.optional(),
+  category_id: uuidSchema.optional(),
 });
 
 export type TicketFilterParams = z.infer<typeof ticketFilterSchema>;
@@ -346,3 +357,158 @@ export const assetFilterSchema = paginationSchema.extend({
 });
 
 export type AssetFilterParams = z.infer<typeof assetFilterSchema>;
+
+// ---------------------------------------------------------------------------
+// Workflow Schemas
+// ---------------------------------------------------------------------------
+
+export const createWorkflowTemplateSchema = z.object({
+  name: z.string().min(1, 'Name is required').max(200),
+  description: z.string().max(2000).nullable().default(null),
+  trigger_type: z.enum(WORKFLOW_TRIGGER_TYPES),
+  trigger_subtype: z.enum(TICKET_TYPES).nullable().default(null),
+  is_active: z.boolean().default(true),
+});
+export type CreateWorkflowTemplateInput = z.infer<typeof createWorkflowTemplateSchema>;
+
+export const updateWorkflowTemplateSchema = createWorkflowTemplateSchema.partial();
+export type UpdateWorkflowTemplateInput = z.infer<typeof updateWorkflowTemplateSchema>;
+
+export const createWorkflowStepSchema = z.object({
+  name: z.string().min(1).max(200),
+  step_type: z.enum(WORKFLOW_STEP_TYPES),
+  config: z.record(z.unknown()).default({}),
+  timeout_hours: z.number().int().positive().nullable().default(null),
+});
+export type CreateWorkflowStepInput = z.infer<typeof createWorkflowStepSchema>;
+
+export const reorderWorkflowStepsSchema = z.object({
+  step_ids: z.array(z.string().min(1)).min(1),
+});
+export type ReorderWorkflowStepsInput = z.infer<typeof reorderWorkflowStepsSchema>;
+
+export const instantiateWorkflowSchema = z.object({
+  template_id: z.string().min(1),
+  ticket_id: z.string().min(1),
+});
+export type InstantiateWorkflowInput = z.infer<typeof instantiateWorkflowSchema>;
+
+export const completeWorkflowStepSchema = z.object({
+  form_data: z.record(z.unknown()).default({}),
+  next_step_id: z.string().nullable().default(null),
+});
+export type CompleteWorkflowStepInput = z.infer<typeof completeWorkflowStepSchema>;
+
+export const workflowFilterSchema = paginationSchema.extend({
+  is_active: z.enum(['true', 'false']).optional(),
+  trigger_type: z.enum(WORKFLOW_TRIGGER_TYPES).optional(),
+});
+export type WorkflowFilterParams = z.infer<typeof workflowFilterSchema>;
+
+// ---------------------------------------------------------------------------
+// Service Catalog Schemas
+// ---------------------------------------------------------------------------
+
+export const createServiceDescriptionSchema = z.object({
+  code: z.string().min(1).max(100).regex(/^[A-Z0-9_-]+$/, 'Code must be uppercase alphanumeric with hyphens/underscores'),
+  title: z.string().min(1).max(500),
+  description: z.string().max(50000).default(''),
+  scope_included: z.string().max(10000).nullable().default(null),
+  scope_excluded: z.string().max(10000).nullable().default(null),
+  compliance_tags: z.array(z.string()).default([]),
+  status: z.enum(SERVICE_DESCRIPTION_STATUSES).default('draft'),
+});
+export type CreateServiceDescriptionInput = z.infer<typeof createServiceDescriptionSchema>;
+
+export const updateServiceDescriptionSchema = createServiceDescriptionSchema.partial();
+export type UpdateServiceDescriptionInput = z.infer<typeof updateServiceDescriptionSchema>;
+
+export const createHorizontalCatalogSchema = z.object({
+  name: z.string().min(1).max(255),
+  description: z.string().max(10000).nullable().default(null),
+  status: z.enum(CATALOG_STATUSES).default('active'),
+});
+export type CreateHorizontalCatalogInput = z.infer<typeof createHorizontalCatalogSchema>;
+
+export const updateHorizontalCatalogSchema = createHorizontalCatalogSchema.partial();
+export type UpdateHorizontalCatalogInput = z.infer<typeof updateHorizontalCatalogSchema>;
+
+export const addCatalogItemSchema = z.object({
+  service_desc_id: uuidSchema,
+});
+export type AddCatalogItemInput = z.infer<typeof addCatalogItemSchema>;
+
+export const createVerticalCatalogSchema = z.object({
+  name: z.string().min(1).max(255),
+  base_catalog_id: uuidSchema,
+  customer_id: uuidSchema.nullable().default(null),
+  industry: z.string().max(100).nullable().default(null),
+  description: z.string().max(10000).nullable().default(null),
+  status: z.enum(CATALOG_STATUSES).default('active'),
+});
+export type CreateVerticalCatalogInput = z.infer<typeof createVerticalCatalogSchema>;
+
+export const updateVerticalCatalogSchema = createVerticalCatalogSchema.partial();
+export type UpdateVerticalCatalogInput = z.infer<typeof updateVerticalCatalogSchema>;
+
+export const addVerticalOverrideSchema = z.object({
+  original_desc_id: uuidSchema,
+  override_desc_id: uuidSchema,
+  override_type: z.enum(OVERRIDE_TYPES),
+  reason: z.string().max(1000).nullable().default(null),
+});
+export type AddVerticalOverrideInput = z.infer<typeof addVerticalOverrideSchema>;
+
+export const serviceDescriptionFilterSchema = paginationSchema.extend({
+  status: z.enum(SERVICE_DESCRIPTION_STATUSES).optional(),
+  q: z.string().optional(),
+});
+export type ServiceDescriptionFilterParams = z.infer<typeof serviceDescriptionFilterSchema>;
+
+export const catalogFilterSchema = paginationSchema.extend({
+  status: z.enum(CATALOG_STATUSES).optional(),
+});
+export type CatalogFilterParams = z.infer<typeof catalogFilterSchema>;
+
+// ---------------------------------------------------------------------------
+// Compliance Schemas
+// ---------------------------------------------------------------------------
+
+export const createRegulatoryFrameworkSchema = z.object({
+  name: z.string().min(1).max(255),
+  version: z.string().max(50).nullable().default(null),
+  description: z.string().max(10000).nullable().default(null),
+  effective_date: z.string().nullable().default(null),
+});
+export type CreateRegulatoryFrameworkInput = z.infer<typeof createRegulatoryFrameworkSchema>;
+
+export const updateRegulatoryFrameworkSchema = createRegulatoryFrameworkSchema.partial();
+export type UpdateRegulatoryFrameworkInput = z.infer<typeof updateRegulatoryFrameworkSchema>;
+
+export const createRequirementSchema = z.object({
+  code: z.string().min(1).max(100),
+  title: z.string().min(1).max(500),
+  description: z.string().max(10000).nullable().default(null),
+  category: z.string().max(100).nullable().default(null),
+});
+export type CreateRequirementInput = z.infer<typeof createRequirementSchema>;
+
+export const updateRequirementSchema = createRequirementSchema.partial();
+export type UpdateRequirementInput = z.infer<typeof updateRequirementSchema>;
+
+export const upsertMappingSchema = z.object({
+  coverage_level: z.enum(COVERAGE_LEVELS),
+  evidence_notes: z.string().max(10000).nullable().default(null),
+});
+export type UpsertMappingInput = z.infer<typeof upsertMappingSchema>;
+
+export const flagAssetSchema = z.object({
+  asset_id: uuidSchema,
+  reason: z.string().max(1000).nullable().default(null),
+});
+export type FlagAssetInput = z.infer<typeof flagAssetSchema>;
+
+export const complianceFilterSchema = paginationSchema.extend({
+  q: z.string().optional(),
+});
+export type ComplianceFilterParams = z.infer<typeof complianceFilterSchema>;

@@ -35,6 +35,8 @@ export interface TicketListParams {
   assignee_group_id?: string;
   assignee_id?: string;
   asset_id?: string;
+  customer_id?: string;
+  category_id?: string;
 }
 
 export interface TicketListResponse {
@@ -48,6 +50,9 @@ export interface TicketWithRelations extends Ticket {
   reporter?: { id: string; display_name: string; email: string } | null;
   asset?: { id: string; name: string; display_name: string } | null;
   customer?: { id: string; name: string } | null;
+  category?: { id: string; name: string } | null;
+  parent_ticket?: { id: string; ticket_number: string; title: string } | null;
+  child_ticket_count?: number;
 }
 
 // Single ticket responses are auto-unwrapped by the API client
@@ -84,15 +89,34 @@ export interface BoardDataResponse {
   columns: BoardColumn[];
 }
 
+export interface ChildTicketSummary {
+  id: string;
+  ticket_number: string;
+  ticket_type: TicketType;
+  title: string;
+  status: TicketStatus;
+  priority: TicketPriority;
+  assignee_id: string | null;
+  assignee_group_id: string | null;
+  created_at: string;
+  updated_at: string;
+  assignee?: { id: string; display_name: string } | null;
+  assignee_group?: { id: string; name: string } | null;
+}
+
 export interface CreateTicketPayload {
   ticket_type: TicketType;
   title: string;
   description: string;
   priority: TicketPriority;
+  impact?: string | null;
+  urgency?: string | null;
   assignee_group_id?: string | null;
   assignee_id?: string | null;
   asset_id?: string | null;
   customer_id?: string | null;
+  category_id?: string | null;
+  parent_ticket_id?: string | null;
   source?: string;
 }
 
@@ -101,9 +125,13 @@ export interface UpdateTicketPayload {
   description?: string;
   status?: TicketStatus;
   priority?: TicketPriority;
+  impact?: string | null;
+  urgency?: string | null;
   assignee_id?: string | null;
   assignee_group_id?: string | null;
   asset_id?: string | null;
+  customer_id?: string | null;
+  category_id?: string | null;
   sla_tier?: string | null;
 }
 
@@ -132,6 +160,30 @@ export interface UsersResponse {
   meta: PaginationMeta;
 }
 
+export interface CustomerSummary {
+  id: string;
+  name: string;
+  industry: string | null;
+  contact_email: string | null;
+  is_active: number;
+}
+
+export interface CustomersResponse {
+  data: CustomerSummary[];
+  meta: PaginationMeta;
+}
+
+export interface CategorySummary {
+  id: string;
+  name: string;
+  applies_to: string;
+  is_active: number;
+}
+
+export interface CategoriesResponse {
+  data: CategorySummary[];
+}
+
 // ---------------------------------------------------------------------------
 // Query Keys
 // ---------------------------------------------------------------------------
@@ -144,6 +196,7 @@ export const ticketKeys = {
   detail: (id: string) => [...ticketKeys.details(), id] as const,
   comments: (ticketId: string) => [...ticketKeys.all, 'comments', ticketId] as const,
   history: (ticketId: string) => [...ticketKeys.all, 'history', ticketId] as const,
+  children: (ticketId: string) => [...ticketKeys.all, 'children', ticketId] as const,
   stats: () => [...ticketKeys.all, 'stats'] as const,
   board: () => [...ticketKeys.all, 'board'] as const,
 };
@@ -156,6 +209,16 @@ export const groupKeys = {
 export const userKeys = {
   all: ['users'] as const,
   list: () => [...userKeys.all, 'list'] as const,
+};
+
+export const customerKeys = {
+  all: ['customers'] as const,
+  list: () => [...customerKeys.all, 'list'] as const,
+};
+
+export const categoryKeys = {
+  all: ['categories'] as const,
+  list: () => [...categoryKeys.all, 'list'] as const,
 };
 
 // ---------------------------------------------------------------------------
@@ -209,6 +272,16 @@ export function useTicketHistory(ticketId: string) {
   });
 }
 
+export function useChildTickets(ticketId: string, enabled = true) {
+  return useQuery({
+    queryKey: ticketKeys.children(ticketId),
+    queryFn: async () => {
+      return apiClient.get<ChildTicketSummary[]>(`/tickets/${ticketId}/children`);
+    },
+    enabled: !!ticketId && enabled,
+  });
+}
+
 export function useTicketStats() {
   return useQuery({
     queryKey: ticketKeys.stats(),
@@ -241,6 +314,24 @@ export function useUsers() {
     queryKey: userKeys.list(),
     queryFn: async () => {
       return apiClient.get<UsersResponse>('/users', { params: { limit: 100 } });
+    },
+  });
+}
+
+export function useCustomers() {
+  return useQuery({
+    queryKey: customerKeys.list(),
+    queryFn: async () => {
+      return apiClient.get<CustomersResponse>('/customers', { params: { limit: 100 } });
+    },
+  });
+}
+
+export function useCategories() {
+  return useQuery({
+    queryKey: categoryKeys.list(),
+    queryFn: async () => {
+      return apiClient.get<CategoriesResponse>('/tickets/categories');
     },
   });
 }

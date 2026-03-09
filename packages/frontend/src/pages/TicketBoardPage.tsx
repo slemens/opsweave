@@ -17,6 +17,7 @@ import {
   ArrowDown,
   Ticket as TicketIcon,
   FilterX,
+  GitBranch,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -57,10 +58,13 @@ import {
   useTickets,
   useCreateTicket,
   useGroups,
+  useUsers,
+  useCustomers,
+  useCategories,
 } from '@/api/tickets';
 import type { TicketWithRelations, CreateTicketPayload, TicketListParams } from '@/api/tickets';
 import type { TicketType, TicketPriority, TicketStatus } from '@opsweave/shared';
-import { TICKET_TYPES, TICKET_PRIORITIES, TICKET_STATUSES } from '@opsweave/shared';
+import { TICKET_TYPES, TICKET_PRIORITIES, TICKET_STATUSES, TICKET_IMPACTS, TICKET_URGENCIES, calculatePriority } from '@opsweave/shared';
 import { useAuthStore } from '@/stores/auth-store';
 
 // ---------------------------------------------------------------------------
@@ -397,9 +401,22 @@ interface TicketListViewProps {
   statusFilter: string;
   typeFilter: string;
   priorityFilter: string;
+  assigneeFilter: string;
+  groupFilter: string;
+  customerFilter: string;
+  categoryFilter: string;
   onStatusFilterChange: (v: string) => void;
   onTypeFilterChange: (v: string) => void;
   onPriorityFilterChange: (v: string) => void;
+  onAssigneeFilterChange: (v: string) => void;
+  onGroupFilterChange: (v: string) => void;
+  onCustomerFilterChange: (v: string) => void;
+  onCategoryFilterChange: (v: string) => void;
+  // Data for filter dropdowns
+  assigneeOptions: Array<{ value: string; label: string }>;
+  groupOptions: Array<{ value: string; label: string }>;
+  customerOptions: Array<{ value: string; label: string }>;
+  categoryOptions: Array<{ value: string; label: string }>;
 }
 
 function TicketListView({
@@ -418,9 +435,21 @@ function TicketListView({
   statusFilter,
   typeFilter,
   priorityFilter,
+  assigneeFilter,
+  groupFilter,
+  customerFilter,
+  categoryFilter,
   onStatusFilterChange,
   onTypeFilterChange,
   onPriorityFilterChange,
+  onAssigneeFilterChange,
+  onGroupFilterChange,
+  onCustomerFilterChange,
+  onCategoryFilterChange,
+  assigneeOptions,
+  groupOptions,
+  customerOptions,
+  categoryOptions,
 }: TicketListViewProps) {
   const { t } = useTranslation('tickets');
   const { t: tCommon } = useTranslation();
@@ -497,6 +526,45 @@ function TicketListView({
     );
   }
 
+  function FilterOnlyHead({
+    label,
+    filterValue,
+    onFilterChange,
+    options,
+    allLabel,
+  }: {
+    label: string;
+    filterValue: string;
+    onFilterChange: (v: string) => void;
+    options: Array<{ value: string; label: string }>;
+    allLabel: string;
+  }) {
+    return (
+      <TableHead className="p-0">
+        <div className="flex flex-col">
+          <span className="flex items-center px-3 pt-2 pb-1 text-xs font-medium text-muted-foreground">
+            {label}
+          </span>
+          <div className="px-2 pb-1.5">
+            <Select value={filterValue} onValueChange={onFilterChange}>
+              <SelectTrigger className="h-6 text-[11px] border-dashed min-w-[90px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{allLabel}</SelectItem>
+                {options.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </TableHead>
+    );
+  }
+
   if (isLoading) return <ListSkeleton />;
 
   if (isError) {
@@ -529,8 +597,8 @@ function TicketListView({
 
   return (
     <div className="space-y-3">
-      <div className="border rounded-lg overflow-hidden">
-        <Table>
+      <div className="border rounded-lg overflow-x-auto">
+        <Table className="min-w-[1250px]">
           <TableHeader>
             <TableRow className="bg-muted/30 hover:bg-muted/30">
               <SortableHead field="ticket_number">{t('fields.ticket_number')}</SortableHead>
@@ -567,9 +635,35 @@ function TicketListView({
                   dot: p === 'critical' ? 'bg-red-500' : p === 'high' ? 'bg-orange-500' : p === 'medium' ? 'bg-blue-500' : 'bg-slate-400',
                 }))}
               />
-              <TableHead>{t('fields.assignee')}</TableHead>
-              <TableHead>{t('fields.group')}</TableHead>
-              <SortableHead field="created_at">{t('fields.created_at')}</SortableHead>
+              <FilterOnlyHead
+                label={t('fields.assignee')}
+                filterValue={assigneeFilter}
+                onFilterChange={onAssigneeFilterChange}
+                allLabel={t('filter_all_assignees')}
+                options={assigneeOptions}
+              />
+              <FilterOnlyHead
+                label={t('fields.group')}
+                filterValue={groupFilter}
+                onFilterChange={onGroupFilterChange}
+                allLabel={t('filter_all_groups')}
+                options={groupOptions}
+              />
+              <FilterOnlyHead
+                label={t('fields.customer')}
+                filterValue={customerFilter}
+                onFilterChange={onCustomerFilterChange}
+                allLabel={t('filter_all_customers')}
+                options={customerOptions}
+              />
+              <FilterOnlyHead
+                label={t('fields.category')}
+                filterValue={categoryFilter}
+                onFilterChange={onCategoryFilterChange}
+                allLabel={t('filter_all_categories')}
+                options={categoryOptions}
+              />
+              <SortableHead field="created_at" className="min-w-[140px]">{t('fields.created_at')}</SortableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -600,7 +694,12 @@ function TicketListView({
                     </div>
                   </TableCell>
                   <TableCell className="max-w-[300px]">
-                    <span className="line-clamp-1 text-sm font-medium">{ticket.title}</span>
+                    <div className="flex items-center gap-1.5">
+                      {ticket.parent_ticket_id && (
+                        <GitBranch className="h-3 w-3 text-muted-foreground shrink-0" />
+                      )}
+                      <span className="line-clamp-1 text-sm font-medium">{ticket.title}</span>
+                    </div>
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline" className={cn('text-[11px] px-1.5 py-0', ticketTypeBadgeColors[ticket.ticket_type])}>
@@ -639,7 +738,13 @@ function TicketListView({
                     {ticket.assignee_group?.name ?? <span className="text-muted-foreground/50">—</span>}
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                    {formatDate(ticket.created_at, locale, { hour: undefined, minute: undefined })}
+                    {ticket.customer?.name ?? <span className="text-muted-foreground/50">—</span>}
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                    {ticket.category?.name ?? <span className="text-muted-foreground/50">—</span>}
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                    {formatDate(ticket.created_at, locale)}
                   </TableCell>
                 </TableRow>
               );
@@ -688,31 +793,51 @@ function TicketListView({
 interface CreateTicketDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  parentTicketId?: string | null;
+  parentTicketType?: TicketType | null;
 }
 
-function CreateTicketDialog({ open, onOpenChange }: CreateTicketDialogProps) {
+function CreateTicketDialog({ open, onOpenChange, parentTicketId, parentTicketType }: CreateTicketDialogProps) {
   const { t } = useTranslation('tickets');
   const { t: tCommon } = useTranslation();
   const createTicket = useCreateTicket();
   const { data: groupsData } = useGroups();
+  const { data: customersData } = useCustomers();
+  const { data: categoriesData } = useCategories();
 
-  const [ticketType, setTicketType] = useState<TicketType>('incident');
+  const [ticketType, setTicketType] = useState<TicketType>(parentTicketType ?? 'incident');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<TicketPriority>('medium');
+  const [impact, setImpact] = useState<string>('');
+  const [urgency, setUrgency] = useState<string>('');
   const [groupId, setGroupId] = useState<string>('');
+  const [customerId, setCustomerId] = useState<string>('');
+  const [categoryId, setCategoryId] = useState<string>('');
   const [titleError, setTitleError] = useState('');
 
   const groups = groupsData?.data ?? [];
+  const customers = (customersData?.data ?? []).filter((c) => c.is_active);
+  const categories = (categoriesData?.data ?? []).filter(
+    (c) => c.is_active && (c.applies_to === 'all' || c.applies_to === ticketType),
+  );
+
+  // Auto-calculate priority from ITIL matrix
+  const autoPriority = (impact && urgency) ? calculatePriority(impact, urgency) : null;
+  const effectivePriority = autoPriority ?? priority;
 
   const resetForm = useCallback(() => {
-    setTicketType('incident');
+    setTicketType(parentTicketType ?? 'incident');
     setTitle('');
     setDescription('');
     setPriority('medium');
+    setImpact('');
+    setUrgency('');
     setGroupId('');
+    setCustomerId('');
+    setCategoryId('');
     setTitleError('');
-  }, []);
+  }, [parentTicketType]);
 
   const handleSubmit = useCallback(async () => {
     if (title.trim().length < 3) {
@@ -725,13 +850,16 @@ function CreateTicketDialog({ open, onOpenChange }: CreateTicketDialogProps) {
       ticket_type: ticketType,
       title: title.trim(),
       description: description.trim() || title.trim(),
-      priority,
+      priority: effectivePriority,
       source: 'manual',
     };
 
-    if (groupId) {
-      payload.assignee_group_id = groupId;
-    }
+    if (impact) payload.impact = impact;
+    if (urgency) payload.urgency = urgency;
+    if (parentTicketId) payload.parent_ticket_id = parentTicketId;
+    if (groupId) payload.assignee_group_id = groupId;
+    if (customerId) payload.customer_id = customerId;
+    if (categoryId) payload.category_id = categoryId;
 
     try {
       await createTicket.mutateAsync(payload);
@@ -741,7 +869,7 @@ function CreateTicketDialog({ open, onOpenChange }: CreateTicketDialogProps) {
     } catch {
       toast.error(t('create_error'));
     }
-  }, [ticketType, title, description, priority, groupId, createTicket, t, resetForm, onOpenChange]);
+  }, [ticketType, title, description, effectivePriority, impact, urgency, groupId, customerId, categoryId, parentTicketId, createTicket, t, resetForm, onOpenChange]);
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => {
@@ -750,15 +878,26 @@ function CreateTicketDialog({ open, onOpenChange }: CreateTicketDialogProps) {
     }}>
       <DialogContent className="sm:max-w-[520px]">
         <DialogHeader>
-          <DialogTitle>{t('create')}</DialogTitle>
+          <DialogTitle>{parentTicketId ? t('parent_child.create_child') : t('create')}</DialogTitle>
           <DialogDescription>{t('create_description')}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
+          {/* Parent ticket info */}
+          {parentTicketId && (
+            <div className="rounded-lg bg-muted/50 border px-3 py-2 text-sm text-muted-foreground">
+              {t('parent_child.linked_to_parent')} <span className="font-mono font-medium text-foreground">{parentTicketId.slice(0, 8)}…</span>
+            </div>
+          )}
+
           {/* Ticket Type */}
           <div className="space-y-2">
             <Label htmlFor="ticket-type">{t('fields.type')}</Label>
-            <Select value={ticketType} onValueChange={(v) => setTicketType(v as TicketType)}>
+            <Select
+              value={ticketType}
+              onValueChange={(v) => setTicketType(v as TicketType)}
+              disabled={!!parentTicketType}
+            >
               <SelectTrigger id="ticket-type">
                 <SelectValue />
               </SelectTrigger>
@@ -770,6 +909,9 @@ function CreateTicketDialog({ open, onOpenChange }: CreateTicketDialogProps) {
                 ))}
               </SelectContent>
             </Select>
+            {parentTicketType && (
+              <p className="text-xs text-muted-foreground">{t('parent_child.type_mismatch')}</p>
+            )}
           </div>
 
           {/* Title */}
@@ -803,30 +945,78 @@ function CreateTicketDialog({ open, onOpenChange }: CreateTicketDialogProps) {
             />
           </div>
 
-          {/* Priority */}
+          {/* Impact & Urgency row */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label htmlFor="ticket-impact">{t('fields.impact')}</Label>
+              <Select value={impact} onValueChange={setImpact}>
+                <SelectTrigger id="ticket-impact">
+                  <SelectValue placeholder="-" />
+                </SelectTrigger>
+                <SelectContent>
+                  {TICKET_IMPACTS.map((v) => (
+                    <SelectItem key={v} value={v}>
+                      {t(`impacts.${v}`)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="ticket-urgency">{t('fields.urgency')}</Label>
+              <Select value={urgency} onValueChange={setUrgency}>
+                <SelectTrigger id="ticket-urgency">
+                  <SelectValue placeholder="-" />
+                </SelectTrigger>
+                <SelectContent>
+                  {TICKET_URGENCIES.map((v) => (
+                    <SelectItem key={v} value={v}>
+                      {t(`urgencies.${v}`)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Priority — auto or manual */}
           <div className="space-y-2">
             <Label htmlFor="ticket-priority">{t('fields.priority')}</Label>
-            <Select value={priority} onValueChange={(v) => setPriority(v as TicketPriority)}>
-              <SelectTrigger id="ticket-priority">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {TICKET_PRIORITIES.map((p) => (
-                  <SelectItem key={p} value={p}>
-                    <span className="flex items-center gap-2">
-                      <span className={cn(
-                        'h-2 w-2 rounded-full',
-                        p === 'critical' && 'bg-red-500',
-                        p === 'high' && 'bg-orange-500',
-                        p === 'medium' && 'bg-blue-500',
-                        p === 'low' && 'bg-slate-400',
-                      )} />
-                      {t(`priorities.${p}`)}
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {autoPriority ? (
+              <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+                <span className={cn(
+                  'h-2 w-2 rounded-full',
+                  autoPriority === 'critical' && 'bg-red-500',
+                  autoPriority === 'high' && 'bg-orange-500',
+                  autoPriority === 'medium' && 'bg-blue-500',
+                  autoPriority === 'low' && 'bg-slate-400',
+                )} />
+                {t(`priorities.${autoPriority}`)}
+                <span className="ml-auto text-[10px] text-muted-foreground">{t('priority_auto_calculated')}</span>
+              </div>
+            ) : (
+              <Select value={priority} onValueChange={(v) => setPriority(v as TicketPriority)}>
+                <SelectTrigger id="ticket-priority">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {TICKET_PRIORITIES.map((p) => (
+                    <SelectItem key={p} value={p}>
+                      <span className="flex items-center gap-2">
+                        <span className={cn(
+                          'h-2 w-2 rounded-full',
+                          p === 'critical' && 'bg-red-500',
+                          p === 'high' && 'bg-orange-500',
+                          p === 'medium' && 'bg-blue-500',
+                          p === 'low' && 'bg-slate-400',
+                        )} />
+                        {t(`priorities.${p}`)}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           {/* Group */}
@@ -840,6 +1030,40 @@ function CreateTicketDialog({ open, onOpenChange }: CreateTicketDialogProps) {
                 {groups.map((group) => (
                   <SelectItem key={group.id} value={group.id}>
                     {group.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Customer */}
+          <div className="space-y-2">
+            <Label htmlFor="ticket-customer">{t('fields.customer')}</Label>
+            <Select value={customerId} onValueChange={setCustomerId}>
+              <SelectTrigger id="ticket-customer">
+                <SelectValue placeholder={t('select_customer')} />
+              </SelectTrigger>
+              <SelectContent>
+                {customers.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Category */}
+          <div className="space-y-2">
+            <Label htmlFor="ticket-category">{t('fields.category')}</Label>
+            <Select value={categoryId} onValueChange={setCategoryId}>
+              <SelectTrigger id="ticket-category">
+                <SelectValue placeholder={t('select_category')} />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -876,7 +1100,7 @@ function CreateTicketDialog({ open, onOpenChange }: CreateTicketDialogProps) {
 export function TicketBoardPage() {
   const { t, i18n } = useTranslation('tickets');
   const { t: tCommon } = useTranslation();
-  const locale = i18n.language === 'de' ? 'de-DE' : 'en-US';
+  const locale = i18n.language?.startsWith('de') ? 'de-DE' : 'en-US';
   const user = useAuthStore((s) => s.user);
 
   const [searchParams, setSearchParams] = useSearchParams();
@@ -911,14 +1135,38 @@ export function TicketBoardPage() {
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
+  const [groupFilter, setGroupFilter] = useState<string>('all');
+  const [customerFilter, setCustomerFilter] = useState<string>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  // Create dialog — can be triggered via URL params (e.g. ?parent=xxx&type=incident)
+  const parentParam = searchParams.get('parent');
+  const typeParam = searchParams.get('type') as TicketType | null;
+  const [createDialogOpen, setCreateDialogOpen] = useState(!!parentParam);
 
-  const hasActiveColumnFilters = typeFilter !== 'all' || priorityFilter !== 'all' || statusFilter !== 'all';
+  const handleCreateDialogClose = useCallback((isOpen: boolean) => {
+    setCreateDialogOpen(isOpen);
+    if (!isOpen && parentParam) {
+      // Remove parent/type params from URL when dialog closes
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete('parent');
+        next.delete('type');
+        return next;
+      });
+    }
+  }, [parentParam, setSearchParams]);
+
+  const hasActiveColumnFilters = typeFilter !== 'all' || priorityFilter !== 'all' || statusFilter !== 'all' || assigneeFilter !== 'all' || groupFilter !== 'all' || customerFilter !== 'all' || categoryFilter !== 'all';
   const resetColumnFilters = useCallback(() => {
     setTypeFilter('all');
     setPriorityFilter('all');
     setStatusFilter('all');
+    setAssigneeFilter('all');
+    setGroupFilter('all');
+    setCustomerFilter('all');
+    setCategoryFilter('all');
   }, []);
 
   // List view sorting & pagination
@@ -965,16 +1213,50 @@ export function TicketBoardPage() {
     if (statusFilter !== 'all' && !presetParams.status) {
       params.status = statusFilter as TicketStatus;
     }
+    if (assigneeFilter !== 'all') {
+      params.assignee_id = assigneeFilter;
+    }
+    if (groupFilter !== 'all') {
+      params.assignee_group_id = groupFilter;
+    }
+    if (customerFilter !== 'all') {
+      params.customer_id = customerFilter;
+    }
+    if (categoryFilter !== 'all') {
+      params.category_id = categoryFilter;
+    }
     if (searchQuery.trim()) {
       params.q = searchQuery.trim();
     }
 
     return params;
-  }, [activePreset, listPage, sortField, sortOrder, typeFilter, priorityFilter, statusFilter, searchQuery, user?.id]);
+  }, [activePreset, listPage, sortField, sortOrder, typeFilter, priorityFilter, statusFilter, assigneeFilter, groupFilter, customerFilter, categoryFilter, searchQuery, user?.id]);
 
   // Data hooks
   const boardQuery = useBoardData();
   const listQuery = useTickets(listParams);
+  const { data: mainGroupsData } = useGroups();
+  const { data: usersData } = useUsers();
+  const { data: customersData } = useCustomers();
+  const { data: categoriesData } = useCategories();
+
+  // Filter options for assignee/group/customer/category dropdowns
+  const assigneeOptions = useMemo(() =>
+    (usersData?.data ?? []).map((u) => ({ value: u.id, label: u.display_name })),
+    [usersData],
+  );
+  const groupOptions = useMemo(() =>
+    (mainGroupsData?.data ?? []).map((g) => ({ value: g.id, label: g.name })),
+    [mainGroupsData],
+  );
+  const customerOptions = useMemo(() =>
+    (customersData?.data ?? []).filter((c) => c.is_active).map((c) => ({ value: c.id, label: c.name })),
+    [customersData],
+  );
+  const categoryOptions = useMemo(() =>
+    (categoriesData?.data ?? []).filter((c) => c.is_active).map((c) => ({ value: c.id, label: c.name })),
+    [categoriesData],
+  );
 
   // Use the appropriate query based on view mode
   const isListView = viewMode === 'list';
@@ -1177,9 +1459,21 @@ export function TicketBoardPage() {
           statusFilter={statusFilter}
           typeFilter={typeFilter}
           priorityFilter={priorityFilter}
+          assigneeFilter={assigneeFilter}
+          groupFilter={groupFilter}
+          customerFilter={customerFilter}
+          categoryFilter={categoryFilter}
           onStatusFilterChange={setStatusFilter}
           onTypeFilterChange={setTypeFilter}
           onPriorityFilterChange={setPriorityFilter}
+          onAssigneeFilterChange={setAssigneeFilter}
+          onGroupFilterChange={setGroupFilter}
+          onCustomerFilterChange={setCustomerFilter}
+          onCategoryFilterChange={setCategoryFilter}
+          assigneeOptions={assigneeOptions}
+          groupOptions={groupOptions}
+          customerOptions={customerOptions}
+          categoryOptions={categoryOptions}
         />
       ) : (
         <>
@@ -1216,7 +1510,9 @@ export function TicketBoardPage() {
       {/* Create Ticket Dialog */}
       <CreateTicketDialog
         open={createDialogOpen}
-        onOpenChange={setCreateDialogOpen}
+        onOpenChange={handleCreateDialogClose}
+        parentTicketId={parentParam}
+        parentTicketType={typeParam}
       />
     </div>
   );

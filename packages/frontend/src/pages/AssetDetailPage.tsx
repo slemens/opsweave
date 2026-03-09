@@ -1,0 +1,672 @@
+import { useState, useCallback, useMemo } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import {
+  ArrowLeft,
+  AlertCircle,
+  RefreshCw,
+  Trash2,
+  Link2,
+  Plus,
+  ExternalLink,
+} from 'lucide-react';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Separator } from '@/components/ui/separator';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { cn, formatDate } from '@/lib/utils';
+import {
+  useAsset,
+  useAssetRelations,
+  useAssetTickets,
+  useUpdateAsset,
+  useDeleteAsset,
+  useCreateAssetRelation,
+  useDeleteAssetRelation,
+  useAssets,
+} from '@/api/assets';
+import { useGroups, useCustomers } from '@/api/tickets';
+import type { AssetRelationWithDetails, AssetTicketSummary } from '@/api/assets';
+import type { AssetType, AssetStatus, RelationType } from '@opsweave/shared';
+import { ASSET_TYPES, ASSET_STATUSES, SLA_TIERS, ENVIRONMENTS, RELATION_TYPES } from '@opsweave/shared';
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const statusColors: Record<string, string> = {
+  active: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
+  inactive: 'bg-slate-100 text-slate-600 dark:bg-slate-800/60 dark:text-slate-300',
+  maintenance: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+  decommissioned: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
+};
+
+const slaColors: Record<string, string> = {
+  platinum: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
+  gold: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300',
+  silver: 'bg-slate-100 text-slate-600 dark:bg-slate-800/60 dark:text-slate-300',
+  bronze: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300',
+  none: 'bg-gray-100 text-gray-500 dark:bg-gray-800/40 dark:text-gray-400',
+};
+
+const ticketStatusColors: Record<string, string> = {
+  open: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+  in_progress: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+  pending: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300',
+  resolved: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
+  closed: 'bg-slate-100 text-slate-600 dark:bg-slate-800/60 dark:text-slate-300',
+};
+
+const assetTypeGroups: Array<{ category: string; types: AssetType[] }> = [
+  { category: 'compute', types: ['server_physical', 'server_virtual', 'virtualization_host', 'container', 'container_host'] },
+  { category: 'network', types: ['network_switch', 'network_router', 'network_firewall', 'network_load_balancer', 'network_wap'] },
+  { category: 'storage', types: ['storage_san', 'storage_nas', 'storage_backup'] },
+  { category: 'infrastructure', types: ['rack', 'pdu', 'ups'] },
+  { category: 'software', types: ['database', 'application', 'service', 'middleware', 'cluster'] },
+  { category: 'enduser', types: ['workstation', 'laptop', 'printer'] },
+  { category: 'other', types: ['other'] },
+];
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
+export function AssetDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { t } = useTranslation('cmdb');
+  const { t: tCommon } = useTranslation('common');
+  const { t: tTickets } = useTranslation('tickets');
+
+  // ── Data ──────────────────────────────────────────────────
+  const { data: asset, isLoading, isError, refetch } = useAsset(id ?? '');
+  const { data: relations } = useAssetRelations(id ?? '');
+  const { data: linkedTickets } = useAssetTickets(id ?? '');
+  const { data: groupsData } = useGroups();
+  const { data: customersData } = useCustomers();
+
+  const updateAsset = useUpdateAsset();
+  const deleteAssetMutation = useDeleteAsset();
+  const createRelation = useCreateAssetRelation();
+  const deleteRelation = useDeleteAssetRelation();
+
+  // For relation dialog — need all assets to pick from
+  const { data: allAssetsData } = useAssets({ limit: 100 });
+
+  // ── Relation Dialog ───────────────────────────────────────
+  const [relationOpen, setRelationOpen] = useState(false);
+  const [relTarget, setRelTarget] = useState('');
+  const [relType, setRelType] = useState<string>('depends_on');
+  const [relDirection, setRelDirection] = useState<'outgoing' | 'incoming'>('outgoing');
+
+  const otherAssets = useMemo(() => {
+    const all = allAssetsData?.data ?? [];
+    return all.filter((a) => a.id !== id);
+  }, [allAssetsData, id]);
+
+  // ── Handlers ──────────────────────────────────────────────
+
+  const handleFieldChange = useCallback(async (field: string, value: string | null) => {
+    if (!id) return;
+    try {
+      await updateAsset.mutateAsync({ id, [field]: value });
+      toast.success(t('update_success'));
+    } catch {
+      toast.error(t('update_error'));
+    }
+  }, [id, updateAsset, t]);
+
+  const handleDelete = useCallback(async () => {
+    if (!id) return;
+    if (!window.confirm(t('delete_confirm'))) return;
+    try {
+      await deleteAssetMutation.mutateAsync(id);
+      toast.success(t('delete_success'));
+      navigate('/assets');
+    } catch {
+      toast.error(t('delete_error'));
+    }
+  }, [id, deleteAssetMutation, t, navigate]);
+
+  const handleAddRelation = useCallback(async () => {
+    if (!id || !relTarget || !relType) return;
+    const payload = relDirection === 'outgoing'
+      ? { assetId: id, source_asset_id: id, target_asset_id: relTarget, relation_type: relType as RelationType }
+      : { assetId: id, source_asset_id: relTarget, target_asset_id: id, relation_type: relType as RelationType };
+
+    try {
+      await createRelation.mutateAsync(payload);
+      toast.success(t('relations.add_success'));
+      setRelationOpen(false);
+      setRelTarget('');
+      setRelType('depends_on');
+    } catch {
+      toast.error(t('relations.add_error'));
+    }
+  }, [id, relTarget, relType, relDirection, createRelation, t]);
+
+  const handleDeleteRelation = useCallback(async (relationId: string) => {
+    if (!id) return;
+    try {
+      await deleteRelation.mutateAsync({ assetId: id, relationId });
+      toast.success(t('relations.delete_success'));
+    } catch {
+      toast.error(t('relations.delete_error'));
+    }
+  }, [id, deleteRelation, t]);
+
+  // ── Group / Customer Options ──────────────────────────────
+
+  const groups = useMemo(() => groupsData?.data ?? [], [groupsData]);
+  const customers = useMemo(() => customersData?.data ?? [], [customersData]);
+
+  // ── Loading / Error ───────────────────────────────────────
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-8 w-48" />
+        <div className="grid grid-cols-3 gap-6">
+          <div className="col-span-2 space-y-4">
+            <Skeleton className="h-64 w-full" />
+          </div>
+          <div className="space-y-4">
+            <Skeleton className="h-64 w-full" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isError || !asset) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <div className="rounded-full bg-destructive/10 p-3 mb-4">
+          <AlertCircle className="h-6 w-6 text-destructive" />
+        </div>
+        <p className="text-sm font-medium mb-1">{tCommon('status.error')}</p>
+        <p className="text-sm text-muted-foreground mb-4">{tCommon('errors.generic')}</p>
+        <Button variant="outline" onClick={() => refetch()}>
+          <RefreshCw className="mr-2 h-4 w-4" />
+          {tCommon('actions.retry')}
+        </Button>
+      </div>
+    );
+  }
+
+  const relationsData = (relations ?? []) as AssetRelationWithDetails[];
+  const ticketsData = (linkedTickets ?? []) as AssetTicketSummary[];
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={() => navigate('/assets')}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">{asset.display_name}</h2>
+            <p className="text-sm text-muted-foreground font-mono">{asset.name}</p>
+          </div>
+        </div>
+        <Button variant="outline" size="sm" className="text-destructive" onClick={handleDelete}>
+          <Trash2 className="mr-2 h-4 w-4" />
+          {tCommon('actions.delete')}
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main Content */}
+        <div className="lg:col-span-2">
+          <Tabs defaultValue="details">
+            <TabsList>
+              <TabsTrigger value="details">{t('tabs.details')}</TabsTrigger>
+              <TabsTrigger value="relations">
+                {t('tabs.relations')}
+                {relationsData.length > 0 && (
+                  <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-[10px]">
+                    {relationsData.length}
+                  </Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="tickets">
+                {t('tabs.tickets')}
+                {ticketsData.length > 0 && (
+                  <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-[10px]">
+                    {ticketsData.length}
+                  </Badge>
+                )}
+              </TabsTrigger>
+            </TabsList>
+
+            {/* Details Tab */}
+            <TabsContent value="details" className="mt-4">
+              <Card>
+                <CardContent className="pt-6 space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">{t('fields.display_name')}</Label>
+                      <p className="text-sm font-medium mt-1">{asset.display_name}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">{t('fields.name')}</Label>
+                      <p className="text-sm font-mono mt-1">{asset.name}</p>
+                    </div>
+                  </div>
+                  <Separator />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">{t('fields.asset_type')}</Label>
+                      <div className="text-sm mt-1">
+                        <Badge variant="outline">{t(`types.${asset.asset_type}`)}</Badge>
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">{t('fields.ip_address')}</Label>
+                      <p className="text-sm font-mono mt-1">{asset.ip_address ?? '\u2014'}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">{t('fields.location')}</Label>
+                      <p className="text-sm mt-1">{asset.location ?? '\u2014'}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">{t('fields.owner_group')}</Label>
+                      <p className="text-sm mt-1">{asset.owner_group?.name ?? '\u2014'}</p>
+                    </div>
+                  </div>
+                  <Separator />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">{t('fields.created_at')}</Label>
+                      <p className="text-sm text-muted-foreground mt-1">{formatDate(asset.created_at)}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">{t('fields.updated_at')}</Label>
+                      <p className="text-sm text-muted-foreground mt-1">{formatDate(asset.updated_at)}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Relations Tab */}
+            <TabsContent value="relations" className="mt-4">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-3">
+                  <CardTitle className="text-base">{t('relations.title')}</CardTitle>
+                  <Button size="sm" onClick={() => setRelationOpen(true)}>
+                    <Plus className="mr-1.5 h-3.5 w-3.5" />
+                    {t('relations.add')}
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  {relationsData.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-10 text-center">
+                      <Link2 className="h-8 w-8 text-muted-foreground mb-3" />
+                      <p className="text-sm text-muted-foreground">{t('relations.no_relations')}</p>
+                    </div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>{t('relations.source')}</TableHead>
+                          <TableHead>{t('relations.type')}</TableHead>
+                          <TableHead>{t('relations.target')}</TableHead>
+                          <TableHead className="w-[60px]" />
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {relationsData.map((rel) => (
+                          <TableRow key={rel.id}>
+                            <TableCell className="text-sm">
+                              {rel.direction === 'outgoing' ? (
+                                <span className="font-medium">{asset.display_name}</span>
+                              ) : (
+                                <Link
+                                  to={`/assets/${rel.related_asset.id}`}
+                                  className="text-primary hover:underline"
+                                >
+                                  {rel.related_asset.display_name}
+                                </Link>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="text-xs">
+                                {t(`relations.${rel.relation_type}`)}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-sm">
+                              {rel.direction === 'outgoing' ? (
+                                <Link
+                                  to={`/assets/${rel.related_asset.id}`}
+                                  className="text-primary hover:underline"
+                                >
+                                  {rel.related_asset.display_name}
+                                </Link>
+                              ) : (
+                                <span className="font-medium">{asset.display_name}</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                                onClick={() => handleDeleteRelation(rel.id)}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Tickets Tab */}
+            <TabsContent value="tickets" className="mt-4">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">{t('linked_tickets.title')}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {ticketsData.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-10 text-center">
+                      <ExternalLink className="h-8 w-8 text-muted-foreground mb-3" />
+                      <p className="text-sm text-muted-foreground">{t('linked_tickets.no_tickets')}</p>
+                    </div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>{tTickets('fields.ticket_number')}</TableHead>
+                          <TableHead>{tTickets('fields.title')}</TableHead>
+                          <TableHead>{tTickets('fields.status')}</TableHead>
+                          <TableHead>{tTickets('fields.type')}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {ticketsData.map((ticket) => (
+                          <TableRow
+                            key={ticket.id}
+                            className="cursor-pointer"
+                            onClick={() => navigate(`/tickets/${ticket.id}`)}
+                          >
+                            <TableCell className="font-mono text-sm">{ticket.ticket_number}</TableCell>
+                            <TableCell className="text-sm">{ticket.title}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className={cn('text-xs', ticketStatusColors[ticket.status] ?? '')}>
+                                {tTickets(`statuses.${ticket.status}`)}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="text-xs">
+                                {tTickets(`types.${ticket.ticket_type}`)}
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
+
+        {/* Sidebar */}
+        <div className="space-y-4">
+          {/* Status */}
+          <Card>
+            <CardContent className="pt-4 space-y-4">
+              <div>
+                <Label className="text-xs text-muted-foreground mb-1.5 block">{t('fields.status')}</Label>
+                <Select
+                  value={asset.status}
+                  onValueChange={(v) => handleFieldChange('status', v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ASSET_STATUSES.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        <div className="flex items-center gap-2">
+                          <span className={cn('h-2 w-2 rounded-full', statusColors[s]?.split(' ')[0] ?? '')} />
+                          {t(`statuses.${s}`)}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label className="text-xs text-muted-foreground mb-1.5 block">{t('fields.asset_type')}</Label>
+                <Select
+                  value={asset.asset_type}
+                  onValueChange={(v) => handleFieldChange('asset_type', v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {assetTypeGroups.map((group) => (
+                      <SelectGroup key={group.category}>
+                        <SelectLabel>{t(`type_categories.${group.category}`)}</SelectLabel>
+                        {group.types.map((at) => (
+                          <SelectItem key={at} value={at}>{t(`types.${at}`)}</SelectItem>
+                        ))}
+                      </SelectGroup>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Separator />
+
+              <div>
+                <Label className="text-xs text-muted-foreground mb-1.5 block">{t('fields.sla_tier')}</Label>
+                <Select
+                  value={asset.sla_tier}
+                  onValueChange={(v) => handleFieldChange('sla_tier', v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SLA_TIERS.map((s) => (
+                      <SelectItem key={s} value={s}>{t(`sla_tiers.${s}`)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label className="text-xs text-muted-foreground mb-1.5 block">{t('fields.environment')}</Label>
+                <Select
+                  value={asset.environment ?? '__none__'}
+                  onValueChange={(v) => handleFieldChange('environment', v === '__none__' ? null : v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">{'\u2014'}</SelectItem>
+                    {ENVIRONMENTS.map((e) => (
+                      <SelectItem key={e} value={e}>{t(`environments.${e}`)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Separator />
+
+              <div>
+                <Label className="text-xs text-muted-foreground mb-1.5 block">{t('fields.owner_group')}</Label>
+                <Select
+                  value={asset.owner_group_id ?? '__none__'}
+                  onValueChange={(v) => handleFieldChange('owner_group_id', v === '__none__' ? null : v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">{'\u2014'}</SelectItem>
+                    {groups.map((g) => (
+                      <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label className="text-xs text-muted-foreground mb-1.5 block">{t('fields.customer')}</Label>
+                <Select
+                  value={asset.customer_id ?? '__none__'}
+                  onValueChange={(v) => handleFieldChange('customer_id', v === '__none__' ? null : v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">{'\u2014'}</SelectItem>
+                    {customers.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Separator />
+
+              <div>
+                <Label className="text-xs text-muted-foreground mb-1.5 block">{t('fields.ip_address')}</Label>
+                <p className="text-sm font-mono">{asset.ip_address ?? '\u2014'}</p>
+              </div>
+
+              <div>
+                <Label className="text-xs text-muted-foreground mb-1.5 block">{t('fields.location')}</Label>
+                <p className="text-sm">{asset.location ?? '\u2014'}</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Add Relation Dialog */}
+      <Dialog open={relationOpen} onOpenChange={setRelationOpen}>
+        <DialogContent className="sm:max-w-[460px]">
+          <DialogHeader>
+            <DialogTitle>{t('relations.add')}</DialogTitle>
+            <DialogDescription>
+              {asset.display_name}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label>Richtung</Label>
+              <Select value={relDirection} onValueChange={(v) => setRelDirection(v as 'outgoing' | 'incoming')}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="outgoing">{asset.display_name} \u2192 ...</SelectItem>
+                  <SelectItem value="incoming">... \u2192 {asset.display_name}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid gap-2">
+              <Label>{t('relations.type')}</Label>
+              <Select value={relType} onValueChange={setRelType}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {RELATION_TYPES.map((rt) => (
+                    <SelectItem key={rt} value={rt}>
+                      {t(`relations.${rt}`)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid gap-2">
+              <Label>{t('relations.select_asset')}</Label>
+              <Select value={relTarget} onValueChange={setRelTarget}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t('relations.select_asset')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {otherAssets.map((a) => (
+                    <SelectItem key={a.id} value={a.id}>
+                      {a.display_name}
+                      <span className="text-muted-foreground ml-2 text-xs">({t(`types.${a.asset_type}`)})</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRelationOpen(false)}>
+              {tCommon('actions.cancel')}
+            </Button>
+            <Button
+              onClick={handleAddRelation}
+              disabled={!relTarget || createRelation.isPending}
+            >
+              {createRelation.isPending ? tCommon('status.loading') : t('relations.add')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

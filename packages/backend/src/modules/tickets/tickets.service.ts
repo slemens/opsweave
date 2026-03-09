@@ -4,14 +4,16 @@ import { v4 as uuidv4 } from 'uuid';
 import { getDb, type TypedDb } from '../../config/database.js';
 import {
   tickets,
+  ticketCategories,
   ticketComments,
   ticketHistory,
   users,
   assigneeGroups,
   assets,
+  customers,
 } from '../../db/schema/index.js';
-import { NotFoundError } from '../../lib/errors.js';
-import { TICKET_NUMBER_PREFIXES, TICKET_STATUSES } from '@opsweave/shared';
+import { NotFoundError, ValidationError } from '../../lib/errors.js';
+import { TICKET_NUMBER_PREFIXES, TICKET_STATUSES, calculatePriority } from '@opsweave/shared';
 import type { TicketFilterParams, CreateTicketInput, UpdateTicketInput } from '@opsweave/shared';
 
 // ─── DB Helper ────────────────────────────────────────────
@@ -107,7 +109,7 @@ export async function listTickets(
   params: TicketFilterParams,
 ): Promise<{ tickets: unknown[]; total: number }> {
   const d = db();
-  const { page, limit, sort, order, q, status, ticket_type, priority, assignee_id, assignee_group_id, asset_id, customer_id } = params;
+  const { page, limit, sort, order, q, status, ticket_type, priority, assignee_id, assignee_group_id, asset_id, customer_id, category_id } = params;
   const offset = (page - 1) * limit;
 
   const conditions = [eq(tickets.tenant_id, tenantId)];
@@ -119,6 +121,7 @@ export async function listTickets(
   if (assignee_group_id) conditions.push(eq(tickets.assignee_group_id, assignee_group_id));
   if (asset_id) conditions.push(eq(tickets.asset_id, asset_id));
   if (customer_id) conditions.push(eq(tickets.customer_id, customer_id));
+  if (category_id) conditions.push(eq(tickets.category_id, category_id));
 
   if (q) {
     conditions.push(
@@ -169,6 +172,7 @@ export async function listTickets(
       sla_response_due: tickets.sla_response_due,
       sla_resolve_due: tickets.sla_resolve_due,
       sla_breached: tickets.sla_breached,
+      parent_ticket_id: tickets.parent_ticket_id,
       source: tickets.source,
       created_at: tickets.created_at,
       updated_at: tickets.updated_at,
@@ -178,10 +182,15 @@ export async function listTickets(
       assignee_name: users.display_name,
       assignee_email: users.email,
       group_name: assigneeGroups.name,
+      customer_name: customers.name,
+      category_id: tickets.category_id,
+      category_name: ticketCategories.name,
     })
     .from(tickets)
     .leftJoin(users, eq(tickets.assignee_id, users.id))
     .leftJoin(assigneeGroups, eq(tickets.assignee_group_id, assigneeGroups.id))
+    .leftJoin(customers, eq(tickets.customer_id, customers.id))
+    .leftJoin(ticketCategories, eq(tickets.category_id, ticketCategories.id))
     .where(and(...conditions))
     .orderBy(orderFn(sortColumn))
     .limit(limit)
@@ -205,10 +214,12 @@ export async function listTickets(
     assignee_group_id: row.assignee_group_id,
     reporter_id: row.reporter_id,
     customer_id: row.customer_id,
+    category_id: row.category_id,
     sla_tier: row.sla_tier,
     sla_response_due: row.sla_response_due,
     sla_resolve_due: row.sla_resolve_due,
     sla_breached: row.sla_breached,
+    parent_ticket_id: row.parent_ticket_id,
     source: row.source,
     created_at: row.created_at,
     updated_at: row.updated_at,
@@ -217,6 +228,8 @@ export async function listTickets(
     created_by: row.created_by,
     assignee: row.assignee_id ? { id: row.assignee_id, display_name: row.assignee_name ?? '', email: row.assignee_email ?? '' } : null,
     assignee_group: row.assignee_group_id ? { id: row.assignee_group_id, name: row.group_name ?? '' } : null,
+    customer: row.customer_id ? { id: row.customer_id, name: row.customer_name ?? '' } : null,
+    category: row.category_id ? { id: row.category_id, name: row.category_name ?? '' } : null,
   }));
 
   return { tickets: shaped, total };
@@ -255,6 +268,7 @@ export async function getTicket(
       sla_response_due: tickets.sla_response_due,
       sla_resolve_due: tickets.sla_resolve_due,
       sla_breached: tickets.sla_breached,
+      parent_ticket_id: tickets.parent_ticket_id,
       source: tickets.source,
       created_at: tickets.created_at,
       updated_at: tickets.updated_at,
@@ -265,11 +279,16 @@ export async function getTicket(
       assignee_email: users.email,
       group_name: assigneeGroups.name,
       asset_name: assets.display_name,
+      customer_name: customers.name,
+      category_id: tickets.category_id,
+      category_name: ticketCategories.name,
     })
     .from(tickets)
     .leftJoin(users, eq(tickets.assignee_id, users.id))
     .leftJoin(assigneeGroups, eq(tickets.assignee_group_id, assigneeGroups.id))
     .leftJoin(assets, eq(tickets.asset_id, assets.id))
+    .leftJoin(customers, eq(tickets.customer_id, customers.id))
+    .leftJoin(ticketCategories, eq(tickets.category_id, ticketCategories.id))
     .where(
       and(
         eq(tickets.id, ticketId),
@@ -282,6 +301,25 @@ export async function getTicket(
   if (!row) {
     throw new NotFoundError('Ticket not found');
   }
+
+  // If ticket has a parent, fetch parent info
+  let parentTicket: { id: string; ticket_number: string; title: string } | null = null;
+  if (row.parent_ticket_id) {
+    const parentRows = await d
+      .select({ id: tickets.id, ticket_number: tickets.ticket_number, title: tickets.title })
+      .from(tickets)
+      .where(and(eq(tickets.id, row.parent_ticket_id), eq(tickets.tenant_id, tenantId)))
+      .limit(1);
+    if (parentRows[0]) {
+      parentTicket = parentRows[0];
+    }
+  }
+
+  // Count child tickets
+  const [childCountResult] = await d
+    .select({ count: count() })
+    .from(tickets)
+    .where(and(eq(tickets.parent_ticket_id, ticketId), eq(tickets.tenant_id, tenantId)));
 
   // Reshape flat row into nested objects
   return {
@@ -301,12 +339,14 @@ export async function getTicket(
     assignee_group_id: row.assignee_group_id,
     reporter_id: row.reporter_id,
     customer_id: row.customer_id,
+    category_id: row.category_id,
     workflow_instance_id: row.workflow_instance_id,
     current_step_id: row.current_step_id,
     sla_tier: row.sla_tier,
     sla_response_due: row.sla_response_due,
     sla_resolve_due: row.sla_resolve_due,
     sla_breached: row.sla_breached,
+    parent_ticket_id: row.parent_ticket_id,
     source: row.source,
     created_at: row.created_at,
     updated_at: row.updated_at,
@@ -316,6 +356,10 @@ export async function getTicket(
     assignee: row.assignee_id ? { id: row.assignee_id, display_name: row.assignee_name ?? '', email: row.assignee_email ?? '' } : null,
     assignee_group: row.assignee_group_id ? { id: row.assignee_group_id, name: row.group_name ?? '' } : null,
     asset: row.asset_id ? { id: row.asset_id, name: row.asset_name ?? '', display_name: row.asset_name ?? '' } : null,
+    customer: row.customer_id ? { id: row.customer_id, name: row.customer_name ?? '' } : null,
+    category: row.category_id ? { id: row.category_id, name: row.category_name ?? '' } : null,
+    parent_ticket: parentTicket,
+    child_ticket_count: childCountResult?.count ?? 0,
   };
 }
 
@@ -333,6 +377,35 @@ export async function createTicket(
 
   const ticketNumber = await generateTicketNumber(tenantId, data.ticket_type);
 
+  // Validate parent ticket if provided
+  if (data.parent_ticket_id) {
+    const parentRows = await d
+      .select({ id: tickets.id, ticket_type: tickets.ticket_type, tenant_id: tickets.tenant_id })
+      .from(tickets)
+      .where(
+        and(
+          eq(tickets.id, data.parent_ticket_id),
+          eq(tickets.tenant_id, tenantId),
+        ),
+      )
+      .limit(1);
+
+    const parent = parentRows[0];
+    if (!parent) {
+      throw new NotFoundError('Parent ticket not found');
+    }
+    if (parent.ticket_type !== data.ticket_type) {
+      throw new ValidationError('Parent ticket must be of the same type');
+    }
+  }
+
+  // Auto-calculate priority from Impact × Urgency matrix (ITIL)
+  const impact = data.impact ?? null;
+  const urgency = data.urgency ?? null;
+  const priority = (impact && urgency)
+    ? calculatePriority(impact, urgency)
+    : (data.priority ?? 'medium');
+
   const [created] = await d
     .insert(tickets)
     .values({
@@ -344,14 +417,16 @@ export async function createTicket(
       title: data.title,
       description: data.description,
       status: 'open',
-      priority: data.priority ?? 'medium',
-      impact: data.impact ?? null,
-      urgency: data.urgency ?? null,
+      priority,
+      impact,
+      urgency,
       asset_id: data.asset_id ?? null,
       assignee_id: data.assignee_id ?? null,
       assignee_group_id: data.assignee_group_id ?? null,
       reporter_id: creatorId,
       customer_id: data.customer_id ?? null,
+      category_id: data.category_id ?? null,
+      parent_ticket_id: data.parent_ticket_id ?? null,
       sla_breached: 0,
       source: data.source ?? 'manual',
       created_at: now,
@@ -367,6 +442,11 @@ export async function createTicket(
     null,
     'Ticket created',
     creatorId,
+  );
+
+  // Auto-trigger matching workflows (fire-and-forget, don't fail ticket creation)
+  void import('../workflows/workflows.service.js').then(({ triggerWorkflowsForTicket }) =>
+    triggerWorkflowsForTicket(tenantId, ticketId, 'ticket_created', data.ticket_type, creatorId),
   );
 
   return created;
@@ -416,6 +496,7 @@ export async function updateTicket(
     { key: 'assignee_id', dbKey: 'assignee_id' },
     { key: 'assignee_group_id', dbKey: 'assignee_group_id' },
     { key: 'customer_id', dbKey: 'customer_id' },
+    { key: 'category_id', dbKey: 'category_id' },
     { key: 'sla_tier', dbKey: 'sla_tier' },
   ];
 
@@ -442,8 +523,56 @@ export async function updateTicket(
     }
   }
 
+  // Auto-calculate priority from Impact × Urgency matrix (ITIL)
+  if (data.impact !== undefined || data.urgency !== undefined) {
+    const newImpact = (data.impact !== undefined ? data.impact : existing.impact) as string | null;
+    const newUrgency = (data.urgency !== undefined ? data.urgency : existing.urgency) as string | null;
+    if (newImpact && newUrgency) {
+      const calculatedPriority = calculatePriority(newImpact, newUrgency);
+      const oldPriority = updateSet['priority'] ?? existing.priority;
+      if (String(oldPriority) !== calculatedPriority) {
+        updateSet['priority'] = calculatedPriority;
+        historyPromises.push(
+          recordHistory(
+            tenantId,
+            ticketId,
+            'priority',
+            existing.priority != null ? String(existing.priority) : null,
+            calculatedPriority,
+            userId,
+          ),
+        );
+      }
+    }
+  }
+
   // Handle status transitions
   if (data.status) {
+    // Closing rules: check for unresolved children
+    if (data.status === 'resolved' || data.status === 'closed') {
+      const unresolvedChildren = await d
+        .select({ count: count() })
+        .from(tickets)
+        .where(
+          and(
+            eq(tickets.parent_ticket_id, ticketId),
+            eq(tickets.tenant_id, tenantId),
+            or(
+              eq(tickets.status, 'open'),
+              eq(tickets.status, 'in_progress'),
+              eq(tickets.status, 'pending'),
+            ),
+          ),
+        );
+
+      const unresolvedCount = unresolvedChildren[0]?.count ?? 0;
+      if (unresolvedCount > 0) {
+        throw new ValidationError(
+          'Cannot close — there are unresolved child tickets',
+        );
+      }
+    }
+
     if (data.status === 'resolved' && existing.status !== 'resolved') {
       updateSet['resolved_at'] = now;
     }
@@ -847,6 +976,7 @@ export async function getBoardData(
       assignee_group_id: tickets.assignee_group_id,
       sla_breached: tickets.sla_breached,
       sla_resolve_due: tickets.sla_resolve_due,
+      parent_ticket_id: tickets.parent_ticket_id,
       created_at: tickets.created_at,
       updated_at: tickets.updated_at,
       assignee_name: users.display_name,
@@ -878,6 +1008,7 @@ export async function getBoardData(
       assignee_group_id: row.assignee_group_id,
       sla_breached: row.sla_breached,
       sla_resolve_due: row.sla_resolve_due,
+      parent_ticket_id: row.parent_ticket_id,
       created_at: row.created_at,
       updated_at: row.updated_at,
       assignee: row.assignee_id ? { id: row.assignee_id, display_name: row.assignee_name ?? '', email: row.assignee_email ?? '' } : null,
@@ -899,4 +1030,133 @@ export async function getBoardData(
   });
 
   return { columns };
+}
+
+/**
+ * Get child tickets of a parent ticket.
+ */
+export async function getChildTickets(
+  tenantId: string,
+  ticketId: string,
+): Promise<unknown[]> {
+  const d = db();
+
+  // Verify parent ticket exists
+  const parentRows = await d
+    .select({ id: tickets.id })
+    .from(tickets)
+    .where(and(eq(tickets.id, ticketId), eq(tickets.tenant_id, tenantId)))
+    .limit(1);
+
+  if (parentRows.length === 0) {
+    throw new NotFoundError('Ticket not found');
+  }
+
+  const rows = await d
+    .select({
+      id: tickets.id,
+      ticket_number: tickets.ticket_number,
+      ticket_type: tickets.ticket_type,
+      title: tickets.title,
+      status: tickets.status,
+      priority: tickets.priority,
+      assignee_id: tickets.assignee_id,
+      assignee_group_id: tickets.assignee_group_id,
+      created_at: tickets.created_at,
+      updated_at: tickets.updated_at,
+      assignee_name: users.display_name,
+      group_name: assigneeGroups.name,
+    })
+    .from(tickets)
+    .leftJoin(users, eq(tickets.assignee_id, users.id))
+    .leftJoin(assigneeGroups, eq(tickets.assignee_group_id, assigneeGroups.id))
+    .where(
+      and(
+        eq(tickets.parent_ticket_id, ticketId),
+        eq(tickets.tenant_id, tenantId),
+      ),
+    )
+    .orderBy(asc(tickets.created_at));
+
+  return rows.map((row) => ({
+    id: row.id,
+    ticket_number: row.ticket_number,
+    ticket_type: row.ticket_type,
+    title: row.title,
+    status: row.status,
+    priority: row.priority,
+    assignee_id: row.assignee_id,
+    assignee_group_id: row.assignee_group_id,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    assignee: row.assignee_id ? { id: row.assignee_id, display_name: row.assignee_name ?? '' } : null,
+    assignee_group: row.assignee_group_id ? { id: row.assignee_group_id, name: row.group_name ?? '' } : null,
+  }));
+}
+
+// ─── Ticket Categories CRUD ─────────────────────────────────────────
+
+export async function listCategories(tenantId: string) {
+  const d = db();
+  return d
+    .select()
+    .from(ticketCategories)
+    .where(eq(ticketCategories.tenant_id, tenantId))
+    .orderBy(asc(ticketCategories.name));
+}
+
+export async function createCategory(
+  tenantId: string,
+  data: { name: string; applies_to?: string },
+) {
+  const d = db();
+  const id = uuidv4();
+  const now = new Date().toISOString();
+
+  const [created] = await d
+    .insert(ticketCategories)
+    .values({
+      id,
+      tenant_id: tenantId,
+      name: data.name,
+      applies_to: data.applies_to ?? 'all',
+      is_active: 1,
+      created_at: now,
+    })
+    .returning();
+
+  return created;
+}
+
+export async function updateCategory(
+  tenantId: string,
+  categoryId: string,
+  data: { name?: string; applies_to?: string; is_active?: number },
+) {
+  const d = db();
+
+  const existing = await d
+    .select()
+    .from(ticketCategories)
+    .where(and(eq(ticketCategories.id, categoryId), eq(ticketCategories.tenant_id, tenantId)))
+    .limit(1);
+
+  if (!existing[0]) {
+    throw new NotFoundError('Category not found');
+  }
+
+  const updateSet: Record<string, unknown> = {};
+  if (data.name !== undefined) updateSet.name = data.name;
+  if (data.applies_to !== undefined) updateSet.applies_to = data.applies_to;
+  if (data.is_active !== undefined) updateSet.is_active = data.is_active;
+
+  if (Object.keys(updateSet).length === 0) return existing[0];
+
+  const [updated] = await d
+    .update(ticketCategories)
+    .set(updateSet)
+    .where(and(eq(ticketCategories.id, categoryId), eq(ticketCategories.tenant_id, tenantId)))
+    .returning();
+
+  return updated;
 }

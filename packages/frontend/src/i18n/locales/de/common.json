@@ -101,5 +101,10 @@
   "sidebar": {
     "collapse": "Seitenleiste einklappen",
     "expand": "Seitenleiste ausklappen"
+  },
+  "fields": {
+    "created_at": "Erstellt",
+    "updated_at": "Aktualisiert",
+    "optional": "Optional"
   }
 }

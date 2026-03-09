@@ -20,7 +20,15 @@
   "placeholder_description": "Detaillierte Beschreibung des Anliegens\u2026",
   "select_group": "Gruppe auswahlen",
   "filter_all_types": "Alle Typen",
-  "filter_all_priorities": "Alle Prioritaten",
+  "filter_all_priorities": "Alle Prioritäten",
+  "filter_all_assignees": "Alle Bearbeiter",
+  "filter_all_groups": "Alle Gruppen",
+  "filter_all_customers": "Alle Kunden",
+  "select_customer": "Kunde auswählen",
+  "no_customer": "Kein Kunde",
+  "filter_all_categories": "Alle Kategorien",
+  "select_category": "Kategorie auswählen",
+  "no_category": "Keine Kategorie",
   "types": {
     "incident": "Incident",
     "problem": "Problem",
@@ -46,6 +54,19 @@
     "medium": "Mittel",
     "low": "Niedrig"
   },
+  "impacts": {
+    "critical": "Kritisch",
+    "high": "Hoch",
+    "medium": "Mittel",
+    "low": "Niedrig"
+  },
+  "urgencies": {
+    "critical": "Kritisch",
+    "high": "Hoch",
+    "medium": "Mittel",
+    "low": "Niedrig"
+  },
+  "priority_auto_calculated": "Automatisch berechnet aus Auswirkung \u00d7 Dringlichkeit",
   "fields": {
     "title": "Titel",
     "description": "Beschreibung",
@@ -68,7 +89,21 @@
     "closed_at": "Geschlossen am",
     "sla_response_due": "SLA-Reaktion f\u00e4llig",
     "sla_resolve_due": "SLA-L\u00f6sung f\u00e4llig",
-    "sla_breached": "SLA verletzt"
+    "sla_breached": "SLA verletzt",
+    "category": "Kategorie",
+    "parent_ticket": "Übergeordnetes Ticket",
+    "child_tickets": "Untergeordnete Tickets"
+  },
+  "parent_child": {
+    "parent": "Parent-Ticket",
+    "children": "Child-Tickets",
+    "child_count": "{{count}} Child-Tickets",
+    "create_child": "Child-Ticket erstellen",
+    "no_children": "Keine untergeordneten Tickets",
+    "linked_to_parent": "Verknüpft mit",
+    "close_blocked": "Kann nicht geschlossen werden — es gibt noch offene Child-Tickets",
+    "close_blocked_detail": "Alle Child-Tickets müssen gelöst oder geschlossen sein, bevor dieses Ticket abgeschlossen werden kann.",
+    "type_mismatch": "Parent-Ticket muss denselben Typ haben"
   },
   "board": {
     "title": "Ticket-Board",

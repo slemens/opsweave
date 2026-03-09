@@ -1,0 +1,82 @@
+{
+  "title": "Service Catalog",
+  "descriptions": {
+    "title": "Service Descriptions",
+    "subtitle": "All available service descriptions",
+    "create": "Create Service Description",
+    "edit": "Edit Service Description",
+    "empty": "No service descriptions found",
+    "empty_hint": "Create your first service description.",
+    "total": "{{count}} service descriptions"
+  },
+  "horizontal": {
+    "title": "Horizontal Catalogs",
+    "subtitle": "Base service catalogs for all customers",
+    "create": "Create Catalog",
+    "edit": "Edit Catalog",
+    "empty": "No catalogs found",
+    "empty_hint": "Create your first horizontal catalog.",
+    "items": "Items",
+    "add_item": "Add Service Description",
+    "remove_item": "Remove",
+    "no_items": "No service descriptions in catalog",
+    "no_items_hint": "Add service descriptions to this catalog."
+  },
+  "vertical": {
+    "title": "Vertical Catalogs",
+    "subtitle": "Customer-specific catalogs (Enterprise)",
+    "enterprise_only": "Vertical catalogs are an Enterprise feature.",
+    "upgrade_hint": "Upgrade to Enterprise to use customer-specific catalog overrides."
+  },
+  "fields": {
+    "code": "Code",
+    "title": "Title",
+    "description": "Description",
+    "scope_included": "Included in scope",
+    "scope_excluded": "Excluded from scope",
+    "compliance_tags": "Compliance Tags",
+    "version": "Version",
+    "status": "Status",
+    "name": "Name",
+    "base_catalog": "Base Catalog",
+    "customer": "Customer",
+    "industry": "Industry",
+    "items_count": "Items",
+    "created_at": "Created"
+  },
+  "statuses": {
+    "draft": "Draft",
+    "published": "Published",
+    "archived": "Archived",
+    "active": "Active",
+    "inactive": "Inactive"
+  },
+  "filters": {
+    "all_statuses": "All Statuses",
+    "search_placeholder": "Search code, title…"
+  },
+  "dialogs": {
+    "create_description": {
+      "title": "Create Service Description",
+      "description": "Create a new service description for your catalog."
+    },
+    "edit_description": {
+      "title": "Edit Service Description",
+      "description": "Update the service description details."
+    },
+    "create_catalog": {
+      "title": "Create Catalog",
+      "description": "Create a new horizontal service catalog."
+    },
+    "edit_catalog": {
+      "title": "Edit Catalog",
+      "description": "Edit catalog details."
+    },
+    "add_item": {
+      "title": "Add Service Description",
+      "description": "Select a service description to add to this catalog."
+    },
+    "delete_confirm": "Are you sure? This action cannot be undone.",
+    "select_description": "Select service description"
+  }
+}

@@ -1,0 +1,116 @@
+{
+  "title": "Workflows",
+  "create": "Create Template",
+  "edit": "Edit Template",
+  "detail": "Workflow Template",
+  "no_workflows": "No workflow templates found",
+  "empty_hint": "Create your first workflow template.",
+  "create_success": "Template created successfully",
+  "create_error": "Failed to create template",
+  "update_success": "Template updated successfully",
+  "update_error": "Failed to update template",
+  "delete_success": "Template deleted successfully",
+  "delete_error": "Failed to delete template",
+  "delete_confirm": "Are you sure you want to delete this template?",
+  "delete_confirm_detail": "This action cannot be undone.",
+  "delete_blocked": "Template cannot be deleted — there are active instances.",
+  "instantiate_success": "Workflow started",
+  "instantiate_error": "Failed to start workflow",
+  "complete_step_success": "Step completed",
+  "complete_step_error": "Failed to complete step",
+  "cancel_success": "Workflow cancelled",
+  "cancel_error": "Failed to cancel workflow",
+  "community_limit": "Community Edition: max. 3 workflow templates",
+  "trigger_types": {
+    "ticket_created": "Ticket Created",
+    "ticket_updated": "Ticket Updated",
+    "manual": "Manual"
+  },
+  "step_types": {
+    "form": "Form",
+    "routing": "Routing",
+    "approval": "Approval",
+    "condition": "Condition",
+    "automatic": "Automatic"
+  },
+  "instance_statuses": {
+    "active": "Active",
+    "completed": "Completed",
+    "cancelled": "Cancelled",
+    "failed": "Failed"
+  },
+  "step_statuses": {
+    "pending": "Pending",
+    "in_progress": "In Progress",
+    "completed": "Completed",
+    "skipped": "Skipped",
+    "failed": "Failed"
+  },
+  "fields": {
+    "name": "Name",
+    "description": "Description",
+    "trigger_type": "Trigger",
+    "trigger_subtype": "Ticket Type",
+    "is_active": "Active",
+    "steps": "Steps",
+    "timeout_hours": "Timeout (Hours)",
+    "version": "Version",
+    "step_type": "Step Type",
+    "step_name": "Step Name",
+    "config": "Configuration"
+  },
+  "steps": {
+    "title": "Steps",
+    "add": "Add Step",
+    "remove": "Remove Step",
+    "remove_confirm": "Are you sure you want to remove this step?",
+    "no_steps": "No steps defined",
+    "no_steps_hint": "Add steps to define the workflow.",
+    "drag_to_reorder": "Drag to reorder",
+    "step_number": "Step {{number}}",
+    "config": {
+      "form_fields": "Form Fields",
+      "approver_group": "Approver Group",
+      "require_all": "Require all approvers",
+      "routing_options": "Routing Options",
+      "condition_field": "Condition Field",
+      "condition_operator": "Operator",
+      "condition_value": "Value",
+      "next_step_true": "Next Step (True)",
+      "next_step_false": "Next Step (False)",
+      "action": "Action"
+    }
+  },
+  "instances": {
+    "title": "Instances",
+    "no_instances": "No instances yet",
+    "current_step": "Current Step",
+    "progress": "Progress",
+    "started_at": "Started at",
+    "completed_at": "Completed at",
+    "cancel": "Cancel Workflow",
+    "start": "Start Workflow",
+    "no_active": "No active workflow",
+    "no_active_hint": "Start a workflow for this ticket.",
+    "select_template": "Select template",
+    "complete_step": "Complete Step",
+    "step_history": "Step History",
+    "completed_by": "Completed by"
+  },
+  "list": {
+    "showing": "{{count}} Templates",
+    "page_info": "Page {{page}} of {{pages}}",
+    "steps_count": "{{count}} Steps",
+    "active": "Active",
+    "inactive": "Inactive"
+  },
+  "filter_all_triggers": "All Triggers",
+  "filter_active": "Active",
+  "filter_inactive": "Inactive",
+  "filter_all_status": "All Status",
+  "tabs": {
+    "steps": "Steps",
+    "flow": "Flow Diagram",
+    "instances": "Instances"
+  }
+}

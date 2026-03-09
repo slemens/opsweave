@@ -125,6 +125,16 @@ CREATE TABLE IF NOT EXISTS asset_relations (
   UNIQUE(tenant_id, source_asset_id, target_asset_id, relation_type)
 );
 
+-- ticket_categories
+CREATE TABLE IF NOT EXISTS ticket_categories (
+  id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  name TEXT NOT NULL,
+  applies_to TEXT NOT NULL DEFAULT 'all',
+  is_active INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL
+);
+
 -- tickets
 CREATE TABLE IF NOT EXISTS tickets (
   id TEXT PRIMARY KEY,
@@ -149,6 +159,8 @@ CREATE TABLE IF NOT EXISTS tickets (
   sla_response_due TEXT,
   sla_resolve_due TEXT,
   sla_breached INTEGER NOT NULL DEFAULT 0,
+  category_id TEXT REFERENCES ticket_categories(id),
+  parent_ticket_id TEXT,
   source TEXT NOT NULL DEFAULT 'manual',
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
@@ -446,6 +458,7 @@ CREATE TABLE IF NOT EXISTS system_settings (
 CREATE INDEX IF NOT EXISTS idx_tickets_tenant_status ON tickets(tenant_id, status);
 CREATE INDEX IF NOT EXISTS idx_tickets_tenant_type ON tickets(tenant_id, ticket_type);
 CREATE INDEX IF NOT EXISTS idx_tickets_tenant_group ON tickets(tenant_id, assignee_group_id);
+CREATE INDEX IF NOT EXISTS idx_tickets_tenant_parent ON tickets(tenant_id, parent_ticket_id);
 CREATE INDEX IF NOT EXISTS idx_ticket_comments_ticket ON ticket_comments(tenant_id, ticket_id);
 CREATE INDEX IF NOT EXISTS idx_ticket_history_ticket ON ticket_history(tenant_id, ticket_id);
 CREATE INDEX IF NOT EXISTS idx_assets_tenant_type ON assets(tenant_id, asset_type);
