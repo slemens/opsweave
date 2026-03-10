@@ -17,18 +17,20 @@ test.describe('Tickets', () => {
     await expect(content).toBeVisible({ timeout: 15000 });
   });
 
-  test('should open ticket creation dialog', async ({ page }) => {
+  test('should navigate to ticket creation page', async ({ page }) => {
     await page.goto('/tickets');
-    // Look for the create / new ticket button
+    // Look for the create / new ticket button (navigates to /tickets/new)
     const createBtn = page
       .locator(
-        'button:has-text("Neues Ticket"), button:has-text("New Ticket"), button:has-text("Erstellen"), button:has-text("Create")'
+        'button:has-text("Neues Ticket"), button:has-text("New Ticket"), button:has-text("Erstellen"), button:has-text("Create"), a:has-text("Neues Ticket"), a:has-text("New Ticket")'
       )
       .first();
     await createBtn.waitFor({ timeout: 15000 });
     await createBtn.click();
-    // A dialog should open
-    await expect(page.locator('[role="dialog"]')).toBeVisible({ timeout: 5000 });
+    // Should navigate to the ticket creation page
+    await expect(page).toHaveURL(/\/tickets\/new/, { timeout: 10000 });
+    // The creation page should have a form with a title input
+    await expect(page.locator('input, textarea, form').first()).toBeVisible({ timeout: 10000 });
   });
 
   test('should display ticket detail when clicking a ticket', async ({ page }) => {
