@@ -69,7 +69,7 @@ ENV DB_DRIVER=sqlite
 ENV DATABASE_URL=file:/data/opsweave.db
 ENV PORT=8080
 ENV SERVE_STATIC=true
-ENV STATIC_PATH=../../public
+ENV STATIC_PATH=../../../public
 ENV QUEUE_DRIVER=better-queue
 ENV LOG_LEVEL=info
 
