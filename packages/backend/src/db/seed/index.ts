@@ -1903,8 +1903,8 @@ async function seed() {
   ]);
 
   // Update tickets to reference their workflow instances
-  await db.update(tickets).set({ workflow_instance_id: wiProblem1Id }).where(eq(tickets.id, prbTicketId)).run();
-  await db.update(tickets).set({ workflow_instance_id: wiSecurityId }).where(eq(tickets.id, secTicketId)).run();
+  await db.update(tickets).set({ workflow_instance_id: wiProblem1Id }).where(eq(tickets.id, prbTicketId));
+  await db.update(tickets).set({ workflow_instance_id: wiSecurityId }).where(eq(tickets.id, secTicketId));
 
   logger.info('  ✓ Workflow Instances: 2 active (Problem-Mgmt on DNS-Problem, Security IR on Log4j-Patch)');
 
