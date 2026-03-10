@@ -30,12 +30,17 @@ export async function listAssets(
   params: AssetFilterParams,
 ): Promise<{ assets: unknown[]; total: number }> {
   const d = db();
-  const { page, limit, sort, order, q, asset_type, status, sla_tier, environment, owner_group_id, customer_id } = params;
+  const { page, limit, sort, order, q, asset_type, asset_types, status, sla_tier, environment, owner_group_id, customer_id } = params;
   const offset = (page - 1) * limit;
 
   const conditions = [eq(assets.tenant_id, tenantId)];
 
-  if (asset_type) conditions.push(eq(assets.asset_type, asset_type));
+  if (asset_type) {
+    conditions.push(eq(assets.asset_type, asset_type));
+  } else if (asset_types) {
+    const types = asset_types.split(',').filter(Boolean);
+    if (types.length > 0) conditions.push(inArray(assets.asset_type, types));
+  }
   if (status) conditions.push(eq(assets.status, status));
   if (sla_tier) conditions.push(eq(assets.sla_tier, sla_tier));
   if (environment) conditions.push(eq(assets.environment, environment));

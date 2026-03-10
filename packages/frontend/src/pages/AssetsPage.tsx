@@ -82,7 +82,7 @@ const slaColors: Record<string, string> = {
   none: 'bg-gray-100 text-gray-500 dark:bg-gray-800/40 dark:text-gray-400',
 };
 
-/** Grouped asset types for the select dropdown */
+/** Grouped asset types for the select dropdown and category buttons */
 const assetTypeGroups: Array<{ category: string; types: AssetType[] }> = [
   { category: 'compute', types: ['server_physical', 'server_virtual', 'virtualization_host', 'container', 'container_host'] },
   { category: 'network', types: ['network_switch', 'network_router', 'network_firewall', 'network_load_balancer', 'network_wap'] },
@@ -92,6 +92,10 @@ const assetTypeGroups: Array<{ category: string; types: AssetType[] }> = [
   { category: 'enduser', types: ['workstation', 'laptop', 'printer'] },
   { category: 'other', types: ['other'] },
 ];
+
+/** Category keys for the filter buttons (all + each group) */
+const CATEGORY_KEYS = ['all', ...assetTypeGroups.map((g) => g.category)] as const;
+type CategoryKey = (typeof CATEGORY_KEYS)[number];
 
 // ---------------------------------------------------------------------------
 // Component
@@ -107,6 +111,7 @@ export function AssetsPage() {
 
   // ── Filter State ──────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<CategoryKey>('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [slaFilter, setSlaFilter] = useState('all');
@@ -131,13 +136,18 @@ export function AssetsPage() {
   const listParams: AssetListParams = useMemo(() => {
     const params: AssetListParams = { page, limit: 25, sort: sortField, order: sortOrder };
     if (searchQuery) params.q = searchQuery;
-    if (typeFilter !== 'all') params.asset_type = typeFilter as AssetType;
+    if (typeFilter !== 'all') {
+      params.asset_type = typeFilter as AssetType;
+    } else if (categoryFilter !== 'all') {
+      const group = assetTypeGroups.find((g) => g.category === categoryFilter);
+      if (group) params.asset_types = group.types.join(',');
+    }
     if (statusFilter !== 'all') params.status = statusFilter as AssetStatus;
     if (slaFilter !== 'all') params.sla_tier = slaFilter as AssetListParams['sla_tier'];
     if (envFilter !== 'all') params.environment = envFilter as AssetListParams['environment'];
     if (customerFilter !== 'all') params.customer_id = customerFilter;
     return params;
-  }, [page, sortField, sortOrder, searchQuery, typeFilter, statusFilter, slaFilter, envFilter, customerFilter]);
+  }, [page, sortField, sortOrder, searchQuery, categoryFilter, typeFilter, statusFilter, slaFilter, envFilter, customerFilter]);
 
   const { data, isLoading, isError, refetch } = useAssets(listParams);
   const createAsset = useCreateAsset();
@@ -153,7 +163,7 @@ export function AssetsPage() {
     return list.map((c) => ({ value: c.id, label: c.name }));
   }, [customersData]);
 
-  const hasActiveFilters = typeFilter !== 'all' || statusFilter !== 'all' || slaFilter !== 'all' || envFilter !== 'all' || customerFilter !== 'all' || searchQuery !== '';
+  const hasActiveFilters = categoryFilter !== 'all' || typeFilter !== 'all' || statusFilter !== 'all' || slaFilter !== 'all' || envFilter !== 'all' || customerFilter !== 'all' || searchQuery !== '';
 
   // ── Global Topology Graph ─────────────────────────────────
 
@@ -225,6 +235,7 @@ export function AssetsPage() {
 
   const resetFilters = useCallback(() => {
     setSearchQuery('');
+    setCategoryFilter('all');
     setTypeFilter('all');
     setStatusFilter('all');
     setSlaFilter('all');
@@ -316,10 +327,13 @@ export function AssetsPage() {
 
   // ── Type / Status / SLA options ───────────────────────────
 
-  const typeOptions = useMemo(() =>
-    ASSET_TYPES.map((at) => ({ value: at, label: t(`types.${at}`) })),
-    [t],
-  );
+  const typeOptions = useMemo(() => {
+    if (categoryFilter !== 'all') {
+      const group = assetTypeGroups.find((g) => g.category === categoryFilter);
+      if (group) return group.types.map((at) => ({ value: at, label: t(`types.${at}`) }));
+    }
+    return ASSET_TYPES.map((at) => ({ value: at, label: t(`types.${at}`) }));
+  }, [t, categoryFilter]);
 
   const statusOptions = useMemo(() =>
     ASSET_STATUSES.map((s) => ({ value: s, label: t(`statuses.${s}`) })),
@@ -365,7 +379,7 @@ export function AssetsPage() {
           }`}
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-          Tabelle
+          {t('view_table')}
         </button>
         <button
           onClick={() => setGlobalGraphView(true)}
@@ -374,29 +388,51 @@ export function AssetsPage() {
           }`}
         >
           <Network size={14} />
-          Topologie
+          {t('view_topology')}
         </button>
       </div>
 
-      {/* Search (table view only) */}
+      {/* Category filter buttons + Search (table view only) */}
       {!globalGraphView && (
-        <div className="flex items-center gap-3">
-          <form onSubmit={handleSearch} className="relative flex-1 max-w-md">
-            <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder={`${tCommon('actions.search')}...`}
-              className="pl-8"
-              value={searchQuery}
-              onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
-            />
-          </form>
-          {hasActiveFilters && (
-            <Button variant="ghost" size="sm" onClick={resetFilters} className="text-muted-foreground">
-              <FilterX className="mr-1.5 h-4 w-4" />
-              {tCommon('actions.reset')}
-            </Button>
-          )}
+        <div className="space-y-3">
+          <div className="flex items-center gap-1.5 overflow-x-auto">
+            {CATEGORY_KEYS.map((cat) => (
+              <Button
+                key={cat}
+                variant={categoryFilter === cat ? 'default' : 'outline'}
+                size="sm"
+                className={cn(
+                  'h-7 text-xs whitespace-nowrap',
+                  categoryFilter === cat && 'pointer-events-none',
+                )}
+                onClick={() => {
+                  setCategoryFilter(cat);
+                  setTypeFilter('all');
+                  setPage(1);
+                }}
+              >
+                {t(`type_categories.${cat}`)}
+              </Button>
+            ))}
+          </div>
+          <div className="flex items-center gap-3">
+            <form onSubmit={handleSearch} className="relative flex-1 max-w-md">
+              <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder={`${tCommon('actions.search')}...`}
+                className="pl-8"
+                value={searchQuery}
+                onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
+              />
+            </form>
+            {hasActiveFilters && (
+              <Button variant="ghost" size="sm" onClick={resetFilters} className="text-muted-foreground">
+                <FilterX className="mr-1.5 h-4 w-4" />
+                {tCommon('actions.reset')}
+              </Button>
+            )}
+          </div>
         </div>
       )}
 
@@ -584,9 +620,9 @@ export function AssetsPage() {
       {globalGraphView && (
         <div className="rounded-lg border border-border overflow-hidden" style={{ height: 600 }}>
           {graphLoading ? (
-            <div className="flex items-center justify-center h-full text-muted-foreground">Lade Topologie...</div>
+            <div className="flex items-center justify-center h-full text-muted-foreground">{t('topology_loading')}</div>
           ) : globalNodes.length === 0 ? (
-            <div className="flex items-center justify-center h-full text-muted-foreground">Keine Assets vorhanden</div>
+            <div className="flex items-center justify-center h-full text-muted-foreground">{t('topology_empty')}</div>
           ) : (
             <ReactFlow
               nodes={globalNodes}

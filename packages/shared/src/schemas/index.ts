@@ -358,6 +358,7 @@ export type TicketFilterParams = z.infer<typeof ticketFilterSchema>;
 
 export const assetFilterSchema = paginationSchema.extend({
   asset_type: z.enum(ASSET_TYPES).optional(),
+  asset_types: z.string().optional(), // comma-separated asset types for category filtering
   status: z.enum(ASSET_STATUSES).optional(),
   sla_tier: z.enum(SLA_TIERS).optional(),
   environment: z.enum(ENVIRONMENTS).optional(),

@@ -30,6 +30,7 @@ export interface AssetListParams {
   order?: 'asc' | 'desc';
   q?: string;
   asset_type?: AssetType;
+  asset_types?: string; // comma-separated types for category filtering
   status?: AssetStatus;
   sla_tier?: SlaTier;
   environment?: Environment;
