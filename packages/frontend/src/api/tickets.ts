@@ -148,6 +148,20 @@ export interface UpdateTicketPayload {
   customer_id?: string | null;
   category_id?: string | null;
   sla_tier?: string | null;
+  known_error_id?: string | null;
+  // Change-specific RFC fields
+  change_justification?: string | null;
+  change_risk_likelihood?: string | null;
+  change_risk_impact?: string | null;
+  change_implementation?: string | null;
+  change_rollback_plan?: string | null;
+  change_planned_start?: string | null;
+  change_planned_end?: string | null;
+  change_actual_start?: string | null;
+  change_actual_end?: string | null;
+  // Major incident
+  incident_commander_id?: string | null;
+  subtype?: string | null;
 }
 
 export interface UpdateTicketStatusPayload {

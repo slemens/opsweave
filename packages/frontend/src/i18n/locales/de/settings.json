@@ -11,6 +11,7 @@
     "customers": "Kunden",
     "categories": "Kategorien",
     "sla": "SLA",
+    "notifications": "Benachrichtigungen",
     "system": "System"
   },
   "general": {
@@ -211,6 +212,28 @@
     "delete_success": "SLA erfolgreich gelöscht",
     "assignment_success": "Zuweisung erfolgreich erstellt",
     "assignment_delete_success": "Zuweisung erfolgreich gelöscht"
+  },
+  "notifications": {
+    "title": "E-Mail-Benachrichtigungen",
+    "description": "Wählen Sie aus, über welche Ereignisse Sie per E-Mail benachrichtigt werden möchten.",
+    "events": {
+      "ticket_assigned": "Ticket zugewiesen",
+      "ticket_assigned_hint": "Benachrichtigung wenn Ihnen ein Ticket zugewiesen wird",
+      "ticket_status_changed": "Status geändert",
+      "ticket_status_changed_hint": "Benachrichtigung wenn sich der Status eines Ihrer Tickets ändert",
+      "ticket_commented": "Neuer Kommentar",
+      "ticket_commented_hint": "Benachrichtigung bei neuen Kommentaren auf Ihren Tickets",
+      "sla_warning": "SLA-Warnung",
+      "sla_warning_hint": "Warnung wenn eine SLA-Frist sich nähert",
+      "sla_breached": "SLA-Verletzung",
+      "sla_breached_hint": "Benachrichtigung wenn eine SLA-Frist überschritten wurde",
+      "ticket_escalated": "Ticket eskaliert",
+      "ticket_escalated_hint": "Benachrichtigung wenn ein Ticket eskaliert wurde",
+      "major_incident_declared": "Major Incident ausgerufen",
+      "major_incident_declared_hint": "Benachrichtigung wenn ein Major Incident ausgerufen wird",
+      "major_incident_resolved": "Major Incident gelöst",
+      "major_incident_resolved_hint": "Benachrichtigung wenn ein Major Incident gelöst wurde"
+    }
   },
   "saved": "Einstellungen gespeichert",
   "save_error": "Fehler beim Speichern",

@@ -56,7 +56,6 @@ import {
 } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
-import { Textarea } from '@/components/ui/textarea';
 import { cn, formatDate, formatRelativeTime } from '@/lib/utils';
 import {
   useBoardData,

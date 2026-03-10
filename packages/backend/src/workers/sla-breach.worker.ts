@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { getDb, type TypedDb } from '../config/database.js';
 import { tickets, ticketComments, ticketHistory, tenants } from '../db/schema/index.js';
 import logger from '../lib/logger.js';
+import { notify, getAffectedUsers } from '../modules/notifications/notification.service.js';
 
 // ─── Constants ───────────────────────────────────────────
 
@@ -98,6 +99,10 @@ async function checkTenantBreaches(
     .select({
       id: tickets.id,
       ticket_number: tickets.ticket_number,
+      title: tickets.title,
+      ticket_type: tickets.ticket_type,
+      assignee_id: tickets.assignee_id,
+      reporter_id: tickets.reporter_id,
       status: tickets.status,
       sla_response_due: tickets.sla_response_due,
       sla_resolve_due: tickets.sla_resolve_due,
@@ -195,6 +200,21 @@ async function checkTenantBreaches(
         { ticketNumber: ticket.ticket_number, breachType, tenantId },
         `[sla-breach] SLA breach detected: ${ticket.ticket_number} (${breachType})`,
       );
+
+      // Dispatch sla_breached notification
+      const affectedUsers = await getAffectedUsers(
+        tenantId,
+        ticket.assignee_id,
+        ticket.reporter_id,
+      );
+      void notify(tenantId, 'sla_breached', {
+        ticket_id: ticket.id,
+        ticket_number: ticket.ticket_number,
+        ticket_title: ticket.title,
+        ticket_type: ticket.ticket_type,
+        field_changed: 'sla_breached',
+        new_value: breachType,
+      }, affectedUsers);
 
       breached++;
     }

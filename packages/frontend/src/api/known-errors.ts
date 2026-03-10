@@ -43,7 +43,7 @@ export interface KnownErrorSearchResult {
 export const knownErrorKeys = {
   all: ['known-errors'] as const,
   lists: () => [...knownErrorKeys.all, 'list'] as const,
-  list: (params: Record<string, unknown>) => [...knownErrorKeys.lists(), params] as const,
+  list: (params: Record<string, string | number | boolean | undefined>) => [...knownErrorKeys.lists(), params] as const,
   details: () => [...knownErrorKeys.all, 'detail'] as const,
   detail: (id: string) => [...knownErrorKeys.details(), id] as const,
   search: (q: string) => [...knownErrorKeys.all, 'search', q] as const,
@@ -51,7 +51,7 @@ export const knownErrorKeys = {
 
 // ─── Queries ─────────────────────────────────────────────
 
-export function useKnownErrors(params: Record<string, unknown> = {}) {
+export function useKnownErrors(params: Record<string, string | number | boolean | undefined> = {}) {
   return useQuery({
     queryKey: knownErrorKeys.list(params),
     queryFn: () =>

@@ -67,7 +67,7 @@ export default function KnownErrorsPage() {
   const [editItem, setEditItem] = useState<KnownErrorWithRelations | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  const params: Record<string, unknown> = { page, limit: 25 };
+  const params: Record<string, string | number | boolean | undefined> = { page, limit: 25 };
   if (searchQuery) params.q = searchQuery;
   if (statusFilter) params.status = statusFilter;
 

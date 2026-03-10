@@ -19,6 +19,7 @@ import { portalRouter } from '../modules/portal/portal.routes.js';
 import { settingsRouter, licenseRouter } from '../modules/settings/settings.routes.js';
 import { slaRouter } from '../modules/sla/sla.routes.js';
 import { knownErrorRouter } from '../modules/known-errors/known-errors.routes.js';
+import notificationRouter from '../modules/notifications/notification.routes.js';
 
 // ─── Central API Router ────────────────────────────────────
 const apiRouter = Router();
@@ -58,6 +59,7 @@ protectedRouter.use('/settings', settingsRouter);
 protectedRouter.use('/license', licenseRouter);
 protectedRouter.use('/sla', slaRouter);
 protectedRouter.use('/known-errors', knownErrorRouter);
+protectedRouter.use('/notifications', notificationRouter);
 
 // AUDIT-FIX: L-01 — See TODO_BACKLOG.md#01 (monitoring module not yet implemented)
 // protectedRouter.use('/monitoring', monitoringRouter);
