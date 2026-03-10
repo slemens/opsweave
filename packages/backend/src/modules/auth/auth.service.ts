@@ -10,8 +10,15 @@ import {
   UnauthorizedError,
   NotFoundError,
   ForbiddenError,
+  ValidationError,
 } from '../../lib/errors.js';
 import type { RequestUser } from '../../lib/context.js';
+import {
+  validatePassword,
+  isPasswordInHistory,
+  isPasswordExpired,
+  parsePolicyFromSettings,
+} from '../../lib/password-policy.js';
 
 // ─── Constants ──────────────────────────────────────────────
 
@@ -52,6 +59,7 @@ interface LoginResult {
   user: UserInfo;
   token: string;
   tenants: TenantInfo[];
+  passwordExpired: boolean;
 }
 
 interface SwitchTenantResult {
@@ -212,6 +220,22 @@ export async function login(
     );
   }
 
+  // Check password expiry against tenant's policy
+  const tenantRow = db()
+    .select({ settings: tenants.settings })
+    .from(tenants)
+    .where(eq(tenants.id, defaultTenant.tenantId))
+    .limit(1)
+    .get();
+
+  let passwordExpired = false;
+  if (tenantRow) {
+    let tenantSettings: Record<string, unknown> = {};
+    try { tenantSettings = JSON.parse(tenantRow.settings) as Record<string, unknown>; } catch { /* empty */ }
+    const policy = parsePolicyFromSettings(tenantSettings);
+    passwordExpired = isPasswordExpired(user.password_changed_at, policy);
+  }
+
   // Update last_login timestamp
   const now = new Date().toISOString();
   db()
@@ -242,6 +266,7 @@ export async function login(
     },
     token,
     tenants: tenantList,
+    passwordExpired,
   };
 }
 
@@ -349,6 +374,124 @@ export async function switchTenant(
     activeTenantId: targetTenantId,
     role: membership.role,
   };
+}
+
+/**
+ * Change a user's password.
+ * Validates against the tenant's password policy, checks history,
+ * and updates password_hash, password_changed_at, password_history.
+ */
+export async function changePassword(
+  userId: string,
+  tenantId: string,
+  currentPassword: string,
+  newPassword: string,
+): Promise<void> {
+  const user = db()
+    .select()
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1)
+    .get();
+
+  if (!user) {
+    throw new NotFoundError('User not found');
+  }
+
+  if (!user.password_hash) {
+    throw new ForbiddenError('Cannot change password for external auth accounts');
+  }
+
+  // Verify current password
+  const currentValid = await verifyPassword(currentPassword, user.password_hash);
+  if (!currentValid) {
+    throw new UnauthorizedError('Current password is incorrect');
+  }
+
+  // Load tenant's password policy
+  const tenantRow = db()
+    .select({ settings: tenants.settings })
+    .from(tenants)
+    .where(eq(tenants.id, tenantId))
+    .limit(1)
+    .get();
+
+  let tenantSettings: Record<string, unknown> = {};
+  if (tenantRow) {
+    try { tenantSettings = JSON.parse(tenantRow.settings) as Record<string, unknown>; } catch { /* empty */ }
+  }
+  const policy = parsePolicyFromSettings(tenantSettings);
+
+  // Validate new password against policy
+  const violations = validatePassword(newPassword, policy);
+  if (violations.length > 0) {
+    throw new ValidationError(violations[0]!.message, {
+      violations: violations as unknown as Record<string, unknown>,
+    });
+  }
+
+  // Check password history
+  if (policy.history_count > 0) {
+    let historyHashes: string[] = [];
+    try {
+      historyHashes = JSON.parse(user.password_history) as string[];
+    } catch { /* empty */ }
+
+    const inHistory = await isPasswordInHistory(newPassword, historyHashes);
+    if (inHistory) {
+      throw new ValidationError(
+        `Password was used recently. Choose a password not used in the last ${policy.history_count} changes.`,
+      );
+    }
+  }
+
+  // Hash new password
+  const newHash = await hashPassword(newPassword);
+  const now = new Date().toISOString();
+
+  // Update password history
+  let historyHashes: string[] = [];
+  try {
+    historyHashes = JSON.parse(user.password_history) as string[];
+  } catch { /* empty */ }
+
+  // Add current hash to history (before replacing it)
+  historyHashes.unshift(user.password_hash);
+  // Trim to policy limit
+  if (policy.history_count > 0) {
+    historyHashes = historyHashes.slice(0, policy.history_count);
+  } else {
+    historyHashes = [];
+  }
+
+  db()
+    .update(users)
+    .set({
+      password_hash: newHash,
+      password_changed_at: now,
+      password_history: JSON.stringify(historyHashes),
+    })
+    .where(eq(users.id, userId))
+    .run();
+}
+
+/**
+ * Get the password policy for a tenant (parsed from settings).
+ */
+export function getPasswordPolicy(tenantId: string) {
+  const tenantRow = db()
+    .select({ settings: tenants.settings })
+    .from(tenants)
+    .where(eq(tenants.id, tenantId))
+    .limit(1)
+    .get();
+
+  let tenantSettings: Record<string, unknown> = {};
+  if (tenantRow) {
+    try { tenantSettings = JSON.parse(tenantRow.settings) as Record<string, unknown>; } catch { /* empty */ }
+  }
+
+  return parsePolicyFromSettings(tenantSettings);
 }
 
 // Re-export uuidv4 for use in other modules (e.g., seed)

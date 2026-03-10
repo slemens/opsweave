@@ -94,6 +94,23 @@
     "members": "Mitglieder",
     "save": "Speichern"
   },
+  "password_policy": {
+    "title": "Passwortrichtlinie",
+    "description": "Konfigurieren Sie die Anforderungen für Passwörter in Ihrer Organisation.",
+    "min_length": "Mindestlänge",
+    "characters": "Zeichen",
+    "complexity": "Komplexitätsanforderungen",
+    "require_uppercase": "Großbuchstabe erforderlich (A-Z)",
+    "require_lowercase": "Kleinbuchstabe erforderlich (a-z)",
+    "require_digit": "Ziffer erforderlich (0-9)",
+    "require_special": "Sonderzeichen erforderlich (!@#$...)",
+    "expiry_days": "Passwort-Ablauf",
+    "no_expiry": "Kein Ablauf",
+    "days": "Tage",
+    "history_count": "Passwort-Historie",
+    "no_history": "Keine Historie",
+    "remembered": "gespeicherte Passwörter"
+  },
   "users": {
     "import": {
       "title": "Benutzer importieren",

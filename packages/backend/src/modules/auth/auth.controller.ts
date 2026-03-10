@@ -2,7 +2,7 @@ import type { Request, Response } from 'express';
 
 import { sendSuccess } from '../../lib/response.js';
 // AUDIT-FIX: M-04 — Safe context accessors instead of non-null assertions
-import { requireUserId } from '../../lib/context.js';
+import { requireUserId, requireTenantId } from '../../lib/context.js';
 import * as authService from './auth.service.js';
 import type { LoginInput, SwitchTenantInput } from '@opsweave/shared';
 
@@ -60,4 +60,40 @@ export async function switchTenant(
   const result = await authService.switchTenant(userId, tenantId);
 
   sendSuccess(res, result);
+}
+
+// ─── PATCH /api/v1/auth/change-password ──────────────────
+
+/**
+ * Change the current user's password.
+ * Validates against the tenant's password policy.
+ */
+export async function changePassword(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const userId = requireUserId(req);
+  const tenantId = requireTenantId(req);
+  const { current_password, new_password } = req.body as {
+    current_password: string;
+    new_password: string;
+  };
+
+  await authService.changePassword(userId, tenantId, current_password, new_password);
+
+  sendSuccess(res, { message: 'Password changed successfully' });
+}
+
+// ─── GET /api/v1/auth/password-policy ────────────────────
+
+/**
+ * Get the password policy for the current tenant.
+ */
+export function getPasswordPolicy(
+  req: Request,
+  res: Response,
+): void {
+  const tenantId = requireTenantId(req);
+  const policy = authService.getPasswordPolicy(tenantId);
+  sendSuccess(res, policy);
 }

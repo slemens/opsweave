@@ -13,6 +13,8 @@ import {
 import { NotFoundError, ValidationError } from '../../lib/errors.js';
 import { validateLicenseKey, COMMUNITY_LIMITS } from '../../middleware/license.js';
 import { config } from '../../config/index.js';
+import type { PasswordPolicy } from '../../lib/password-policy.js';
+import { parsePolicyFromSettings, DEFAULT_PASSWORD_POLICY } from '../../lib/password-policy.js';
 
 // ─── DB Helper ────────────────────────────────────────────
 
@@ -342,4 +344,72 @@ function parseJson(value: string): unknown {
   } catch {
     return value;
   }
+}
+
+// ─── Password Policy ────────────────────────────────────
+
+/**
+ * Get the password policy for a tenant.
+ */
+export function getPasswordPolicy(tenantId: string): PasswordPolicy {
+  const row = db()
+    .select({ settings: tenants.settings })
+    .from(tenants)
+    .where(eq(tenants.id, tenantId))
+    .limit(1)
+    .get();
+
+  if (!row) return { ...DEFAULT_PASSWORD_POLICY };
+
+  let settings: Record<string, unknown> = {};
+  try { settings = JSON.parse(row.settings) as Record<string, unknown>; } catch { /* empty */ }
+
+  return parsePolicyFromSettings(settings);
+}
+
+/**
+ * Update the password policy for a tenant.
+ * Merges the new policy into the existing tenant settings JSON.
+ */
+export function updatePasswordPolicy(
+  tenantId: string,
+  policy: Partial<PasswordPolicy>,
+): PasswordPolicy {
+  const row = db()
+    .select({ settings: tenants.settings })
+    .from(tenants)
+    .where(eq(tenants.id, tenantId))
+    .limit(1)
+    .get();
+
+  if (!row) throw new NotFoundError('Tenant not found');
+
+  let settings: Record<string, unknown> = {};
+  try { settings = JSON.parse(row.settings) as Record<string, unknown>; } catch { /* empty */ }
+
+  // Merge with existing policy
+  const currentPolicy = parsePolicyFromSettings(settings);
+  const mergedPolicy: PasswordPolicy = {
+    min_length: policy.min_length ?? currentPolicy.min_length,
+    require_uppercase: policy.require_uppercase ?? currentPolicy.require_uppercase,
+    require_lowercase: policy.require_lowercase ?? currentPolicy.require_lowercase,
+    require_digit: policy.require_digit ?? currentPolicy.require_digit,
+    require_special: policy.require_special ?? currentPolicy.require_special,
+    expiry_days: policy.expiry_days ?? currentPolicy.expiry_days,
+    history_count: policy.history_count ?? currentPolicy.history_count,
+  };
+
+  // Validate bounds
+  const validated = parsePolicyFromSettings({ password_policy: mergedPolicy });
+
+  settings['password_policy'] = validated;
+
+  const now = new Date().toISOString();
+  db()
+    .update(tenants)
+    .set({ settings: JSON.stringify(settings), updated_at: now })
+    .where(eq(tenants.id, tenantId))
+    .run();
+
+  return validated;
 }

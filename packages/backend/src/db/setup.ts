@@ -38,6 +38,8 @@ CREATE TABLE IF NOT EXISTS users (
   is_active INTEGER NOT NULL DEFAULT 1,
   is_superadmin INTEGER NOT NULL DEFAULT 0,
   last_login TEXT,
+  password_changed_at TEXT,
+  password_history TEXT NOT NULL DEFAULT '[]',
   created_at TEXT NOT NULL
 );
 

@@ -16,6 +16,8 @@ export const users = sqliteTable('users', {
   is_active: integer('is_active').notNull().default(1),
   is_superadmin: integer('is_superadmin').notNull().default(0),
   last_login: text('last_login'),
+  password_changed_at: text('password_changed_at'),
+  password_history: text('password_history').notNull().default('[]'),
   created_at: text('created_at').notNull(),
 });
 

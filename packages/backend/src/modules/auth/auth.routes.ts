@@ -1,9 +1,15 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import { loginSchema, switchTenantSchema } from '@opsweave/shared';
 
 import { requireAuth } from '../../middleware/auth.js';
 import { validate } from '../../middleware/validate.js';
-import { login, logout, getMe, switchTenant } from './auth.controller.js';
+import { login, logout, getMe, switchTenant, changePassword, getPasswordPolicy } from './auth.controller.js';
+
+const changePasswordSchema = z.object({
+  current_password: z.string().min(1),
+  new_password: z.string().min(1),
+});
 
 // ─── Auth Router ────────────────────────────────────────────
 
@@ -37,5 +43,22 @@ authRouter.post(
   validate(switchTenantSchema),
   switchTenant,
 );
+
+/**
+ * PATCH /api/v1/auth/change-password
+ * Protected — change current user's password.
+ */
+authRouter.patch(
+  '/change-password',
+  requireAuth,
+  validate(changePasswordSchema),
+  changePassword,
+);
+
+/**
+ * GET /api/v1/auth/password-policy
+ * Protected — get tenant's password policy.
+ */
+authRouter.get('/password-policy', requireAuth, getPasswordPolicy);
 
 export { authRouter };

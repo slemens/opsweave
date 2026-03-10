@@ -8,6 +8,7 @@ import {
 // AUDIT-FIX: M-04 — Safe context accessors instead of non-null assertions
 import { requireTenantId, requireUserId } from '../../lib/context.js';
 import * as settingsService from './settings.service.js';
+import type { PasswordPolicy } from '../../lib/password-policy.js';
 
 // ─── System Settings ─────────────────────────────────────
 
@@ -131,4 +132,33 @@ export function deactivateLicenseHandler(
   const tenantId = requireTenantId(req);
   settingsService.deactivateLicense(tenantId);
   sendNoContent(res);
+}
+
+// ─── Password Policy ────────────────────────────────────
+
+/**
+ * GET /api/v1/settings/password-policy
+ * Get the password policy for the current tenant.
+ */
+export function getPasswordPolicy(
+  req: Request,
+  res: Response,
+): void {
+  const tenantId = requireTenantId(req);
+  const policy = settingsService.getPasswordPolicy(tenantId);
+  sendSuccess(res, policy);
+}
+
+/**
+ * PUT /api/v1/settings/password-policy
+ * Update the password policy for the current tenant (admin only).
+ */
+export function updatePasswordPolicy(
+  req: Request,
+  res: Response,
+): void {
+  const tenantId = requireTenantId(req);
+  const data = req.body as Partial<PasswordPolicy>;
+  const updated = settingsService.updatePasswordPolicy(tenantId, data);
+  sendSuccess(res, updated);
 }
