@@ -30,6 +30,14 @@ import {
   startEscalationWorker,
   stopEscalationWorker,
 } from './workers/escalation.worker.js';
+import {
+  startMonitoringPollWorker,
+  stopMonitoringPollWorker,
+} from './workers/monitoring-poll.worker.js';
+import {
+  startEventToIncidentWorker,
+  stopEventToIncidentWorker,
+} from './workers/event-to-incident.worker.js';
 // AUDIT-FIX: H-11 — Structured logging
 import logger from './lib/logger.js';
 // AUDIT-FIX: H-02 — Warn if default admin password unchanged in production
@@ -161,7 +169,7 @@ async function bootstrap(): Promise<void> {
         language: config.defaultLanguage,
         serveStatic: config.serveStatic,
       },
-      'OpsWeave Backend v0.3.6 started',
+      'OpsWeave Backend v0.3.7 started',
     );
 
     startEmailPollingWorker().catch((err: unknown) => {
@@ -173,6 +181,12 @@ async function bootstrap(): Promise<void> {
 
     // Auto-escalation worker
     startEscalationWorker();
+
+    // Monitoring poll worker (Check_MK, etc.)
+    startMonitoringPollWorker();
+
+    // Event-to-incident auto-creation worker
+    startEventToIncidentWorker();
 
     // AUDIT-FIX: H-02 — Check default admin password in production
     if (config.nodeEnv === 'production') {
@@ -188,6 +202,8 @@ async function bootstrap(): Promise<void> {
     stopEmailPollingWorker();
     stopSlaBreachWorker();
     stopEscalationWorker();
+    stopMonitoringPollWorker();
+    stopEventToIncidentWorker();
 
     httpServer.close(() => {
       logger.info('HTTP server closed');
