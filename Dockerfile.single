@@ -54,6 +54,8 @@ COPY --from=build /build/packages/shared/package.json ./packages/shared/
 # Copy built backend
 COPY --from=build /build/packages/backend/dist ./packages/backend/dist
 COPY --from=build /build/packages/backend/package.json ./packages/backend/
+# Copy non-TS assets that tsc doesn't emit (license public key)
+COPY --from=build /build/packages/backend/src/lib/license-public-key.pem ./packages/backend/dist/lib/license-public-key.pem
 
 # Copy built frontend as static files
 COPY --from=build /build/packages/frontend/dist ./public
