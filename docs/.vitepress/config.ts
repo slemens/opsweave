@@ -27,10 +27,19 @@ export default defineConfig({
       { text: 'Features', link: '/features/tickets', activeMatch: '/features/' },
       { text: 'API', link: '/api/', activeMatch: '/api/' },
       {
-        text: 'v0.2.9',
+        text: 'Entwicklung',
         items: [
-          { text: 'Changelog', link: 'https://github.com/slemens/opsweave/blob/main/CHANGELOG.md' },
-          { text: 'Releases', link: 'https://github.com/slemens/opsweave/releases' },
+          { text: 'Architektur', link: '/development/architecture' },
+          { text: 'Soft-Delete Strategie', link: '/development/soft-delete' },
+        ],
+      },
+      {
+        text: 'v0.3.2',
+        items: [
+          { text: 'Roadmap', link: '/project/roadmap' },
+          { text: 'ITIL Compliance', link: '/project/itil-compliance' },
+          { text: 'Changelog', link: '/project/changelog' },
+          { text: 'GitHub Releases', link: 'https://github.com/slemens/opsweave/releases' },
         ],
       },
     ],
@@ -67,6 +76,26 @@ export default defineConfig({
           text: 'REST API',
           items: [
             { text: 'Übersicht', link: '/api/' },
+            { text: 'OpenAPI Spec', link: '/api/openapi-gaps' },
+          ],
+        },
+      ],
+      '/development/': [
+        {
+          text: 'Entwicklung',
+          items: [
+            { text: 'Architektur', link: '/development/architecture' },
+            { text: 'Soft-Delete Strategie', link: '/development/soft-delete' },
+          ],
+        },
+      ],
+      '/project/': [
+        {
+          text: 'Projekt',
+          items: [
+            { text: 'Roadmap', link: '/project/roadmap' },
+            { text: 'ITIL Compliance', link: '/project/itil-compliance' },
+            { text: 'Changelog', link: '/project/changelog' },
           ],
         },
       ],
@@ -78,7 +107,7 @@ export default defineConfig({
 
     footer: {
       message: 'Veröffentlicht unter der AGPL-3.0 Lizenz.',
-      copyright: 'Copyright © 2025 OpsWeave Contributors',
+      copyright: 'Copyright © 2025–2026 OpsWeave Contributors',
     },
 
     editLink: {

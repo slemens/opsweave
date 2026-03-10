@@ -2,7 +2,7 @@
 
 **AUDIT-FIX: L-10** — Endpoints present in the codebase but missing or outdated in `docs/api/openapi.yaml`.
 
-**Spec version:** 0.1.0 (outdated — codebase is 0.2.x)
+**Spec version:** 0.3.2 (Tags aktualisiert, einzelne Endpoint-Definitionen noch ausstehend)
 
 ---
 

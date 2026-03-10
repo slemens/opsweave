@@ -11,9 +11,8 @@
 <p align="center">
   <a href="#quick-start">Quick Start</a> •
   <a href="#features">Features</a> •
-  <a href="#screenshots">Screenshots</a> •
-  <a href="#documentation">Docs</a> •
   <a href="#editions">Editions</a> •
+  <a href="#documentation">Docs</a> •
   <a href="#contributing">Contributing</a>
 </p>
 
@@ -44,7 +43,7 @@ docker run -d \
   ghcr.io/slemens/opsweave:latest
 ```
 
-Open [http://localhost:8080](http://localhost:8080) and log in with `admin` / `changeme`.
+Open [http://localhost:8080](http://localhost:8080) and log in with `admin@opsweave.local` / `changeme`.
 
 **Production deployment with PostgreSQL:**
 
@@ -101,16 +100,6 @@ docker compose up -d
 - **OIDC Authentication**: Azure AD, Keycloak, Okta (Enterprise)
 - **Role-based access**: Admin, Manager, Agent, Viewer
 
-## Screenshots
-
-> Screenshots will be added once the UI is implemented.
-
-<!--
-<p align="center">
-  <img src="docs/screenshots/dashboard.png" alt="Dashboard" width="800" />
-</p>
--->
-
 ## Editions
 
 | | Community | Enterprise |
@@ -144,10 +133,11 @@ The Community Edition is fully functional — no artificial feature gates. Enter
 
 Full documentation is available at **[https://slemens.github.io/opsweave](https://slemens.github.io/opsweave)**
 
-- [Getting Started](docs/guide/getting-started.md)
-- [Installation Guide](docs/guide/installation.md)
-- [Configuration](docs/guide/configuration.md)
-- [API Reference](docs/api/overview.md)
+- [What is OpsWeave?](docs/guide/index.md)
+- [Installation](docs/guide/installation.md)
+- [Quick Start](docs/guide/quickstart.md)
+- [Licensing](docs/guide/licensing.md)
+- [API Reference](docs/api/index.md)
 - [Architecture](docs/development/architecture.md)
 
 ## API
