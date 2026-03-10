@@ -3,6 +3,8 @@
 Die Workflow Engine ermöglicht die Automatisierung und Steuerung von ITSM-Prozessen.
 Workflows werden als Templates definiert und automatisch beim Erstellen von Tickets ausgelöst.
 
+![Workflow Templates](/screenshots/workflows.png)
+
 ## Konzepte
 
 **Template:** Definition eines Workflows (Schritte, Reihenfolge, Bedingungen)
@@ -32,6 +34,8 @@ Workflows werden automatisch ausgelöst wenn ein Ticket erstellt wird:
 | `manual` | Manuell durch Agent gestartet |
 
 ## Template-Designer
+
+![Workflow Detail](/screenshots/workflow-detail.png)
 
 Der visuelle Designer nutzt **React Flow**:
 - Drag & Drop von Step-Karten

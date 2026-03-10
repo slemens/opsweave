@@ -4,6 +4,8 @@ OpsWeave ist ein modulares, asset-zentriertes **Open-Source IT Service Managemen
 Es bildet ITIL-konforme Prozesse (Incident, Problem, Change) ab und verknüpft diese über eine CMDB
 mit Serviceverträgen, Regulatorik-Mapping und einem integrierten Kundenportal.
 
+![OpsWeave Dashboard](/screenshots/dashboard.png)
+
 ## Kernprinzipien
 
 **Asset-zentriert:** Das Asset (CI) ist die zentrale Entität. Alles — Tickets, SLAs, Verträge,
