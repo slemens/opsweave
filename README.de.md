@@ -37,6 +37,38 @@ jede Compliance-Anforderung verweist auf Assets in der CMDB. Dadurch hast du sof
 vollständigen Kontext — wenn ein Incident eingeht, siehst du direkt die betroffene
 Infrastruktur, geltende SLAs, regulatorische Anforderungen und Servicevereinbarungen.
 
+<p align="center">
+  <img src="docs/public/screenshots/dashboard.png" alt="OpsWeave Dashboard" width="800" />
+</p>
+
+### Kanban-Board
+
+<p align="center">
+  <img src="docs/public/screenshots/ticket-board.png" alt="Ticket Kanban-Board" width="800" />
+</p>
+
+### Ticket-Detail
+
+<p align="center">
+  <img src="docs/public/screenshots/ticket-detail.png" alt="Ticket-Detailansicht" width="800" />
+</p>
+
+### CMDB & Asset-Topologie
+
+<p align="center">
+  <img src="docs/public/screenshots/cmdb-table.png" alt="CMDB Asset-Tabelle" width="800" />
+</p>
+
+<p align="center">
+  <img src="docs/public/screenshots/cmdb-topology.png" alt="CMDB Topologie-Graph" width="800" />
+</p>
+
+### Workflow-Designer
+
+<p align="center">
+  <img src="docs/public/screenshots/workflow-detail.png" alt="Workflow-Designer" width="800" />
+</p>
+
 ## Quick Start
 
 **Single Container — in 30 Sekunden betriebsbereit:**
