@@ -5,15 +5,27 @@ import type { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
 import { LicenseLimitError } from '../lib/errors.js';
+// AUDIT-FIX: H-11 — Structured logging
+import logger from '../lib/logger.js';
 
 // ─── Community Edition default limits ──────────────────────
+// AUDIT-FIX: M-08 — Document where limits come from
+// These limits define the free Community Edition tier (see CLAUDE.md § 1 "Geschäftsmodell").
+// When no valid Enterprise JWT is present, these caps are enforced.
+// Enterprise licenses override these via the `limits` field in the JWT payload.
+
+const COMMUNITY_MAX_ASSETS = 50;
+const COMMUNITY_MAX_USERS = 5;
+const COMMUNITY_MAX_WORKFLOWS = 3;
+const COMMUNITY_MAX_FRAMEWORKS = 1;
+const COMMUNITY_MAX_MONITORING_SOURCES = 1;
 
 const COMMUNITY_LIMITS = {
-  maxAssets: 50,
-  maxUsers: 5,
-  maxWorkflows: 3,
-  maxFrameworks: 1,
-  maxMonitoringSources: 1,
+  maxAssets: COMMUNITY_MAX_ASSETS,
+  maxUsers: COMMUNITY_MAX_USERS,
+  maxWorkflows: COMMUNITY_MAX_WORKFLOWS,
+  maxFrameworks: COMMUNITY_MAX_FRAMEWORKS,
+  maxMonitoringSources: COMMUNITY_MAX_MONITORING_SOURCES,
 } as const;
 
 // ─── Embedded public key for license validation ────────────
@@ -81,7 +93,9 @@ export function validateLicenseKey(licenseKey: string | null | undefined): Licen
       algorithms: ['RS256'],
       issuer: 'opsweave',
     }) as LicensePayload;
-  } catch {
+  } catch (err) {
+    // AUDIT-FIX: H-13 — Log license validation failures
+    logger.error({ err }, 'License validation failed');
     return null;
   }
 }
@@ -109,8 +123,9 @@ function resolveLimit(
     const limit = decoded.limits[resource];
     // -1 means unlimited
     return limit === -1 ? Infinity : limit;
-  } catch {
-    // Invalid or expired → fall back to community
+  } catch (err) {
+    // AUDIT-FIX: H-13 — Log license limit resolution failures
+    logger.warn({ err, resource }, 'License validation failed, falling back to community limits');
     return COMMUNITY_LIMITS[resource];
   }
 }

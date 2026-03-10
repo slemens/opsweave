@@ -6,6 +6,8 @@ import {
   sendPaginated,
   sendNoContent,
 } from '../../lib/response.js';
+// AUDIT-FIX: M-04 — Safe context accessors instead of non-null assertions
+import { requireTenantId, requireUserId } from '../../lib/context.js';
 import * as servicesService from './services.service.js';
 import type {
   CreateServiceDescriptionInput,
@@ -26,7 +28,7 @@ export async function listServiceDescriptions(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const params = (
     (req as unknown as Record<string, unknown>)['parsedQuery'] ?? req.query
   ) as unknown as ServiceDescriptionFilterParams;
@@ -43,7 +45,7 @@ export async function getServiceDescription(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { id } = req.params as { id: string };
 
   const description = await servicesService.getServiceDescription(tenantId, id);
@@ -57,8 +59,8 @@ export async function createServiceDescription(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
-  const userId = req.user!.id;
+  const tenantId = requireTenantId(req);
+  const userId = requireUserId(req);
   const data = req.body as CreateServiceDescriptionInput;
 
   const description = await servicesService.createServiceDescription(tenantId, data, userId);
@@ -72,9 +74,9 @@ export async function updateServiceDescription(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { id } = req.params as { id: string };
-  const userId = req.user!.id;
+  const userId = requireUserId(req);
   const data = req.body as UpdateServiceDescriptionInput;
 
   const description = await servicesService.updateServiceDescription(tenantId, id, data, userId);
@@ -88,7 +90,7 @@ export async function deleteServiceDescription(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { id } = req.params as { id: string };
 
   await servicesService.deleteServiceDescription(tenantId, id);
@@ -104,7 +106,7 @@ export async function listHorizontalCatalogs(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const params = (
     (req as unknown as Record<string, unknown>)['parsedQuery'] ?? req.query
   ) as unknown as CatalogFilterParams;
@@ -120,7 +122,7 @@ export async function getHorizontalCatalog(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { id } = req.params as { id: string };
 
   const catalog = await servicesService.getHorizontalCatalog(tenantId, id);
@@ -134,8 +136,8 @@ export async function createHorizontalCatalog(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
-  const userId = req.user!.id;
+  const tenantId = requireTenantId(req);
+  const userId = requireUserId(req);
   const data = req.body as CreateHorizontalCatalogInput;
 
   const catalog = await servicesService.createHorizontalCatalog(tenantId, data, userId);
@@ -149,7 +151,7 @@ export async function updateHorizontalCatalog(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { id } = req.params as { id: string };
   const data = req.body as UpdateHorizontalCatalogInput;
 
@@ -164,7 +166,7 @@ export async function deleteHorizontalCatalog(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { id } = req.params as { id: string };
 
   await servicesService.deleteHorizontalCatalog(tenantId, id);
@@ -178,7 +180,7 @@ export async function addCatalogItem(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { id } = req.params as { id: string };
   const data = req.body as AddCatalogItemInput;
 
@@ -193,7 +195,7 @@ export async function removeCatalogItem(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { id, sid } = req.params as { id: string; sid: string };
 
   await servicesService.removeCatalogItem(tenantId, id, sid);
@@ -209,7 +211,7 @@ export async function listVerticalCatalogs(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const catalogs = await servicesService.listVerticalCatalogs(tenantId);
   sendSuccess(res, catalogs);
 }
@@ -221,7 +223,7 @@ export async function getVerticalCatalog(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { id } = req.params as { id: string };
   const catalog = await servicesService.getVerticalCatalog(tenantId, id);
   sendSuccess(res, catalog);
@@ -234,7 +236,7 @@ export async function createVerticalCatalog(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const catalog = await servicesService.createVerticalCatalog(tenantId, req.body);
   sendCreated(res, catalog);
 }
@@ -246,7 +248,7 @@ export async function updateVerticalCatalog(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { id } = req.params as { id: string };
   const catalog = await servicesService.updateVerticalCatalog(tenantId, id, req.body);
   sendSuccess(res, catalog);
@@ -259,7 +261,7 @@ export async function deleteVerticalCatalog(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { id } = req.params as { id: string };
   await servicesService.deleteVerticalCatalog(tenantId, id);
   sendNoContent(res);
@@ -272,7 +274,7 @@ export async function addVerticalOverride(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { id } = req.params as { id: string };
   const catalog = await servicesService.addVerticalOverride(tenantId, id, req.body);
   sendCreated(res, catalog);
@@ -285,7 +287,7 @@ export async function removeVerticalOverride(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { id, oid } = req.params as { id: string; oid: string };
   await servicesService.removeVerticalOverride(tenantId, id, oid);
   sendNoContent(res);

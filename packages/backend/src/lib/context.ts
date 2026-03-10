@@ -37,5 +37,37 @@ declare global {
   }
 }
 
-// This file must be a module so the augmentation works.
-export {};
+// ─── AUDIT-FIX: M-04 — Safe context accessors ────────────────────
+// Replace non-null assertions (req.tenantId!, req.user!) with guarded helpers
+// that throw UnauthorizedError if the middleware hasn't set the expected values.
+
+import type { Request } from 'express';
+import { UnauthorizedError } from './errors.js';
+
+/**
+ * Safely extract the tenant ID from the request.
+ * Throws UnauthorizedError if missing (middleware not applied or auth failed).
+ */
+export function requireTenantId(req: Request): string {
+  const tenantId = req.tenantId;
+  if (!tenantId) throw new UnauthorizedError('Missing tenant context');
+  return tenantId;
+}
+
+/**
+ * Safely extract the authenticated user from the request.
+ * Throws UnauthorizedError if missing.
+ */
+export function requireUser(req: Request): RequestUser {
+  const user = req.user;
+  if (!user) throw new UnauthorizedError('Missing user context');
+  return user;
+}
+
+/**
+ * Safely extract the authenticated user's ID from the request.
+ * Throws UnauthorizedError if missing.
+ */
+export function requireUserId(req: Request): string {
+  return requireUser(req).id;
+}

@@ -5,12 +5,18 @@ import { getDb, type TypedDb } from '../../config/database.js';
 import {
   assets,
   assetRelations,
+  assetServiceLinks,
+  assetRegulatoryFlags,
   assigneeGroups,
   customers,
+  regulatoryFrameworks,
   tickets,
   users,
+  verticalCatalogs,
+  horizontalCatalog,
 } from '../../db/schema/index.js';
 import { NotFoundError, ConflictError, LicenseLimitError } from '../../lib/errors.js';
+import { slaEngine } from '../../lib/sla-engine.js';
 import { COMMUNITY_LIMITS } from '@opsweave/shared';
 import type { AssetFilterParams, CreateAssetInput, UpdateAssetInput } from '@opsweave/shared';
 
@@ -733,4 +739,206 @@ export async function getAssetTickets(
     created_at: row.created_at,
     assignee: row.assignee_name ? { display_name: row.assignee_name } : null,
   }));
+}
+
+// ─── AUDIT-FIX: H-10 — Missing Asset Sub-Endpoints ──────
+
+/**
+ * Get the SLA inheritance chain for an asset.
+ * Walks the DAG upward (child → parent) and returns every hop with its SLA tier.
+ * The first entry is the asset itself; subsequent entries are ancestors.
+ */
+export async function getAssetSlaChain(
+  tenantId: string,
+  assetId: string,
+): Promise<{
+  resolved_tier: string | null;
+  chain: Array<{
+    level: number;
+    source: 'self' | 'inherited';
+    sla_tier: string;
+    asset_id: string;
+    asset_name: string;
+  }>;
+}> {
+  const d = db();
+
+  // Verify asset exists
+  const selfRows = await d
+    .select({ id: assets.id, display_name: assets.display_name, sla_tier: assets.sla_tier })
+    .from(assets)
+    .where(and(eq(assets.id, assetId), eq(assets.tenant_id, tenantId)))
+    .limit(1);
+
+  const self = selfRows[0];
+  if (!self) {
+    throw new NotFoundError('Asset not found');
+  }
+
+  const chain: Array<{
+    level: number;
+    source: 'self' | 'inherited';
+    sla_tier: string;
+    asset_id: string;
+    asset_name: string;
+  }> = [];
+
+  // Level 0: the asset itself
+  chain.push({
+    level: 0,
+    source: 'self',
+    sla_tier: self.sla_tier,
+    asset_id: self.id,
+    asset_name: self.display_name,
+  });
+
+  // Walk upward through the DAG (max 5 hops, matching sla-engine)
+  let currentIds = [assetId];
+  const visited = new Set<string>([assetId]);
+  const maxDepth = 5;
+
+  for (let depth = 1; depth <= maxDepth; depth++) {
+    if (currentIds.length === 0) break;
+
+    const nextIds: string[] = [];
+
+    for (const currentId of currentIds) {
+      const rels = await d
+        .select({ parent_id: assetRelations.source_asset_id })
+        .from(assetRelations)
+        .where(and(
+          eq(assetRelations.tenant_id, tenantId),
+          eq(assetRelations.target_asset_id, currentId),
+        ));
+
+      for (const rel of rels) {
+        if (visited.has(rel.parent_id)) continue;
+        visited.add(rel.parent_id);
+
+        const parentRows = await d
+          .select({ id: assets.id, display_name: assets.display_name, sla_tier: assets.sla_tier })
+          .from(assets)
+          .where(and(eq(assets.id, rel.parent_id), eq(assets.tenant_id, tenantId)))
+          .limit(1);
+
+        const parent = parentRows[0];
+        if (parent) {
+          chain.push({
+            level: depth,
+            source: 'inherited',
+            sla_tier: parent.sla_tier,
+            asset_id: parent.id,
+            asset_name: parent.display_name,
+          });
+          nextIds.push(parent.id);
+        }
+      }
+    }
+
+    currentIds = nextIds;
+  }
+
+  // Resolve the effective tier using the existing engine
+  const resolved_tier = await slaEngine.resolveSlaTier(tenantId, assetId);
+
+  return { resolved_tier, chain };
+}
+
+/**
+ * Get services linked to an asset via asset_service_links → vertical catalogs.
+ */
+export async function getAssetServices(
+  tenantId: string,
+  assetId: string,
+): Promise<Array<{
+  vertical_catalog_id: string;
+  vertical_catalog_name: string;
+  base_catalog_name: string | null;
+  effective_from: string;
+  effective_until: string | null;
+}>> {
+  const d = db();
+
+  // Verify asset exists
+  const selfRows = await d
+    .select({ id: assets.id })
+    .from(assets)
+    .where(and(eq(assets.id, assetId), eq(assets.tenant_id, tenantId)))
+    .limit(1);
+
+  if (!selfRows[0]) {
+    throw new NotFoundError('Asset not found');
+  }
+
+  // Query asset_service_links → vertical_catalogs → horizontal_catalog
+  const rows = await d
+    .select({
+      vertical_catalog_id: assetServiceLinks.vertical_id,
+      vertical_catalog_name: verticalCatalogs.name,
+      base_catalog_name: horizontalCatalog.name,
+      effective_from: assetServiceLinks.effective_from,
+      effective_until: assetServiceLinks.effective_until,
+    })
+    .from(assetServiceLinks)
+    .innerJoin(verticalCatalogs, eq(assetServiceLinks.vertical_id, verticalCatalogs.id))
+    .leftJoin(horizontalCatalog, eq(verticalCatalogs.base_catalog_id, horizontalCatalog.id))
+    .where(and(
+      eq(assetServiceLinks.tenant_id, tenantId),
+      eq(assetServiceLinks.asset_id, assetId),
+    ));
+
+  return rows.map((r) => ({
+    vertical_catalog_id: r.vertical_catalog_id,
+    vertical_catalog_name: r.vertical_catalog_name,
+    base_catalog_name: r.base_catalog_name,
+    effective_from: r.effective_from,
+    effective_until: r.effective_until,
+  }));
+}
+
+/**
+ * Get compliance/regulatory flags for an asset.
+ * Returns all regulatory frameworks this asset is flagged under.
+ */
+export async function getAssetCompliance(
+  tenantId: string,
+  assetId: string,
+): Promise<Array<{
+  framework_id: string;
+  framework_name: string;
+  framework_version: string | null;
+  reason: string | null;
+  flagged_at: string;
+  flagged_by: string;
+}>> {
+  const d = db();
+
+  // Verify asset exists
+  const selfRows = await d
+    .select({ id: assets.id })
+    .from(assets)
+    .where(and(eq(assets.id, assetId), eq(assets.tenant_id, tenantId)))
+    .limit(1);
+
+  if (!selfRows[0]) {
+    throw new NotFoundError('Asset not found');
+  }
+
+  const rows = await d
+    .select({
+      framework_id: assetRegulatoryFlags.framework_id,
+      framework_name: regulatoryFrameworks.name,
+      framework_version: regulatoryFrameworks.version,
+      reason: assetRegulatoryFlags.reason,
+      flagged_at: assetRegulatoryFlags.flagged_at,
+      flagged_by: assetRegulatoryFlags.flagged_by,
+    })
+    .from(assetRegulatoryFlags)
+    .innerJoin(regulatoryFrameworks, eq(assetRegulatoryFlags.framework_id, regulatoryFrameworks.id))
+    .where(and(
+      eq(assetRegulatoryFlags.tenant_id, tenantId),
+      eq(assetRegulatoryFlags.asset_id, assetId),
+    ));
+
+  return rows;
 }

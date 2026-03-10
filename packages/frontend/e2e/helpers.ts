@@ -9,7 +9,7 @@ export const ADMIN = {
 };
 
 export const PORTAL_USER = {
-  email: 'portal@acme.example.de',
+  email: 'portal@acme.example.com',
   password: 'changeme',
   tenantSlug: 'demo-org',
 };

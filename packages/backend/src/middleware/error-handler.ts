@@ -4,6 +4,8 @@ import { StatusCodes } from 'http-status-codes';
 
 import { AppError } from '../lib/errors.js';
 import { sendError } from '../lib/response.js';
+// AUDIT-FIX: H-11 — Structured logging
+import logger from '../lib/logger.js';
 
 /**
  * Global error-handling middleware.
@@ -47,16 +49,8 @@ export function errorHandler(
   const message =
     err instanceof Error ? err.message : 'An unexpected error occurred';
 
-  // Log full error in non-production for debugging
-  if (process.env['NODE_ENV'] !== 'production') {
-    console.error('[ErrorHandler]', err);
-  } else {
-    // In production, log a sanitised version
-    console.error(
-      '[ErrorHandler]',
-      err instanceof Error ? err.stack : String(err),
-    );
-  }
+  // AUDIT-FIX: H-11 — Structured logging
+  logger.error({ err }, 'Unhandled error');
 
   sendError(
     res,

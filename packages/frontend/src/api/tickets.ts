@@ -15,9 +15,15 @@ import type {
   TicketType,
   TicketStatus,
   TicketPriority,
-  AssigneeGroup,
 } from '@opsweave/shared';
 import type { PaginationMeta } from '@opsweave/shared';
+// AUDIT-FIX: M-09 — Re-export moved hooks for backwards compatibility during transition
+export { useGroups, useCreateGroup, useUpdateGroup, useDeleteGroup, groupKeys } from '@/api/groups';
+export type { GroupsResponse } from '@/api/groups';
+export { useCustomers, useCustomerOverview, useCreateCustomer, useUpdateCustomer, useDeleteCustomer, customerKeys } from '@/api/customers';
+export type { CustomerSummary, CustomersResponse, CustomerOverview } from '@/api/customers';
+export { useUsers, userKeys } from '@/api/users';
+export type { UserSummary, UsersResponse } from '@/api/users';
 
 // ---------------------------------------------------------------------------
 // Request / Response Types
@@ -144,34 +150,6 @@ export interface AddCommentPayload {
   is_internal: boolean;
 }
 
-export interface GroupsResponse {
-  data: AssigneeGroup[];
-  meta: PaginationMeta;
-}
-
-export interface UserSummary {
-  id: string;
-  email: string;
-  display_name: string;
-}
-
-export interface UsersResponse {
-  data: UserSummary[];
-  meta: PaginationMeta;
-}
-
-export interface CustomerSummary {
-  id: string;
-  name: string;
-  industry: string | null;
-  contact_email: string | null;
-  is_active: number;
-}
-
-export interface CustomersResponse {
-  data: CustomerSummary[];
-  meta: PaginationMeta;
-}
 
 export interface CategorySummary {
   id: string;
@@ -201,21 +179,6 @@ export const ticketKeys = {
   board: () => [...ticketKeys.all, 'board'] as const,
 };
 
-export const groupKeys = {
-  all: ['groups'] as const,
-  list: () => [...groupKeys.all, 'list'] as const,
-};
-
-export const userKeys = {
-  all: ['users'] as const,
-  list: () => [...userKeys.all, 'list'] as const,
-};
-
-export const customerKeys = {
-  all: ['customers'] as const,
-  list: () => [...customerKeys.all, 'list'] as const,
-  overview: (id: string) => [...customerKeys.all, 'overview', id] as const,
-};
 
 export const categoryKeys = {
   all: ['categories'] as const,
@@ -301,87 +264,6 @@ export function useBoardData() {
   });
 }
 
-export function useGroups() {
-  return useQuery({
-    queryKey: groupKeys.list(),
-    queryFn: async () => {
-      return apiClient.get<GroupsResponse>('/groups');
-    },
-  });
-}
-
-export function useUsers() {
-  return useQuery({
-    queryKey: userKeys.list(),
-    queryFn: async () => {
-      return apiClient.get<UsersResponse>('/users', { params: { limit: 100 } });
-    },
-  });
-}
-
-export function useCustomers() {
-  return useQuery({
-    queryKey: customerKeys.list(),
-    queryFn: async () => {
-      return apiClient.get<CustomersResponse>('/customers', { params: { limit: 100 } });
-    },
-  });
-}
-
-export interface CustomerOverview {
-  customer: CustomerSummary & { industry: string | null; created_at: string };
-  stats: {
-    total_assets: number;
-    total_tickets: number;
-    open_tickets: number;
-    sla_breached_tickets: number;
-    portal_users: number;
-  };
-  assets: Array<{
-    id: string;
-    display_name: string;
-    asset_type: string;
-    status: string;
-    sla_tier: string;
-  }>;
-  recent_tickets: Array<{
-    id: string;
-    ticket_number: string;
-    title: string;
-    status: string;
-    priority: string;
-    sla_breached: number;
-    created_at: string;
-  }>;
-  sla_assignments: Array<{
-    id: string;
-    scope: 'customer' | 'customer_service' | 'asset';
-    scope_label: string | null;
-    definition: {
-      id: string;
-      name: string;
-      response_time_minutes: number;
-      resolution_time_minutes: number;
-      business_hours: string;
-    };
-  }>;
-  vertical_catalogs: Array<{
-    id: string;
-    name: string;
-    base_catalog_name: string | null;
-    industry: string | null;
-    status: string;
-    override_count: number;
-  }>;
-}
-
-export function useCustomerOverview(id: string | undefined) {
-  return useQuery({
-    queryKey: customerKeys.overview(id ?? ''),
-    queryFn: async () => apiClient.get<CustomerOverview>(`/customers/${id!}/overview`),
-    enabled: !!id,
-  });
-}
 
 export function useCategories() {
   return useQuery({
@@ -527,73 +409,7 @@ export function useAddComment() {
   });
 }
 
-// ---------------------------------------------------------------------------
-// Group Mutations
-// ---------------------------------------------------------------------------
 
-export function useCreateGroup() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (data: { name: string; description?: string; group_type?: string }) => {
-      return apiClient.post<AssigneeGroup>('/groups', data);
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: groupKeys.all });
-    },
-  });
-}
-
-export function useUpdateGroup() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ id, ...data }: { id: string; name?: string; description?: string; group_type?: string }) => {
-      return apiClient.put<AssigneeGroup>(`/groups/${id}`, data);
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: groupKeys.all });
-    },
-  });
-}
-
-export function useDeleteGroup() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (id: string) => {
-      return apiClient.delete(`/groups/${id}`);
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: groupKeys.all });
-    },
-  });
-}
-
-// ---------------------------------------------------------------------------
-// Customer Mutations
-// ---------------------------------------------------------------------------
-
-export function useCreateCustomer() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (data: { name: string; industry?: string | null; contact_email?: string | null; is_active?: number }) => {
-      return apiClient.post<CustomerSummary>('/customers', data);
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: customerKeys.all });
-    },
-  });
-}
-
-export function useUpdateCustomer() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ id, ...data }: { id: string; name?: string; industry?: string | null; contact_email?: string | null; is_active?: number }) => {
-      return apiClient.put<CustomerSummary>(`/customers/${id}`, data);
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: customerKeys.all });
-    },
-  });
-}
 
 // ---------------------------------------------------------------------------
 // Category Mutations

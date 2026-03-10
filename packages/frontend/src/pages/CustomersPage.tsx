@@ -1,29 +1,45 @@
+// AUDIT-FIX: C-12 — "Neuer Kunde" create button with Dialog
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import {
   Building2,
   Mail,
   Search,
-  Server,
-  Ticket,
   ChevronRight,
+  Plus,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Card,
   CardContent,
 } from '@/components/ui/card';
-import { useCustomers } from '@/api/tickets';
-import type { CustomerSummary } from '@/api/tickets';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+// AUDIT-FIX: M-09 — Import from domain-specific API module
+import { useCustomers, useCreateCustomer } from '@/api/customers';
+import type { CustomerSummary } from '@/api/customers';
 
 export function CustomersPage() {
   const { t } = useTranslation(['common']);
   const navigate = useNavigate();
   const { data, isLoading } = useCustomers();
+  const createMutation = useCreateCustomer();
   const [search, setSearch] = useState('');
+  const [createOpen, setCreateOpen] = useState(false);
+  const [formName, setFormName] = useState('');
+  const [formEmail, setFormEmail] = useState('');
+  const [formIndustry, setFormIndustry] = useState('');
 
   const customers = data?.data ?? [];
   const filtered = search.trim()
@@ -33,6 +49,30 @@ export function CustomersPage() {
         (c.industry ?? '').toLowerCase().includes(search.toLowerCase()),
       )
     : customers;
+
+  function resetForm() {
+    setFormName('');
+    setFormEmail('');
+    setFormIndustry('');
+  }
+
+  function handleCreate() {
+    if (!formName.trim()) return;
+    createMutation.mutate(
+      {
+        name: formName.trim(),
+        contact_email: formEmail.trim() || null,
+        industry: formIndustry.trim() || null,
+      },
+      {
+        onSuccess: () => {
+          toast.success(t('common:customers.create_success'));
+          setCreateOpen(false);
+          resetForm();
+        },
+      },
+    );
+  }
 
   return (
     <div className="space-y-5">
@@ -44,6 +84,10 @@ export function CustomersPage() {
             {filtered.length} {t('common:nav.customers')}
           </p>
         </div>
+        <Button onClick={() => setCreateOpen(true)} size="sm">
+          <Plus className="mr-2 h-4 w-4" />
+          {t('common:customers.create')}
+        </Button>
       </div>
 
       {/* Search */}
@@ -112,6 +156,53 @@ export function CustomersPage() {
           <p className="text-sm text-muted-foreground">{t('common:no_results')}</p>
         </div>
       )}
+
+      {/* Create Dialog */}
+      <Dialog open={createOpen} onOpenChange={(open) => { setCreateOpen(open); if (!open) resetForm(); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('common:customers.create_title')}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="customer-name">{t('common:customers.name')} *</Label>
+              <Input
+                id="customer-name"
+                placeholder={t('common:customers.name_placeholder')}
+                value={formName}
+                onChange={(e) => setFormName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="customer-email">{t('common:customers.email')}</Label>
+              <Input
+                id="customer-email"
+                type="email"
+                placeholder={t('common:customers.email_placeholder')}
+                value={formEmail}
+                onChange={(e) => setFormEmail(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="customer-industry">{t('common:customers.industry')}</Label>
+              <Input
+                id="customer-industry"
+                placeholder={t('common:customers.industry_placeholder')}
+                value={formIndustry}
+                onChange={(e) => setFormIndustry(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setCreateOpen(false); resetForm(); }}>
+              {t('common:actions.cancel')}
+            </Button>
+            <Button onClick={handleCreate} disabled={!formName.trim() || createMutation.isPending}>
+              {t('common:actions.create')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

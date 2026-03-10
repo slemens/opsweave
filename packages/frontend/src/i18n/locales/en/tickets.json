@@ -13,6 +13,8 @@
   "create_error": "Failed to create ticket",
   "update_success": "Ticket updated successfully",
   "update_error": "Failed to update ticket",
+  "status_confirm_title": "Set ticket to {{status}}?",
+  "status_confirm_description": "This action may affect SLA calculations.",
   "unassigned": "Unassigned",
   "unknown_user": "Unknown user",
   "no_description": "No description provided",
@@ -51,7 +53,8 @@
     "in_progress": "In Progress",
     "pending": "Pending",
     "resolved": "Resolved",
-    "closed": "Closed"
+    "closed": "Closed",
+    "archived": "Archived"
   },
   "priorities": {
     "critical": "Critical",

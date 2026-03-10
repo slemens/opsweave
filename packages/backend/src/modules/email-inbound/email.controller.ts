@@ -7,11 +7,15 @@ import {
   sendPaginated,
   sendNoContent,
 } from '../../lib/response.js';
+// AUDIT-FIX: M-04 — Safe context accessors instead of non-null assertions
+import { requireTenantId } from '../../lib/context.js';
 import { getDb, type TypedDb } from '../../config/database.js';
 import { emailInboundConfigs } from '../../db/schema/index.js';
 import * as emailService from './email.service.js';
 import type { InboundEmailData } from './email.service.js';
 import { ImapPoller } from './imap-poller.js';
+// AUDIT-FIX: H-14 — Use i18n instead of hardcoded German strings
+import { t } from '../../i18n/index.js';
 import type {
   PaginationParams,
   EmailFilterParams,
@@ -28,7 +32,7 @@ export async function listConfigs(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const params = ((req as unknown as Record<string, unknown>)['parsedQuery'] ?? req.query) as unknown as PaginationParams;
 
   const { configs, total } = await emailService.listEmailConfigs(tenantId, params);
@@ -42,7 +46,7 @@ export async function getConfig(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { id } = req.params as { id: string };
 
   const config = await emailService.getEmailConfig(tenantId, id);
@@ -56,7 +60,7 @@ export async function createConfig(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const data = req.body as CreateEmailConfigInput;
 
   const config = await emailService.createEmailConfig(tenantId, data);
@@ -70,7 +74,7 @@ export async function updateConfig(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { id } = req.params as { id: string };
   const data = req.body as UpdateEmailConfigInput;
 
@@ -85,7 +89,7 @@ export async function deleteConfig(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { id } = req.params as { id: string };
 
   await emailService.deleteEmailConfig(tenantId, id);
@@ -101,7 +105,7 @@ export async function listMessages(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const params = ((req as unknown as Record<string, unknown>)['parsedQuery'] ?? req.query) as unknown as EmailFilterParams;
 
   const { messages, total } = await emailService.listEmailMessages(tenantId, params);
@@ -115,7 +119,7 @@ export async function getMessage(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { id } = req.params as { id: string };
 
   const message = await emailService.getEmailMessage(tenantId, id);
@@ -137,17 +141,16 @@ export async function testConnection(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { id } = req.params as { id: string };
 
   const config = await emailService.getEmailConfig(tenantId, id);
 
+  // AUDIT-FIX: H-14 — Replace hardcoded German string with i18n
   if (config.provider !== 'imap') {
     sendSuccess(res, {
       success: true,
-      message:
-        'Webhook-basierte Provider benötigen keinen Verbindungstest. ' +
-        'Konfigurieren Sie die Webhook-URL in Ihrem E-Mail-Provider.',
+      message: t('email.webhook_no_test', req.language),
     });
     return;
   }
@@ -172,7 +175,7 @@ export async function testConnection(
  *   each with `from`, `subject`, `text`, `html`, `headers`, `to`,
  *   `message-id`.
  *
- * TODO: validate webhook secret for each provider.
+ * Note: webhook secret validation is handled by validateWebhookSignature middleware (C-08).
  */
 export async function processWebhook(
   req: Request,

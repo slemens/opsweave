@@ -32,14 +32,16 @@ services:
     build:
       context: .
       dockerfile: ./packages/backend/Dockerfile
+    # AUDIT-FIX: M-17 — All secrets and URLs via .env, no inline defaults
     environment:
       - NODE_ENV=production
       - PORT=3000
       - DB_DRIVER=pg
-      - DATABASE_URL=postgresql://opsweave:opsweave_secret@postgres:5432/opsweave_db
-      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
       - QUEUE_DRIVER=bullmq
-      - SESSION_SECRET=${SESSION_SECRET:-change-me-in-production}
+      - JWT_SECRET=${JWT_SECRET}
+      - SESSION_SECRET=${SESSION_SECRET}
       - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost}
       - DEFAULT_LANGUAGE=${DEFAULT_LANGUAGE:-de}
       # Enterprise Auth (optional)
@@ -60,10 +62,11 @@ services:
   # ─── PostgreSQL ──────────────────────────────────────────
   postgres:
     image: postgres:16-alpine
+    # AUDIT-FIX: M-17 — No hardcoded DB credentials
     environment:
-      - POSTGRES_USER=opsweave
-      - POSTGRES_PASSWORD=opsweave_secret
-      - POSTGRES_DB=opsweave_db
+      - POSTGRES_USER=${POSTGRES_USER:-opsweave}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB:-opsweave_db}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro

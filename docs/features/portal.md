@@ -11,7 +11,7 @@ und haben **keinen Zugang** zur internen ITSM-Oberfläche.
 
 **Demo-Zugang (Seed-Daten):**
 - URL: http://localhost:8080/portal/login
-- E-Mail: `portal@acme.example.de`
+- E-Mail: `portal@acme.example.com`
 - Passwort: `changeme`
 - Tenant: `demo-org`
 

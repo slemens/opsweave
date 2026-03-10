@@ -4,6 +4,7 @@ import { eq, and, desc, like, or, count } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 
 import { getDb, type TypedDb } from '../../config/database.js';
+import { config } from '../../config/index.js';
 import {
   customerPortalUsers,
   customers,
@@ -19,11 +20,6 @@ import type {
   PortalLoginInput,
   PaginationParams,
 } from '@opsweave/shared';
-
-// ─── Constants ──────────────────────────────────────────────
-
-const JWT_SECRET =
-  process.env['JWT_SECRET'] ?? 'opsweave-dev-secret-change-in-production';
 
 // ─── DB Helper ──────────────────────────────────────────────
 
@@ -121,7 +117,8 @@ export async function portalLogin(input: PortalLoginInput): Promise<{
     portal: true,
   };
 
-  const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '8h' });
+  // AUDIT-FIX: C-03 — Use central config.jwtSecret instead of separate fallback
+  const token = jwt.sign(payload, config.jwtSecret, { expiresIn: '8h' });
 
   return {
     token,

@@ -10,6 +10,8 @@
 import 'dotenv/config';
 import { sql } from 'drizzle-orm';
 import { initDatabase, getDb, type TypedDb } from '../config/database.js';
+// AUDIT-FIX: H-11 — Structured logging
+import logger from '../lib/logger.js';
 
 const TABLES_SQL = `
 -- tenants
@@ -505,11 +507,11 @@ CREATE INDEX IF NOT EXISTS idx_slaassign_tenant_service ON sla_assignments(tenan
 `;
 
 async function setup() {
-  console.log('[setup] Initializing database...');
+  logger.info('Initializing database');
   await initDatabase();
   const db = getDb() as TypedDb;
 
-  console.log('[setup] Creating tables...');
+  logger.info('Creating tables');
   const statements = TABLES_SQL
     .split(';')
     .map(s => s.trim())
@@ -519,12 +521,11 @@ async function setup() {
     db.run(sql.raw(stmt));
   }
 
-  console.log(`[setup] Created ${statements.length} objects (tables + indexes)`);
-  console.log('[setup] Done!');
+  logger.info({ count: statements.length }, 'Created objects (tables + indexes)');
   process.exit(0);
 }
 
 setup().catch(err => {
-  console.error('[setup] Failed:', err);
+  logger.fatal({ err }, 'Setup failed');
   process.exit(1);
 });

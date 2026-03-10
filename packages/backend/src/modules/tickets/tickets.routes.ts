@@ -30,9 +30,13 @@ import {
   listCategoriesCtrl,
   createCategoryCtrl,
   updateCategoryCtrl,
+  deleteCategoryCtrl,
   getTicketTimeline,
   getTicketsByCustomer,
+  archiveTicketCtrl,
 } from './tickets.controller.js';
+// AUDIT-FIX: M-14 — Alias GET /tickets/:id/workflow → workflow controller
+import { getTicketWorkflow as _getTicketWorkflow } from '../workflows/workflows.controller.js';
 
 const ticketRouter = Router();
 
@@ -40,6 +44,12 @@ const ticketRouter = Router();
 
 const updatePrioritySchema = z.object({
   priority: z.enum(TICKET_PRIORITIES),
+});
+
+// AUDIT-FIX: C-10 — Zod schema for ticket categories
+const categorySchema = z.object({
+  name: z.string().min(1).max(100),
+  description: z.string().optional(),
 });
 
 // ─── Routes ─────────────────────────────────────────────
@@ -109,13 +119,22 @@ ticketRouter.get('/categories', listCategoriesCtrl);
  * POST /api/v1/tickets/categories
  * Create a ticket category.
  */
-ticketRouter.post('/categories', createCategoryCtrl);
+// AUDIT-FIX: C-10 — Validate category body
+ticketRouter.post('/categories', validate(categorySchema), createCategoryCtrl);
 
 /**
  * PUT /api/v1/tickets/categories/:id
  * Update a ticket category.
  */
-ticketRouter.put('/categories/:id', validateParams(idParamSchema), updateCategoryCtrl);
+// AUDIT-FIX: C-10 — Validate category body
+ticketRouter.put('/categories/:id', validateParams(idParamSchema), validate(categorySchema), updateCategoryCtrl);
+
+// AUDIT-FIX: H-06 — Delete a ticket category (hard delete, 409 if tickets assigned)
+/**
+ * DELETE /api/v1/tickets/categories/:id
+ * Delete a ticket category.
+ */
+ticketRouter.delete('/categories/:id', validateParams(idParamSchema), deleteCategoryCtrl);
 
 /**
  * GET /api/v1/tickets/:id
@@ -171,6 +190,17 @@ ticketRouter.patch(
   updateTicketPriority,
 );
 
+// AUDIT-FIX: H-05 — Archive a ticket (only closed/resolved → archived)
+/**
+ * PATCH /api/v1/tickets/:id/archive
+ * Archive a ticket.
+ */
+ticketRouter.patch(
+  '/:id/archive',
+  validateParams(idParamSchema),
+  archiveTicketCtrl,
+);
+
 /**
  * GET /api/v1/tickets/:id/comments
  * Get ticket comments.
@@ -210,6 +240,17 @@ ticketRouter.get(
   '/:id/children',
   validateParams(idParamSchema),
   getChildTickets,
+);
+
+// AUDIT-FIX: M-14 — Convenience alias so the frontend can call GET /tickets/:id/workflow
+// The workflow controller expects req.params.ticketId, so we remap :id → ticketId.
+ticketRouter.get(
+  '/:id/workflow',
+  validateParams(idParamSchema),
+  (req, res, next) => {
+    req.params['ticketId'] = req.params['id']!;
+    _getTicketWorkflow(req, res).catch(next);
+  },
 );
 
 export { ticketRouter };

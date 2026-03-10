@@ -2,6 +2,8 @@ import { ImapFlow } from 'imapflow';
 import { simpleParser, type ParsedMail, type SimpleParserOptions } from 'mailparser';
 
 import * as emailService from './email.service.js';
+// AUDIT-FIX: H-11 — Structured logging
+import logger from '../../lib/logger.js';
 
 // ─── Types ────────────────────────────────────────────────
 
@@ -162,9 +164,10 @@ export class ImapPoller {
               { uid: true },
             );
           } catch (msgErr) {
-            console.error(
-              `[ImapPoller] Failed to process message uid=${message.uid} (config=${this.configId}):`,
-              msgErr,
+            // AUDIT-FIX: H-11 — Structured logging
+            logger.error(
+              { err: msgErr, uid: message.uid, configId: this.configId },
+              'Failed to process IMAP message',
             );
             // Continue with the next message even if this one failed
           }
@@ -175,10 +178,8 @@ export class ImapPoller {
 
       await client.logout();
     } catch (connErr) {
-      console.error(
-        `[ImapPoller] Connection error for config ${this.configId}:`,
-        connErr,
-      );
+      // AUDIT-FIX: H-11 — Structured logging
+      logger.error({ err: connErr, configId: this.configId }, 'IMAP connection error');
       throw connErr;
     }
   }

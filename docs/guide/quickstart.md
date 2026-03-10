@@ -67,7 +67,7 @@ Die Seed-Daten enthalten bereits:
 - 5 Tickets in verschiedenen Zuständen
 - 2 Workflow-Templates
 - 7 KB-Artikel
-- 1 Kundenportal-User (`portal@acme.example.de` / `changeme`)
+- 1 Kundenportal-User (`portal@acme.example.com` / `changeme`)
 
 **Kundenportal:** http://localhost:8080/portal/login
 

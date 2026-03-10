@@ -6,6 +6,8 @@ import {
   sendPaginated,
   sendNoContent,
 } from '../../lib/response.js';
+// AUDIT-FIX: M-04 — Safe context accessors instead of non-null assertions
+import { requireTenantId, requireUserId } from '../../lib/context.js';
 import * as kbService from './kb.service.js';
 import type { CreateKbArticleInput, UpdateKbArticleInput, KbFilterParams } from '@opsweave/shared';
 
@@ -21,7 +23,7 @@ export async function listArticles(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const params = (
     (req as unknown as Record<string, unknown>)['parsedQuery'] ?? req.query
   ) as unknown as KbFilterParams;
@@ -38,7 +40,7 @@ export async function getArticle(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { id } = req.params as { id: string };
 
   const article = await kbService.getKbArticle(tenantId, id);
@@ -53,8 +55,8 @@ export async function createArticle(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
-  const userId = req.user!.id;
+  const tenantId = requireTenantId(req);
+  const userId = requireUserId(req);
   const data = req.body as CreateKbArticleInput;
 
   const article = await kbService.createKbArticle(tenantId, data, userId);
@@ -69,7 +71,7 @@ export async function updateArticle(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { id } = req.params as { id: string };
   const data = req.body as UpdateKbArticleInput;
 
@@ -85,7 +87,7 @@ export async function deleteArticle(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { id } = req.params as { id: string };
 
   await kbService.deleteKbArticle(tenantId, id);
@@ -100,7 +102,7 @@ export async function linkToTicket(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { id, ticketId } = req.params as { id: string; ticketId: string };
 
   await kbService.linkArticleToTicket(tenantId, id, ticketId);
@@ -115,7 +117,7 @@ export async function unlinkFromTicket(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { id, ticketId } = req.params as { id: string; ticketId: string };
 
   await kbService.unlinkArticleFromTicket(tenantId, id, ticketId);

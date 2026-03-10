@@ -1,14 +1,11 @@
+// AUDIT-FIX: C-11 — Replace MOCK_USAGE with real API data from GET /api/v1/license/usage
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AlertTriangle, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useAuthStore } from '@/stores/auth-store';
-
-// Mock license usage data (same source as SettingsPage until API is ready)
-const MOCK_USAGE = {
-  assets: { current: 12, max: 50 },
-  users: { current: 3, max: 5 },
-};
+import { useLicenseUsage } from '@/api/settings';
 
 /**
  * LicenseBanner - shows a warning banner when community edition limits
@@ -27,14 +24,35 @@ export function LicenseBanner() {
   const isAdmin =
     activeTenant?.role === 'admin' || user?.isSuperAdmin === true;
 
+  // AUDIT-FIX: C-11 — Fetch real usage data from API
+  const { data: usage, isLoading, isError } = useLicenseUsage();
+
   if (!isAdmin || dismissed) {
+    return null;
+  }
+
+  // Hide banner on API error (don't crash)
+  if (isError) {
+    return null;
+  }
+
+  // Show skeleton while loading
+  if (isLoading) {
+    return (
+      <div className="border-b border-muted px-4 py-2.5">
+        <Skeleton className="h-4 w-64" />
+      </div>
+    );
+  }
+
+  if (!usage) {
     return null;
   }
 
   // Determine which resources are near their limits (>80%)
   const warnings: Array<{ key: string; current: number; max: number }> = [];
 
-  const { assets, users } = MOCK_USAGE;
+  const { assets, users } = usage;
   if (assets.max > 0 && assets.current / assets.max > 0.8) {
     warnings.push({ key: 'assets_warning', current: assets.current, max: assets.max });
   }

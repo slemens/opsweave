@@ -13,6 +13,8 @@
   "create_error": "Fehler beim Erstellen des Tickets",
   "update_success": "Ticket erfolgreich aktualisiert",
   "update_error": "Fehler beim Aktualisieren des Tickets",
+  "status_confirm_title": "Ticket auf {{status}} setzen?",
+  "status_confirm_description": "Diese Aktion kann Auswirkungen auf SLA-Berechnungen haben.",
   "unassigned": "Nicht zugewiesen",
   "unknown_user": "Unbekannter Benutzer",
   "no_description": "Keine Beschreibung vorhanden",
@@ -51,7 +53,8 @@
     "in_progress": "In Bearbeitung",
     "pending": "Wartend",
     "resolved": "Gel\u00f6st",
-    "closed": "Geschlossen"
+    "closed": "Geschlossen",
+    "archived": "Archiviert"
   },
   "priorities": {
     "critical": "Kritisch",

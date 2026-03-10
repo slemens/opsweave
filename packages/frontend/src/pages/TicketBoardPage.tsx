@@ -18,6 +18,7 @@ import {
   Ticket as TicketIcon,
   FilterX,
   GitBranch,
+  Download,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -57,11 +58,12 @@ import {
   useBoardData,
   useTickets,
   useCreateTicket,
-  useGroups,
-  useUsers,
-  useCustomers,
   useCategories,
 } from '@/api/tickets';
+// AUDIT-FIX: M-09 — Import from domain-specific API modules
+import { useGroups } from '@/api/groups';
+import { useUsers } from '@/api/users';
+import { useCustomers } from '@/api/customers';
 import type { TicketWithRelations, CreateTicketPayload, TicketListParams } from '@/api/tickets';
 import type { TicketType, TicketPriority, TicketStatus } from '@opsweave/shared';
 import { TICKET_TYPES, TICKET_PRIORITIES, TICKET_STATUSES, TICKET_IMPACTS, TICKET_URGENCIES, calculatePriority } from '@opsweave/shared';
@@ -595,15 +597,64 @@ function TicketListView({
     );
   }
 
+  // AUDIT-FIX: M-16 — CSV export for filtered ticket list
+  const handleExportCsv = useCallback(() => {
+    const headers = [
+      t('fields.ticket_number'),
+      t('fields.title'),
+      t('fields.type'),
+      t('fields.status'),
+      t('fields.priority'),
+      t('fields.created_at'),
+      t('fields.assignee'),
+    ];
+    const escapeField = (val: string) => {
+      if (val.includes(',') || val.includes('"') || val.includes('\n')) {
+        return `"${val.replace(/"/g, '""')}"`;
+      }
+      return val;
+    };
+    const rows = tickets.map((ticket) => [
+      escapeField(ticket.ticket_number),
+      escapeField(ticket.title),
+      escapeField(t(`types.${ticket.ticket_type}`)),
+      escapeField(t(`statuses.${ticket.status}`)),
+      escapeField(t(`priorities.${ticket.priority}`)),
+      escapeField(new Date(ticket.created_at).toISOString().slice(0, 10)),
+      escapeField(ticket.assignee?.display_name ?? '-'),
+    ]);
+
+    const csv = [headers.map(escapeField).join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const date = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `opsweave-tickets-${date}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [tickets, t]);
+
   return (
     <div className="space-y-3">
-      {/* SLA-Legende */}
+      {/* SLA legend + export button */}
       <div className="flex items-center gap-4 text-xs text-muted-foreground">
         <span className="font-medium">{t('list.sla_legend')}</span>
         <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-green-500 inline-block" />{t('sla.ok')}</span>
         <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-yellow-500 inline-block" />{t('sla.warning')}</span>
         <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-red-500 inline-block" />{t('sla.breached')}</span>
         <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-gray-300 inline-block" />{t('sla.none')}</span>
+        {/* AUDIT-FIX: M-16 — CSV export button */}
+        <Button
+          variant="outline"
+          size="sm"
+          className="ml-auto h-6 text-xs"
+          onClick={handleExportCsv}
+          disabled={tickets.length === 0}
+        >
+          <Download className="mr-1.5 h-3 w-3" />
+          {tCommon('actions.export')}
+        </Button>
       </div>
       <div className="border rounded-lg overflow-x-auto">
         <Table className="min-w-[1250px]">
@@ -809,9 +860,10 @@ function CreateTicketDialog({ open, onOpenChange, parentTicketId, parentTicketTy
   const { t } = useTranslation('tickets');
   const { t: tCommon } = useTranslation();
   const createTicket = useCreateTicket();
-  const { data: groupsData } = useGroups();
-  const { data: customersData } = useCustomers();
-  const { data: categoriesData } = useCategories();
+  // AUDIT-FIX: M-10 — Track loading states for Select skeleton loaders
+  const { data: groupsData, isLoading: groupsLoading } = useGroups();
+  const { data: customersData, isLoading: customersLoading } = useCustomers();
+  const { data: categoriesData, isLoading: categoriesLoading } = useCategories();
 
   const [ticketType, setTicketType] = useState<TicketType>(parentTicketType ?? 'incident');
   const [title, setTitle] = useState('');
@@ -1027,55 +1079,67 @@ function CreateTicketDialog({ open, onOpenChange, parentTicketId, parentTicketTy
             )}
           </div>
 
-          {/* Group */}
+          {/* Group — AUDIT-FIX: M-10 — Skeleton while loading */}
           <div className="space-y-2">
             <Label htmlFor="ticket-group">{t('fields.group')}</Label>
-            <Select value={groupId} onValueChange={setGroupId}>
-              <SelectTrigger id="ticket-group">
-                <SelectValue placeholder={t('select_group')} />
-              </SelectTrigger>
-              <SelectContent>
-                {groups.map((group) => (
-                  <SelectItem key={group.id} value={group.id}>
-                    {group.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {groupsLoading ? (
+              <Skeleton className="h-9 w-full rounded-md" />
+            ) : (
+              <Select value={groupId} onValueChange={setGroupId}>
+                <SelectTrigger id="ticket-group">
+                  <SelectValue placeholder={t('select_group')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {groups.map((group) => (
+                    <SelectItem key={group.id} value={group.id}>
+                      {group.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
-          {/* Customer */}
+          {/* Customer — AUDIT-FIX: M-10 — Skeleton while loading */}
           <div className="space-y-2">
             <Label htmlFor="ticket-customer">{t('fields.customer')}</Label>
-            <Select value={customerId} onValueChange={setCustomerId}>
-              <SelectTrigger id="ticket-customer">
-                <SelectValue placeholder={t('select_customer')} />
-              </SelectTrigger>
-              <SelectContent>
-                {customers.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {customersLoading ? (
+              <Skeleton className="h-9 w-full rounded-md" />
+            ) : (
+              <Select value={customerId} onValueChange={setCustomerId}>
+                <SelectTrigger id="ticket-customer">
+                  <SelectValue placeholder={t('select_customer')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {customers.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
-          {/* Category */}
+          {/* Category — AUDIT-FIX: M-10 — Skeleton while loading */}
           <div className="space-y-2">
             <Label htmlFor="ticket-category">{t('fields.category')}</Label>
-            <Select value={categoryId} onValueChange={setCategoryId}>
-              <SelectTrigger id="ticket-category">
-                <SelectValue placeholder={t('select_category')} />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {categoriesLoading ? (
+              <Skeleton className="h-9 w-full rounded-md" />
+            ) : (
+              <Select value={categoryId} onValueChange={setCategoryId}>
+                <SelectTrigger id="ticket-category">
+                  <SelectValue placeholder={t('select_category')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
         </div>
 

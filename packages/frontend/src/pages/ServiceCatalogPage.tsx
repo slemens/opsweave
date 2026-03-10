@@ -86,7 +86,8 @@ import {
 } from '@/api/services';
 import type { ServiceDescription, HorizontalCatalog, VerticalCatalog } from '@/api/services';
 import { useLicenseInfo } from '@/api/settings';
-import { useCustomers } from '@/api/tickets';
+// AUDIT-FIX: M-09 — Import from domain-specific API module
+import { useCustomers } from '@/api/customers';
 import { ApiRequestError } from '@/api/client';
 
 // =============================================================================
@@ -1167,8 +1168,10 @@ function VerticalCatalogsTab() {
       setCreateCustomerId('');
       setCreateIndustry('');
       setCreateDescription('');
-    } catch {
-      toast.error(tCommon('error'));
+    } catch (err) {
+      // AUDIT-FIX: H-15 — Proper error handling with ApiRequestError check
+      const msg = err instanceof ApiRequestError ? err.message : tCommon('error');
+      toast.error(msg);
     }
   }
 
@@ -1177,8 +1180,10 @@ function VerticalCatalogsTab() {
       await deleteMutation.mutateAsync(id);
       toast.success(tCommon('deleted'));
       if (detailId === id) setDetailId(null);
-    } catch {
-      toast.error(tCommon('error'));
+    } catch (err) {
+      // AUDIT-FIX: H-15 — Proper error handling with ApiRequestError check
+      const msg = err instanceof ApiRequestError ? err.message : tCommon('error');
+      toast.error(msg);
     }
   }
 
@@ -1377,8 +1382,10 @@ function VerticalCatalogDetail({ verticalId }: { verticalId: string }) {
       setOrigDescId('');
       setOverrideDescId('');
       setOverrideReason('');
-    } catch {
-      toast.error(tCommon('error'));
+    } catch (err) {
+      // AUDIT-FIX: H-15 — Proper error handling with ApiRequestError check
+      const msg = err instanceof ApiRequestError ? err.message : tCommon('error');
+      toast.error(msg);
     }
   }
 
@@ -1386,8 +1393,10 @@ function VerticalCatalogDetail({ verticalId }: { verticalId: string }) {
     try {
       await removeOverrideMutation.mutateAsync({ verticalId, overrideId });
       toast.success(tCommon('deleted'));
-    } catch {
-      toast.error(tCommon('error'));
+    } catch (err) {
+      // AUDIT-FIX: H-15 — Proper error handling with ApiRequestError check
+      const msg = err instanceof ApiRequestError ? err.message : tCommon('error');
+      toast.error(msg);
     }
   }
 

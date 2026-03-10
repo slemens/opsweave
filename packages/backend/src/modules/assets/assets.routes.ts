@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { z } from 'zod';
 
 import { validate, validateQuery, validateParams } from '../../middleware/validate.js';
 import {
@@ -22,9 +23,18 @@ import {
   getFullAssetGraph,
   getAssetGraph,
   getAssetTickets,
+  getAssetSlaChain,
+  getAssetServices,
+  getAssetCompliance,
 } from './assets.controller.js';
 
 const assetRouter = Router();
+
+// AUDIT-FIX: H-04 — Param validation for asset relation delete
+const assetRelationParamsSchema = z.object({
+  id: z.string().uuid(),
+  rid: z.string().uuid(),
+});
 
 // ─── Routes ─────────────────────────────────────────────
 
@@ -135,8 +145,10 @@ assetRouter.post(
  * DELETE /api/v1/assets/:id/relations/:rid
  * Delete a relation.
  */
+// AUDIT-FIX: H-04 — Validate both UUID params
 assetRouter.delete(
   '/:id/relations/:rid',
+  validateParams(assetRelationParamsSchema),
   deleteAssetRelation,
 );
 
@@ -148,6 +160,38 @@ assetRouter.get(
   '/:id/tickets',
   validateParams(idParamSchema),
   getAssetTickets,
+);
+
+// AUDIT-FIX: H-10 — Missing asset sub-endpoints
+
+/**
+ * GET /api/v1/assets/:id/sla-chain
+ * Get the SLA inheritance chain from this asset upward through the hierarchy.
+ */
+assetRouter.get(
+  '/:id/sla-chain',
+  validateParams(idParamSchema),
+  getAssetSlaChain,
+);
+
+/**
+ * GET /api/v1/assets/:id/services
+ * Get services linked to this asset via vertical catalogs.
+ */
+assetRouter.get(
+  '/:id/services',
+  validateParams(idParamSchema),
+  getAssetServices,
+);
+
+/**
+ * GET /api/v1/assets/:id/compliance
+ * Get regulatory/compliance flags for this asset.
+ */
+assetRouter.get(
+  '/:id/compliance',
+  validateParams(idParamSchema),
+  getAssetCompliance,
 );
 
 export { assetRouter };

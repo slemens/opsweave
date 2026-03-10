@@ -9,6 +9,7 @@ import {
   getCustomer,
   createCustomer,
   updateCustomer,
+  deleteCustomer,
   getCustomerOverview,
 } from './customers.controller.js';
 
@@ -53,6 +54,18 @@ customerRouter.put(
   requireRole('admin', 'manager'),
   validateParams(idParamSchema),
   updateCustomer,
+);
+
+// AUDIT-FIX: C-14 — Soft-delete (deactivate) endpoint
+/**
+ * DELETE /api/v1/customers/:id
+ * Deactivate a customer (soft-delete). Returns 409 if open tickets exist.
+ */
+customerRouter.delete(
+  '/:id',
+  requireRole('admin', 'manager'),
+  validateParams(idParamSchema),
+  deleteCustomer,
 );
 
 /**

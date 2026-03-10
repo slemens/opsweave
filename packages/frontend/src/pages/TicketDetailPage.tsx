@@ -52,6 +52,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+// AUDIT-FIX: M-15 — AlertDialog for status change confirmation
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { cn, formatDate, formatRelativeTime } from '@/lib/utils';
 import {
   useTicket,
@@ -62,13 +73,14 @@ import {
   useUpdateTicketPriority,
   useAssignTicket,
   useAddComment,
-  useGroups,
-  useUsers,
-  useCustomers,
   useCategories,
   useCreateCategory,
   useUpdateTicket,
 } from '@/api/tickets';
+// AUDIT-FIX: M-09 — Import from domain-specific API modules
+import { useGroups } from '@/api/groups';
+import { useUsers } from '@/api/users';
+import { useCustomers } from '@/api/customers';
 import type { TicketCommentWithAuthor, HistoryWithUser, ChildTicketSummary } from '@/api/tickets';
 import type { TicketStatus, TicketPriority } from '@opsweave/shared';
 import { TICKET_STATUSES, TICKET_PRIORITIES, TICKET_IMPACTS, TICKET_URGENCIES } from '@opsweave/shared';
@@ -690,6 +702,10 @@ export function TicketDetailPage() {
   const [newCatDialogOpen, setNewCatDialogOpen] = useState(false);
   const [newCatName, setNewCatName] = useState('');
 
+  // AUDIT-FIX: M-15 — Confirmation dialog state for critical status changes
+  const [statusConfirmOpen, setStatusConfirmOpen] = useState(false);
+  const [pendingStatus, setPendingStatus] = useState<string | null>(null);
+
   const handleCategoryChange = useCallback(async (catId: string) => {
     if (catId === '__create_new__') {
       setNewCatName('');
@@ -738,7 +754,20 @@ export function TicketDetailPage() {
     }
   }, [id, updateTicket, t]);
 
-  const handleStatusChange = useCallback(async (newStatus: string) => {
+  // AUDIT-FIX: M-15 — Confirmation dialog for critical status transitions
+  const CONFIRM_STATUSES = ['closed', 'resolved', 'archived'];
+
+  const handleStatusChange = useCallback((newStatus: string) => {
+    if (!id) return;
+    if (CONFIRM_STATUSES.includes(newStatus)) {
+      setPendingStatus(newStatus);
+      setStatusConfirmOpen(true);
+      return;
+    }
+    void doStatusChange(newStatus);
+  }, [id]);
+
+  const doStatusChange = useCallback(async (newStatus: string) => {
     if (!id) return;
     try {
       await updateStatus.mutateAsync({ id, status: newStatus as TicketStatus });
@@ -747,6 +776,14 @@ export function TicketDetailPage() {
       toast.error(t('update_error'));
     }
   }, [id, updateStatus, t]);
+
+  const handleStatusConfirm = useCallback(() => {
+    if (pendingStatus) {
+      void doStatusChange(pendingStatus);
+    }
+    setStatusConfirmOpen(false);
+    setPendingStatus(null);
+  }, [pendingStatus, doStatusChange]);
 
   const handleImpactChange = useCallback(async (value: string) => {
     if (!id) return;
@@ -1703,6 +1740,28 @@ export function TicketDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* AUDIT-FIX: M-15 — Confirmation dialog for critical status changes */}
+      <AlertDialog open={statusConfirmOpen} onOpenChange={setStatusConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t('status_confirm_title', { status: pendingStatus ? t(`statuses.${pendingStatus}`) : '' })}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('status_confirm_description')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingStatus(null)}>
+              {tCommon('actions.cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleStatusConfirm}>
+              {tCommon('actions.confirm')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

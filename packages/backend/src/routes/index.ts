@@ -57,7 +57,7 @@ protectedRouter.use('/settings', settingsRouter);
 protectedRouter.use('/license', licenseRouter);
 protectedRouter.use('/sla', slaRouter);
 
-// TODO: mount remaining module routes as they are implemented
+// AUDIT-FIX: L-01 — See TODO_BACKLOG.md#01 (monitoring module not yet implemented)
 // protectedRouter.use('/monitoring', monitoringRouter);
 
 apiRouter.use(protectedRouter);
