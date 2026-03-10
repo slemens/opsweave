@@ -446,6 +446,38 @@ CREATE TABLE IF NOT EXISTS kb_article_links (
   PRIMARY KEY (article_id, ticket_id)
 );
 
+-- sla_definitions
+CREATE TABLE IF NOT EXISTS sla_definitions (
+  id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  name TEXT NOT NULL,
+  description TEXT,
+  response_time_minutes INTEGER NOT NULL,
+  resolution_time_minutes INTEGER NOT NULL,
+  business_hours TEXT NOT NULL DEFAULT '24/7',
+  business_hours_start TEXT,
+  business_hours_end TEXT,
+  business_days TEXT NOT NULL DEFAULT '1,2,3,4,5',
+  priority_overrides TEXT NOT NULL DEFAULT '{}',
+  is_default INTEGER NOT NULL DEFAULT 0,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+-- sla_assignments
+CREATE TABLE IF NOT EXISTS sla_assignments (
+  id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  sla_definition_id TEXT NOT NULL REFERENCES sla_definitions(id),
+  service_id TEXT REFERENCES service_descriptions(id),
+  customer_id TEXT REFERENCES customers(id),
+  asset_id TEXT REFERENCES assets(id),
+  priority INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL,
+  UNIQUE(tenant_id, sla_definition_id, service_id, customer_id, asset_id)
+);
+
 -- system_settings (NO tenant_id - global)
 CREATE TABLE IF NOT EXISTS system_settings (
   key TEXT PRIMARY KEY,
@@ -465,6 +497,11 @@ CREATE INDEX IF NOT EXISTS idx_assets_tenant_type ON assets(tenant_id, asset_typ
 CREATE INDEX IF NOT EXISTS idx_assets_tenant_status ON assets(tenant_id, status);
 CREATE INDEX IF NOT EXISTS idx_tenant_memberships_user ON tenant_user_memberships(user_id);
 CREATE INDEX IF NOT EXISTS idx_group_memberships_group ON user_group_memberships(group_id);
+CREATE INDEX IF NOT EXISTS idx_sladef_tenant ON sla_definitions(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_slaassign_tenant ON sla_assignments(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_slaassign_tenant_asset ON sla_assignments(tenant_id, asset_id);
+CREATE INDEX IF NOT EXISTS idx_slaassign_tenant_customer ON sla_assignments(tenant_id, customer_id);
+CREATE INDEX IF NOT EXISTS idx_slaassign_tenant_service ON sla_assignments(tenant_id, service_id);
 `;
 
 async function setup() {

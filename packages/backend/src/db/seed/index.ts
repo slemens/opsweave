@@ -35,6 +35,8 @@ import {
   serviceDescriptions,
   horizontalCatalog,
   horizontalCatalogItems,
+  slaDefinitions,
+  slaAssignments,
 } from '../schema/index.js';
 import { DEMO_LICENSE_KEY } from './demo-license.js';
 
@@ -1400,6 +1402,101 @@ async function seed() {
     { requirement_id: reqDsgvo25Id, service_desc_id: svcEmailId, tenant_id: tenantId, coverage_level: 'full', evidence_notes: 'Datensparsamkeit bei E-Mail-Logging umgesetzt', reviewed_at: now, reviewed_by: adminId },
   ]);
   console.log('  ✓ Compliance Mappings: 17 requirement-service mappings');
+
+  // ─── SLA Definitions ──────────────────────────────────────
+  const slaGoldId = uuidv4();
+  const slaSilverId = uuidv4();
+  const slaBronzeId = uuidv4();
+
+  await db.insert(slaDefinitions).values([
+    {
+      id: slaGoldId,
+      tenant_id: tenantId,
+      name: 'Gold SLA',
+      description: 'Premium-SLA für geschäftskritische Systeme. 24/7 Erreichbarkeit.',
+      response_time_minutes: 30,
+      resolution_time_minutes: 240,
+      business_hours: '24/7',
+      business_hours_start: null,
+      business_hours_end: null,
+      business_days: '1,2,3,4,5,6,7',
+      priority_overrides: '{}',
+      is_default: 0,
+      is_active: 1,
+      created_at: now,
+      updated_at: now,
+    },
+    {
+      id: slaSilverId,
+      tenant_id: tenantId,
+      name: 'Silver SLA',
+      description: 'Standard-SLA für wichtige Systeme. Erweiterte Geschäftszeiten.',
+      response_time_minutes: 60,
+      resolution_time_minutes: 480,
+      business_hours: 'extended',
+      business_hours_start: '07:00',
+      business_hours_end: '20:00',
+      business_days: '1,2,3,4,5',
+      priority_overrides: '{}',
+      is_default: 1,
+      is_active: 1,
+      created_at: now,
+      updated_at: now,
+    },
+    {
+      id: slaBronzeId,
+      tenant_id: tenantId,
+      name: 'Bronze SLA',
+      description: 'Basis-SLA für unkritische Systeme. Reguläre Geschäftszeiten.',
+      response_time_minutes: 120,
+      resolution_time_minutes: 1440,
+      business_hours: 'business',
+      business_hours_start: '08:00',
+      business_hours_end: '17:00',
+      business_days: '1,2,3,4,5',
+      priority_overrides: '{}',
+      is_default: 0,
+      is_active: 1,
+      created_at: now,
+      updated_at: now,
+    },
+  ]);
+  console.log('  ✓ SLA Definitions: Gold, Silver (default), Bronze');
+
+  // ─── SLA Assignments ──────────────────────────────────────
+  await db.insert(slaAssignments).values([
+    {
+      id: uuidv4(),
+      tenant_id: tenantId,
+      sla_definition_id: slaGoldId,
+      service_id: svcDatabaseId,
+      customer_id: null,
+      asset_id: null,
+      priority: 25,
+      created_at: now,
+    },
+    {
+      id: uuidv4(),
+      tenant_id: tenantId,
+      sla_definition_id: slaGoldId,
+      service_id: null,
+      customer_id: customerAcmeId,
+      asset_id: null,
+      priority: 50,
+      created_at: now,
+    },
+    {
+      id: uuidv4(),
+      tenant_id: tenantId,
+      sla_definition_id: slaBronzeId,
+      service_id: svcWorkplaceId,
+      customer_id: null,
+      asset_id: null,
+      priority: 25,
+      created_at: now,
+    },
+  ]);
+  console.log('  ✓ SLA Assignments: 3 assignments (DB→Gold, Acme→Gold, Workplace→Bronze)');
 
   console.log('\n✅ Seed completed successfully!');
   console.log('\n📋 Login credentials:');
