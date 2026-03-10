@@ -3,6 +3,8 @@ import { eq, and } from 'drizzle-orm';
 import { getDb, type TypedDb } from '../../config/database.js';
 import { emailInboundConfigs } from '../../db/schema/email.js';
 import { ImapPoller } from './imap-poller.js';
+// AUDIT-FIX: H-11 — Structured logging
+import logger from '../../lib/logger.js';
 
 // ─── State ────────────────────────────────────────────────
 
@@ -21,7 +23,7 @@ const pollingIntervals = new Map<string, ReturnType<typeof setInterval>>();
  * Call this once after the server (and database) has started.
  */
 export async function startEmailPollingWorker(): Promise<void> {
-  console.log('[EmailWorker] Starting IMAP polling worker...');
+  logger.info('Starting IMAP polling worker');
 
   // Small delay to ensure the DB schema + seed have fully initialised
   // before we query email_inbound_configs (avoids race on fresh DB)
@@ -50,16 +52,11 @@ export async function startEmailPollingWorker(): Promise<void> {
         ),
       );
   } catch (err) {
-    console.error(
-      '[EmailWorker] Failed to load active IMAP configurations:',
-      err,
-    );
+    logger.error({ err }, 'Failed to load active IMAP configurations');
     return;
   }
 
-  console.log(
-    `[EmailWorker] Found ${activeConfigs.length} active IMAP configuration(s)`,
-  );
+  logger.info({ count: activeConfigs.length }, 'Found active IMAP configurations');
 
   for (const cfg of activeConfigs) {
     schedulePolling(cfg);
@@ -74,11 +71,11 @@ export function stopEmailPollingWorker(): void {
     return;
   }
 
-  console.log('[EmailWorker] Stopping IMAP polling worker...');
+  logger.info('Stopping IMAP polling worker');
 
   for (const [configId, handle] of pollingIntervals) {
     clearInterval(handle);
-    console.log(`[EmailWorker] Stopped polling for config ${configId}`);
+    logger.info({ configId }, 'Stopped polling for config');
   }
 
   pollingIntervals.clear();
@@ -94,9 +91,7 @@ function schedulePolling(cfg: {
   config: string;
 }): void {
   if (pollingIntervals.has(cfg.id)) {
-    console.warn(
-      `[EmailWorker] Already polling for config ${cfg.id} — skipping duplicate`,
-    );
+    logger.warn({ configId: cfg.id }, 'Already polling for config — skipping duplicate');
     return;
   }
 
@@ -111,13 +106,11 @@ function schedulePolling(cfg: {
 
   pollingIntervals.set(cfg.id, handle);
 
-  console.log(
-    `[EmailWorker] Polling started for config ${cfg.id} (interval: ${POLL_INTERVAL_MS / 1000}s)`,
-  );
+  logger.info({ configId: cfg.id, intervalSec: POLL_INTERVAL_MS / 1000 }, 'Polling started for config');
 }
 
 function runPoll(poller: ImapPoller, configId: string): void {
   poller.poll().catch((err: unknown) => {
-    console.error(`[EmailWorker] Poll failed for config ${configId}:`, err);
+    logger.error({ err, configId }, 'Poll failed for config');
   });
 }

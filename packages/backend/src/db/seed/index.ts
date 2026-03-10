@@ -12,6 +12,8 @@ import { eq } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcryptjs';
 import { initDatabase, getDb, type TypedDb } from '../../config/database.js';
+// AUDIT-FIX: H-11 — Structured logging
+import logger from '../../lib/logger.js';
 import {
   tenants,
   users,
@@ -50,7 +52,7 @@ const now = new Date().toISOString();
 const BCRYPT_ROUNDS = 12;
 
 async function seed() {
-  console.log('🌱 Starting seed...');
+  logger.info('Starting seed');
   await initDatabase();
   const db = getDb() as TypedDb;
 
@@ -66,7 +68,7 @@ async function seed() {
     created_at: now,
     updated_at: now,
   });
-  console.log('  ✓ Tenant: Demo Organisation (Enterprise license applied)');
+  logger.info('  ✓ Tenant: Demo Organisation (Enterprise license applied)');
 
   // ─── Users ──────────────────────────────────────────────
   const adminId = uuidv4();
@@ -132,7 +134,7 @@ async function seed() {
     },
   ];
   await db.insert(users).values(userRows);
-  console.log('  ✓ Users: admin, manager, agent, viewer');
+  logger.info('  ✓ Users: admin, manager, agent, viewer');
 
   // ─── Tenant Memberships ─────────────────────────────────
   await db.insert(tenantUserMemberships).values([
@@ -141,7 +143,7 @@ async function seed() {
     { tenant_id: tenantId, user_id: agentId, role: 'agent', is_default: 1 },
     { tenant_id: tenantId, user_id: viewerId, role: 'viewer', is_default: 1 },
   ]);
-  console.log('  ✓ Tenant memberships assigned');
+  logger.info('  ✓ Tenant memberships assigned');
 
   // ─── Groups ─────────────────────────────────────────────
   const supportGroupId = uuidv4();
@@ -177,7 +179,7 @@ async function seed() {
       created_at: now,
     },
   ]);
-  console.log('  ✓ Groups: 1st Level Support, Operations, Development');
+  logger.info('  ✓ Groups: 1st Level Support, Operations, Development');
 
   // ─── Group Memberships ──────────────────────────────────
   await db.insert(userGroupMemberships).values([
@@ -186,7 +188,7 @@ async function seed() {
     { user_id: agentId, group_id: opsGroupId, tenant_id: tenantId, role_in_group: 'member' },
     { user_id: managerId, group_id: devGroupId, tenant_id: tenantId, role_in_group: 'lead' },
   ]);
-  console.log('  ✓ Group memberships assigned');
+  logger.info('  ✓ Group memberships assigned');
 
   // ─── Customers ────────────────────────────────────────────
   const customerAcmeId = uuidv4();
@@ -222,7 +224,7 @@ async function seed() {
       created_at: now,
     },
   ]);
-  console.log('  ✓ Customers: Acme GmbH, TechCorp AG, MedTech Solutions');
+  logger.info('  ✓ Customers: Acme GmbH, TechCorp AG, MedTech Solutions');
 
   // ─── Customer Portal Users ────────────────────────────────
   // Separate user table — not the same as internal users.
@@ -230,18 +232,19 @@ async function seed() {
 
   const portalUserHash = await bcrypt.hash('changeme', BCRYPT_ROUNDS);
 
+  // AUDIT-FIX: M-07 — Use proper UUID instead of hardcoded placeholder
   await db.insert(customerPortalUsers).values({
-    id: '00000000-0000-0000-0000-000000000099',
+    id: uuidv4(),
     tenant_id: tenantId,
     customer_id: customerAcmeId,
-    email: 'portal@acme.example.de',
+    email: 'portal@acme.example.com',
     display_name: 'Acme Portal User',
     password_hash: portalUserHash,
     is_active: 1,
     last_login: null,
     created_at: now,
   });
-  console.log('  ✓ Customer Portal User: portal@acme.example.de (Acme GmbH)');
+  logger.info('  ✓ Customer Portal User: portal@acme.example.com (Acme GmbH)');
 
   // ─── Categories ──────────────────────────────────────────
   const catNetzwerkId = uuidv4();
@@ -261,7 +264,7 @@ async function seed() {
     { id: catArbeitsplatzId, tenant_id: tenantId, name: 'Arbeitsplatz', applies_to: 'all', is_active: 1, created_at: now },
     { id: catSonstigesId, tenant_id: tenantId, name: 'Sonstiges', applies_to: 'all', is_active: 1, created_at: now },
   ]);
-  console.log('  ✓ Categories: Netzwerk, Server, Applikation, Datenbank, Security, Arbeitsplatz, Sonstiges');
+  logger.info('  ✓ Categories: Netzwerk, Server, Applikation, Datenbank, Security, Arbeitsplatz, Sonstiges');
 
   // ─── Assets (CMDB) ─────────────────────────────────────
   const assetRackId = uuidv4();
@@ -518,7 +521,7 @@ async function seed() {
       created_by: adminId,
     },
   ]);
-  console.log('  ✓ Assets: 14 CMDB assets (rack, VMs, firewall, switch, etc.)');
+  logger.info('  ✓ Assets: 14 CMDB assets (rack, VMs, firewall, switch, etc.)');
 
   // ─── Asset Relations ───────────────────────────────────
   await db.insert(assetRelations).values([
@@ -541,7 +544,7 @@ async function seed() {
     // Backup relation
     { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetNasId, target_asset_id: assetMysqlId, relation_type: 'backup_of', properties: '{}', created_at: now, created_by: adminId },
   ]);
-  console.log('  ✓ Asset Relations: 12 relations (runs_on, depends_on, member_of, connected_to, backup_of)');
+  logger.info('  ✓ Asset Relations: 12 relations (runs_on, depends_on, member_of, connected_to, backup_of)');
 
   // ─── Tickets ────────────────────────────────────────────
   const majorIncidentId = uuidv4();
@@ -742,7 +745,7 @@ async function seed() {
   ];
 
   await db.insert(tickets).values(sampleTickets);
-  console.log('  ✓ Tickets: 6 sample tickets (4 incidents [1 child], 1 change, 1 problem)');
+  logger.info('  ✓ Tickets: 6 sample tickets (4 incidents [1 child], 1 change, 1 problem)');
 
   // ─── Comments ───────────────────────────────────────────
   const ticketId1 = sampleTickets[0]!.id;
@@ -768,7 +771,7 @@ async function seed() {
       created_at: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
     },
   ]);
-  console.log('  ✓ Comments: 2 sample comments');
+  logger.info('  ✓ Comments: 2 sample comments');
 
   // ─── History ────────────────────────────────────────────
   await db.insert(ticketHistory).values([
@@ -793,7 +796,7 @@ async function seed() {
       changed_at: now,
     },
   ]);
-  console.log('  ✓ History: 2 sample history entries');
+  logger.info('  ✓ History: 2 sample history entries');
 
   // ─── Workflow Templates ──────────────────────────────────
   const wfTemplate1Id = uuidv4();
@@ -936,7 +939,7 @@ async function seed() {
     },
   ]);
 
-  console.log('  ✓ Workflows: 2 templates + 10 steps');
+  logger.info('  ✓ Workflows: 2 templates + 10 steps');
 
   // ─── Knowledge Base ──────────────────────────────────────
   const kb1Id = uuidv4();
@@ -966,7 +969,7 @@ async function seed() {
       tenant_id: tenantId,
       title: 'VPN-Verbindung einrichten (Windows)',
       slug: 'vpn-verbindung-einrichten-windows',
-      content: `# VPN-Verbindung einrichten\n\nSchritt-für-Schritt-Anleitung für Windows 10/11.\n\n## Voraussetzungen\n- VPN-Client (GlobalProtect oder Cisco AnyConnect)\n- Zugangsdaten vom IT-Administrator\n\n## Einrichtung\n1. VPN-Client öffnen\n2. Server-Adresse eingeben: vpn.firma.de\n3. Benutzername + Passwort eingeben\n4. Verbinden klicken\n\n## Fehlersuche\n- Firewall prüfen (Port 443 muss offen sein)\n- DNS-Auflösung testen`,
+      content: `# VPN-Verbindung einrichten\n\nSchritt-für-Schritt-Anleitung für Windows 10/11.\n\n## Voraussetzungen\n- VPN-Client (GlobalProtect oder Cisco AnyConnect)\n- Zugangsdaten vom IT-Administrator\n\n## Einrichtung\n1. VPN-Client öffnen\n2. Server-Adresse eingeben: vpn.example.com\n3. Benutzername + Passwort eingeben\n4. Verbinden klicken\n\n## Fehlersuche\n- Firewall prüfen (Port 443 muss offen sein)\n- DNS-Auflösung testen`,
       category: 'Netzwerk',
       tags: JSON.stringify(['vpn', 'netzwerk', 'remote', 'windows']),
       visibility: 'public',
@@ -1030,7 +1033,7 @@ async function seed() {
     tenant_id: tenantId,
   });
 
-  console.log('  ✓ Knowledge Base: 5 articles + 1 ticket link');
+  logger.info('  ✓ Knowledge Base: 5 articles + 1 ticket link');
 
   // ─── Service Descriptions ─────────────────────────────
   const svcEmailId = uuidv4();
@@ -1156,7 +1159,7 @@ async function seed() {
       updated_at: now,
     },
   ]);
-  console.log('  ✓ Service Descriptions: 8 service descriptions');
+  logger.info('  ✓ Service Descriptions: 8 service descriptions');
 
   // ─── Horizontal Catalog ────────────────────────────────
   const catalogStandardId = uuidv4();
@@ -1199,7 +1202,7 @@ async function seed() {
     { catalog_id: catalogPremiumId, service_desc_id: svcMonitoringId },
     { catalog_id: catalogPremiumId, service_desc_id: svcSecurityId },
   ]);
-  console.log('  ✓ Horizontal Catalogs: 2 catalogs (Standard + Premium) with items');
+  logger.info('  ✓ Horizontal Catalogs: 2 catalogs (Standard + Premium) with items');
 
   // ─── Additional Horizontal Catalogs ─────────────────────
   const catalogDevOpsId = uuidv4();
@@ -1288,7 +1291,7 @@ async function seed() {
       updated_at: now,
     },
   ]);
-  console.log('  ✓ Extended Service Descriptions: 4 additional services');
+  logger.info('  ✓ Extended Service Descriptions: 4 additional services');
 
   // DevOps catalog items
   await db.insert(horizontalCatalogItems).values([
@@ -1309,7 +1312,7 @@ async function seed() {
     { catalog_id: catalogManagedId, service_desc_id: svcIdentityId },
     { catalog_id: catalogManagedId, service_desc_id: svcContainerId },
   ]);
-  console.log('  ✓ Extended Horizontal Catalogs: DevOps (4 items), Managed Infrastructure (8 items)');
+  logger.info('  ✓ Extended Horizontal Catalogs: DevOps (4 items), Managed Infrastructure (8 items)');
 
   // ─── Extended Customers (needed for Vertical Catalogs) ───
   const customerBankId = uuidv4();
@@ -1325,7 +1328,7 @@ async function seed() {
     { id: customerEnergieId, tenant_id: tenantId, name: 'GreenPower Energie GmbH', industry: 'Energie', contact_email: 'admin@greenpower-energie.de', is_active: 1, created_at: now },
     { id: customerStadtwerkeId, tenant_id: tenantId, name: 'Stadtwerke Offenbach', industry: 'Öffentlicher Dienst', contact_email: 'edv@stadtwerke-of.de', is_active: 0, created_at: now },
   ]);
-  console.log('  ✓ Extended Customers: 5 additional customers');
+  logger.info('  ✓ Extended Customers: 5 additional customers');
 
   // ─── Vertical Catalogs ──────────────────────────────────
   const vcBankId = uuidv4();
@@ -1367,7 +1370,7 @@ async function seed() {
       created_at: now,
     },
   ]);
-  console.log('  ✓ Vertical Catalogs: 3 catalogs (Bank, Acme, MedTech)');
+  logger.info('  ✓ Vertical Catalogs: 3 catalogs (Bank, Acme, MedTech)');
 
   // Vertical catalog overrides — Bank gets enhanced security
   const svcSecurityBankId = uuidv4();
@@ -1394,7 +1397,7 @@ async function seed() {
     override_type: 'replace',
     reason: 'BaFin BAIT/DORA erfordern erweiterte Sicherheitsmaßnahmen für Finanzdienstleister',
   });
-  console.log('  ✓ Vertical Overrides: Bank gets enhanced security service');
+  logger.info('  ✓ Vertical Overrides: Bank gets enhanced security service');
 
   // ─── Compliance Frameworks ─────────────────────────────
   const fwIso27001Id = uuidv4();
@@ -1420,7 +1423,7 @@ async function seed() {
       created_at: now,
     },
   ]);
-  console.log('  ✓ Compliance Frameworks: ISO 27001:2022, DSGVO/GDPR');
+  logger.info('  ✓ Compliance Frameworks: ISO 27001:2022, DSGVO/GDPR');
 
   // ─── Regulatory Requirements ───────────────────────────
   // ISO 27001 Requirements (Annex A controls — representative selection)
@@ -1572,7 +1575,7 @@ async function seed() {
       created_at: now,
     },
   ]);
-  console.log('  ✓ Regulatory Requirements: 8 ISO 27001 + 6 DSGVO requirements');
+  logger.info('  ✓ Regulatory Requirements: 8 ISO 27001 + 6 DSGVO requirements');
 
   // ─── Requirement ↔ Service Mappings (Compliance Matrix) ──
   await db.insert(requirementServiceMappings).values([
@@ -1602,7 +1605,7 @@ async function seed() {
     { requirement_id: reqDsgvo25Id, service_desc_id: svcWebHostingId, tenant_id: tenantId, coverage_level: 'partial', evidence_notes: 'SSL/TLS per Default, Cookie-Consent ausstehend', reviewed_at: now, reviewed_by: managerId },
     { requirement_id: reqDsgvo25Id, service_desc_id: svcEmailId, tenant_id: tenantId, coverage_level: 'full', evidence_notes: 'Datensparsamkeit bei E-Mail-Logging umgesetzt', reviewed_at: now, reviewed_by: adminId },
   ]);
-  console.log('  ✓ Compliance Mappings: 17 requirement-service mappings');
+  logger.info('  ✓ Compliance Mappings: 17 requirement-service mappings');
 
   // ─── Extended Sample Data ──────────────────────────────────
 
@@ -1662,7 +1665,7 @@ async function seed() {
     { id: assetUpsId, tenant_id: tenantId, asset_type: 'power_supply', name: 'ups-rack01', display_name: 'USV Rack 01', status: 'active', ip_address: '10.0.0.200', location: 'RZ Frankfurt, Rack 01, HE 45', sla_tier: 'gold', environment: 'production', owner_group_id: opsGroupId, customer_id: null, attributes: '{"vendor": "APC Smart-UPS 3000", "capacity_va": 3000, "runtime_min": 15}', created_at: now, updated_at: now, created_by: adminId },
     { id: assetPduId, tenant_id: tenantId, asset_type: 'power_supply', name: 'pdu-rack01-a', display_name: 'PDU Rack 01 A-Seite', status: 'active', ip_address: '10.0.0.201', location: 'RZ Frankfurt, Rack 01', sla_tier: 'none', environment: 'production', owner_group_id: opsGroupId, customer_id: null, attributes: '{"vendor": "APC Metered Rack PDU", "outlets": 24, "amps": 32}', created_at: now, updated_at: now, created_by: adminId },
   ]);
-  console.log('  ✓ Extended Assets: 26 additional assets');
+  logger.info('  ✓ Extended Assets: 26 additional assets');
 
   // Extended Asset Relations
   await db.insert(assetRelations).values([
@@ -1685,7 +1688,7 @@ async function seed() {
     { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetVpnGwId, target_asset_id: assetFwId, relation_type: 'connected_to', properties: '{}', created_at: now, created_by: adminId },
     { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetFileServerId, target_asset_id: assetSanId, relation_type: 'depends_on', properties: '{}', created_at: now, created_by: adminId },
   ]);
-  console.log('  ✓ Extended Relations: 18 additional relations');
+  logger.info('  ✓ Extended Relations: 18 additional relations');
 
   // Asset-Service Links (vertical catalogs → assets)
   await db.insert(assetServiceLinks).values([
@@ -1694,7 +1697,7 @@ async function seed() {
     { asset_id: assetWeb02Id, vertical_id: vcAcmeId, tenant_id: tenantId, effective_from: '2025-01-01', effective_until: null },
     { asset_id: assetDb01Id, vertical_id: vcMedTechId, tenant_id: tenantId, effective_from: '2025-06-01', effective_until: null },
   ]);
-  console.log('  ✓ Asset-Service Links: 4 links');
+  logger.info('  ✓ Asset-Service Links: 4 links');
 
   // ─── Extended Tickets (30+ more) ──────────────────────────
   const h = 1000 * 60 * 60; // 1 hour in ms
@@ -1740,7 +1743,7 @@ async function seed() {
   ];
 
   await db.insert(tickets).values(extendedTickets);
-  console.log(`  ✓ Extended Tickets: ${extendedTickets.length} additional tickets`);
+  logger.info(`  ✓ Extended Tickets: ${extendedTickets.length} additional tickets`);
 
   // Extended comments for various tickets
   await db.insert(ticketComments).values([
@@ -1755,7 +1758,7 @@ async function seed() {
     { id: uuidv4(), tenant_id: tenantId, ticket_id: extendedTickets[21]!.id, author_id: agentId, content: 'Windows Update KB5034441 als Ursache identifiziert. Rollback durchgeführt.', is_internal: 1, source: 'agent', created_at: new Date(Date.now() - 4 * h).toISOString() },
     { id: uuidv4(), tenant_id: tenantId, ticket_id: extendedTickets[24]!.id, author_id: agentId, content: 'Proxy-Whitelist aktualisiert. Confluence-URLs sind wieder erreichbar.', is_internal: 0, source: 'agent', created_at: new Date(Date.now() - 18 * h).toISOString() },
   ]);
-  console.log('  ✓ Extended Comments: 10 additional comments');
+  logger.info('  ✓ Extended Comments: 10 additional comments');
 
   // Extended history entries
   await db.insert(ticketHistory).values([
@@ -1767,7 +1770,7 @@ async function seed() {
     { id: uuidv4(), tenant_id: tenantId, ticket_id: extendedTickets[16]!.id, field_changed: 'status', old_value: 'open', new_value: 'closed', changed_by: adminId, changed_at: new Date(Date.now() - 7 * d).toISOString() },
     { id: uuidv4(), tenant_id: tenantId, ticket_id: extendedTickets[16]!.id, field_changed: 'assignee_id', old_value: null, new_value: adminId, changed_by: agentId, changed_at: new Date(Date.now() - 8 * d + 1 * h).toISOString() },
   ]);
-  console.log('  ✓ Extended History: 7 additional history entries');
+  logger.info('  ✓ Extended History: 7 additional history entries');
 
   // ─── Extended Workflow Templates ─────────────────────────
   const wfProblemMgmtId = uuidv4();
@@ -1856,7 +1859,7 @@ async function seed() {
     { id: siStep3Id, template_id: wfSecurityIncId, name: 'CISO-Eskalation', step_order: 3, step_type: 'approval', config: JSON.stringify({ approvers: ['admin'], min_approvals: 1, description: 'CISO muss bei Datenverlust innerhalb 72h die Behörden informieren (DSGVO Art. 33)' }), timeout_hours: 4, next_step_id: null },
     { id: siStep4Id, template_id: wfSecurityIncId, name: 'Post-Incident Report', step_order: 4, step_type: 'form', config: JSON.stringify({ fields: [{ name: 'timeline', label: 'Zeitstrahl des Vorfalls', type: 'text', required: true }, { name: 'root_cause', label: 'Root Cause', type: 'text', required: true }, { name: 'lessons_learned', label: 'Lessons Learned', type: 'text', required: true }, { name: 'preventive_measures', label: 'Präventivmaßnahmen', type: 'text', required: true }] }), timeout_hours: 168, next_step_id: null },
   ]);
-  console.log('  ✓ Extended Workflows: 3 templates (Problem-Mgmt, Onboarding, Security IR) + 13 steps');
+  logger.info('  ✓ Extended Workflows: 3 templates (Problem-Mgmt, Onboarding, Security IR) + 13 steps');
 
   // ─── Workflow Instances (running on tickets) ──────────────
   const wiProblem1Id = uuidv4();
@@ -1903,7 +1906,7 @@ async function seed() {
   await db.update(tickets).set({ workflow_instance_id: wiProblem1Id }).where(eq(tickets.id, prbTicketId)).run();
   await db.update(tickets).set({ workflow_instance_id: wiSecurityId }).where(eq(tickets.id, secTicketId)).run();
 
-  console.log('  ✓ Workflow Instances: 2 active (Problem-Mgmt on DNS-Problem, Security IR on Log4j-Patch)');
+  logger.info('  ✓ Workflow Instances: 2 active (Problem-Mgmt on DNS-Problem, Security IR on Log4j-Patch)');
 
   // ─── SLA Definitions ──────────────────────────────────────
   const slaGoldId = uuidv4();
@@ -1963,7 +1966,7 @@ async function seed() {
       updated_at: now,
     },
   ]);
-  console.log('  ✓ SLA Definitions: Gold, Silver (default), Bronze');
+  logger.info('  ✓ SLA Definitions: Gold, Silver (default), Bronze');
 
   // ─── SLA Assignments ──────────────────────────────────────
   await db.insert(slaAssignments).values([
@@ -1998,7 +2001,7 @@ async function seed() {
       created_at: now,
     },
   ]);
-  console.log('  ✓ SLA Assignments: 3 assignments (DB→Gold, Acme→Gold, Workplace→Bronze)');
+  logger.info('  ✓ SLA Assignments: 3 assignments (DB→Gold, Acme→Gold, Workplace→Bronze)');
 
   // Extended SLA assignments for additional customers and assets
   await db.insert(slaAssignments).values([
@@ -2012,21 +2015,21 @@ async function seed() {
     { id: uuidv4(), tenant_id: tenantId, sla_definition_id: slaSilverId, service_id: svcWebHostingId, customer_id: null, asset_id: null, priority: 25, created_at: now },
     { id: uuidv4(), tenant_id: tenantId, sla_definition_id: slaGoldId, service_id: svcMonitoringId, customer_id: customerBankId, asset_id: null, priority: 75, created_at: now },
   ]);
-  console.log('  ✓ Extended SLA Assignments: 9 additional assignments');
+  logger.info('  ✓ Extended SLA Assignments: 9 additional assignments');
 
-  console.log('\n✅ Seed completed successfully!');
-  console.log('\n📋 Login credentials:');
-  console.log('   Admin:   admin@opsweave.local / changeme');
-  console.log('   Manager: manager@opsweave.local / password123');
-  console.log('   Agent:   agent@opsweave.local / password123');
-  console.log('   Viewer:  viewer@opsweave.local / password123');
-  console.log('\n🌐 Customer Portal credentials:');
-  console.log('   Acme Portal User: portal@acme.example.de / changeme');
+  logger.info('\n✅ Seed completed successfully!');
+  logger.info('\n📋 Login credentials:');
+  logger.info('   Admin:   admin@opsweave.local / changeme');
+  logger.info('   Manager: manager@opsweave.local / password123');
+  logger.info('   Agent:   agent@opsweave.local / password123');
+  logger.info('   Viewer:  viewer@opsweave.local / password123');
+  logger.info('\n🌐 Customer Portal credentials:');
+  logger.info('   Acme Portal User: portal@acme.example.com / changeme');
 
   process.exit(0);
 }
 
 seed().catch((err) => {
-  console.error('❌ Seed failed:', err);
+  logger.fatal({ err }, 'Seed failed');
   process.exit(1);
 });

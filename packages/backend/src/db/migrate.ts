@@ -12,14 +12,14 @@ import 'dotenv/config';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { config } from '../config/index.js';
+// AUDIT-FIX: H-11 — Structured logging
+import logger from '../lib/logger.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const migrationsFolder = resolve(__dirname, 'migrations');
 
 async function runMigrations(): Promise<void> {
-  console.log(`[migrate] DB_DRIVER=${config.dbDriver}`);
-  console.log(`[migrate] DATABASE_URL=${config.databaseUrl.replace(/:[^:@]+@/, ':***@')}`);
-  console.log(`[migrate] Migrations folder: ${migrationsFolder}`);
+  logger.info({ dbDriver: config.dbDriver, migrationsFolder }, 'Starting migrations');
 
   if (config.dbDriver === 'sqlite') {
     const { default: Database } = await import('better-sqlite3');
@@ -27,7 +27,7 @@ async function runMigrations(): Promise<void> {
     const { migrate } = await import('drizzle-orm/better-sqlite3/migrator');
 
     const dbPath = config.databaseUrl.replace(/^file:/, '');
-    console.log(`[migrate] SQLite path: ${dbPath}`);
+    logger.info({ dbPath }, 'SQLite path');
 
     const sqlite = new Database(dbPath);
     sqlite.pragma('journal_mode = WAL');
@@ -35,11 +35,11 @@ async function runMigrations(): Promise<void> {
 
     const db = drizzle(sqlite);
 
-    console.log('[migrate] Running SQLite migrations...');
+    logger.info('Running SQLite migrations');
     migrate(db, { migrationsFolder });
 
     sqlite.close();
-    console.log('[migrate] SQLite migrations complete.');
+    logger.info('SQLite migrations complete');
   } else {
     const pg = await import('postgres');
     const { drizzle } = await import('drizzle-orm/postgres-js');
@@ -48,15 +48,15 @@ async function runMigrations(): Promise<void> {
     const client = pg.default(config.databaseUrl, { max: 1 });
     const db = drizzle(client);
 
-    console.log('[migrate] Running PostgreSQL migrations...');
+    logger.info('Running PostgreSQL migrations');
     await migrate(db, { migrationsFolder });
 
     await client.end();
-    console.log('[migrate] PostgreSQL migrations complete.');
+    logger.info('PostgreSQL migrations complete');
   }
 }
 
 runMigrations().catch((err: unknown) => {
-  console.error('[migrate] Migration failed:', err);
+  logger.fatal({ err }, 'Migration failed');
   process.exit(1);
 });

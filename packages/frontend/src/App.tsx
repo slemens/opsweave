@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { ThemeProvider } from '@/components/layout/ThemeProvider';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ProtectedLayout } from '@/components/layout/ProtectedLayout';
 import { LoginPage } from '@/pages/LoginPage';
 import { DashboardPage } from '@/pages/DashboardPage';
@@ -27,6 +28,7 @@ import { PortalKbPage } from '@/pages/portal/PortalKbPage';
 export function App() {
   return (
     <ThemeProvider>
+      <ErrorBoundary>
       <BrowserRouter>
         <Routes>
           {/* Public routes */}
@@ -62,6 +64,7 @@ export function App() {
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </BrowserRouter>
+      </ErrorBoundary>
       <Toaster
         position="top-right"
         richColors

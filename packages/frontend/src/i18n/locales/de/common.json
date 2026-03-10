@@ -133,6 +133,39 @@
     "load_error": "Daten konnten nicht geladen werden",
     "scope_customer": "Kundenweit",
     "scope_service": "Service",
-    "scope_asset": "Asset"
+    "scope_asset": "Asset",
+    "edit": "Kunde bearbeiten",
+    "delete": "Kunde deaktivieren",
+    "delete_confirm_title": "Kunde deaktivieren?",
+    "delete_confirm_description": "Der Kunde wird deaktiviert. Bestehende Daten bleiben erhalten.",
+    "delete_success": "Kunde erfolgreich deaktiviert",
+    "delete_conflict": "Kunde hat offene Tickets. Bitte schließen oder neu zuweisen.",
+    "edit_success": "Kunde erfolgreich aktualisiert"
+  },
+  "customers": {
+    "create": "Neuer Kunde",
+    "create_title": "Neuen Kunden anlegen",
+    "name": "Name",
+    "name_placeholder": "Firmenname",
+    "email": "E-Mail",
+    "email_placeholder": "kontakt@firma.de",
+    "industry": "Branche",
+    "industry_placeholder": "z.B. Finanzen, Gesundheit",
+    "create_success": "Kunde erfolgreich erstellt"
+  },
+  "portal_users": {
+    "title": "Portal-Benutzer",
+    "create": "Portal-Benutzer anlegen",
+    "edit": "Portal-Benutzer bearbeiten",
+    "email": "E-Mail",
+    "name": "Anzeigename",
+    "password": "Passwort",
+    "status": "Status",
+    "last_login": "Letzter Login",
+    "active": "Aktiv",
+    "inactive": "Deaktiviert",
+    "empty": "Keine Portal-Benutzer vorhanden",
+    "create_success": "Portal-Benutzer erfolgreich erstellt",
+    "update_success": "Portal-Benutzer erfolgreich aktualisiert"
   }
 }

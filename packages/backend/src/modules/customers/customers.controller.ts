@@ -5,6 +5,8 @@ import {
   sendCreated,
   sendPaginated,
 } from '../../lib/response.js';
+// AUDIT-FIX: M-04 — Safe context accessors instead of non-null assertions
+import { requireTenantId } from '../../lib/context.js';
 import * as customersService from './customers.service.js';
 import type { PaginationParams } from '@opsweave/shared';
 
@@ -17,7 +19,7 @@ export async function listCustomers(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const params = req.query as unknown as PaginationParams;
 
   const { customers, total } = await customersService.listCustomers(tenantId, params);
@@ -33,7 +35,7 @@ export async function getCustomer(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { id } = req.params as { id: string };
 
   const customer = await customersService.getCustomer(tenantId, id);
@@ -49,7 +51,7 @@ export async function createCustomer(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const data = req.body as { name: string; industry?: string; contact_email?: string };
 
   const customer = await customersService.createCustomer(tenantId, data);
@@ -65,11 +67,28 @@ export async function updateCustomer(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { id } = req.params as { id: string };
   const data = req.body as { name?: string; industry?: string; contact_email?: string; is_active?: number };
 
   const customer = await customersService.updateCustomer(tenantId, id, data);
+  sendSuccess(res, customer);
+}
+
+// ─── Delete (Deactivate) Customer ─────────────────────────
+
+// AUDIT-FIX: C-14 — Soft-delete endpoint
+/**
+ * DELETE /api/v1/customers/:id
+ */
+export async function deleteCustomer(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const tenantId = requireTenantId(req);
+  const { id } = req.params as { id: string };
+
+  const customer = await customersService.deactivateCustomer(tenantId, id);
   sendSuccess(res, customer);
 }
 
@@ -82,7 +101,7 @@ export async function getCustomerOverview(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { id } = req.params as { id: string };
 
   const overview = await customersService.getCustomerOverview(tenantId, id);

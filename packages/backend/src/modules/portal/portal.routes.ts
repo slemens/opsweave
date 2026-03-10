@@ -2,6 +2,10 @@ import { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
+import { config } from '../../config/index.js';
+// AUDIT-FIX: H-16 — Use centralized error classes instead of inline res.status().json()
+import { UnauthorizedError, ForbiddenError } from '../../lib/errors.js';
+import { sendSuccess } from '../../lib/response.js';
 import {
   login,
   me,
@@ -29,9 +33,11 @@ export interface PortalRequest extends Request {
 
 // ─── Portal Auth Middleware ──────────────────────────────────
 
+// AUDIT-FIX: H-16 — Throw errors instead of returning res.status().json() directly,
+// so the global error handler formats responses consistently.
 function requirePortalAuth(
   req: Request,
-  res: Response,
+  _res: Response,
   next: NextFunction,
 ): void {
   const authHeader = req.headers['authorization'];
@@ -39,20 +45,12 @@ function requirePortalAuth(
     authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
 
   if (!token) {
-    res.status(401).json({
-      error: {
-        code: 'UNAUTHORIZED',
-        message: 'Portal authentication required',
-      },
-    });
-    return;
+    throw new UnauthorizedError('Portal authentication required');
   }
 
   try {
-    const JWT_SECRET =
-      process.env['JWT_SECRET'] ?? 'opsweave-dev-secret-change-in-production';
-
-    const payload = jwt.verify(token, JWT_SECRET) as {
+    // AUDIT-FIX: C-03 — Use central config.jwtSecret instead of separate fallback
+    const payload = jwt.verify(token, config.jwtSecret) as {
       sub: string;
       email: string;
       displayName: string;
@@ -62,24 +60,18 @@ function requirePortalAuth(
     };
 
     if (!payload.portal) {
-      res.status(403).json({
-        error: {
-          code: 'FORBIDDEN',
-          message: 'Portal access required',
-        },
-      });
-      return;
+      throw new ForbiddenError('Portal access required');
     }
 
     (req as PortalRequest).portalUser = payload;
     next();
-  } catch {
-    res.status(401).json({
-      error: {
-        code: 'UNAUTHORIZED',
-        message: 'Invalid portal token',
-      },
-    });
+  } catch (err) {
+    // Re-throw our own errors (UnauthorizedError, ForbiddenError) as-is
+    if (err instanceof UnauthorizedError || err instanceof ForbiddenError) {
+      throw err;
+    }
+    // jwt.verify failures (expired, malformed, etc.)
+    throw new UnauthorizedError('Invalid portal token');
   }
 }
 
@@ -92,6 +84,18 @@ const portalRouter = Router();
  * Public — no auth required.
  */
 portalRouter.post('/auth/login', login);
+
+// AUDIT-FIX: H-09 — Logout endpoint for portal users.
+// With stateless JWT auth there is no server-side session to invalidate.
+// The client discards the token. This endpoint exists for API completeness
+// and to allow future token-blacklist integration.
+/**
+ * POST /portal/auth/logout
+ * Stateless logout — client should discard the token.
+ */
+portalRouter.post('/auth/logout', (_req: Request, res: Response) => {
+  sendSuccess(res, { message: 'Logged out' });
+});
 
 /**
  * GET /portal/auth/me

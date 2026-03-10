@@ -1,5 +1,8 @@
+// AUDIT-FIX: C-13 — Edit + Delete buttons on CustomerDetailPage
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import {
   ArrowLeft,
   Building2,
@@ -11,9 +14,16 @@ import {
   BookOpen,
   Users,
   ExternalLink,
+  RefreshCw,
+  Pencil,
+  Trash2,
+  Plus,
+  UserPlus,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Card,
@@ -29,7 +39,28 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { useCustomerOverview } from '@/api/tickets';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+// AUDIT-FIX: M-09 — Import from domain-specific API module
+import { useCustomerOverview, useUpdateCustomer, useDeleteCustomer } from '@/api/customers';
+// AUDIT-FIX: H-08 — Portal user management
+import { usePortalUsers, useCreatePortalUser, useUpdatePortalUser } from '@/api/auth';
+import type { PortalUser } from '@/api/auth';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -74,7 +105,59 @@ export function CustomerDetailPage() {
   const navigate = useNavigate();
   const { t } = useTranslation(['common', 'tickets', 'cmdb', 'catalog']);
 
-  const { data: overview, isLoading, isError } = useCustomerOverview(id);
+  // AUDIT-FIX: M-11 — Destructure refetch for retry button on error state
+  const { data: overview, isLoading, isError, refetch } = useCustomerOverview(id);
+  const updateMutation = useUpdateCustomer();
+  const deleteMutation = useDeleteCustomer();
+
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [editIndustry, setEditIndustry] = useState('');
+
+  function openEditDialog() {
+    if (!overview) return;
+    setEditName(overview.customer.name);
+    setEditEmail(overview.customer.contact_email ?? '');
+    setEditIndustry(overview.customer.industry ?? '');
+    setEditOpen(true);
+  }
+
+  function handleEdit() {
+    if (!id || !editName.trim()) return;
+    updateMutation.mutate(
+      {
+        id,
+        name: editName.trim(),
+        contact_email: editEmail.trim() || null,
+        industry: editIndustry.trim() || null,
+      },
+      {
+        onSuccess: () => {
+          toast.success(t('common:customer_detail.edit_success'));
+          setEditOpen(false);
+        },
+      },
+    );
+  }
+
+  function handleDelete() {
+    if (!id) return;
+    deleteMutation.mutate(id, {
+      onSuccess: () => {
+        toast.success(t('common:customer_detail.delete_success'));
+        navigate('/customers');
+      },
+      onError: (err) => {
+        const status = (err as { response?: { status?: number } })?.response?.status;
+        if (status === 409) {
+          toast.error(t('common:customer_detail.delete_conflict'));
+        }
+        setDeleteOpen(false);
+      },
+    });
+  }
 
   if (isLoading) {
     return (
@@ -88,14 +171,25 @@ export function CustomerDetailPage() {
     );
   }
 
+  {/* AUDIT-FIX: M-11 — Consistent error state with retry button */}
   if (isError || !overview) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 gap-3">
-        <p className="text-sm text-red-400">{t('common:customer_detail.load_error')}</p>
-        <Button variant="outline" size="sm" onClick={() => navigate('/customers')}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          {t('common:actions.back')}
-        </Button>
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <div className="rounded-full bg-destructive/10 p-3 mb-4">
+          <AlertTriangle className="h-6 w-6 text-destructive" />
+        </div>
+        <p className="text-sm font-medium text-foreground mb-1">{t('common:status.error')}</p>
+        <p className="text-sm text-muted-foreground mb-4">{t('common:customer_detail.load_error')}</p>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => navigate('/customers')}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            {t('common:actions.back')}
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => void refetch()}>
+            <RefreshCw className="mr-2 h-4 w-4" />
+            {t('common:actions.retry')}
+          </Button>
+        </div>
       </div>
     );
   }
@@ -126,6 +220,16 @@ export function CustomerDetailPage() {
             )}
           </div>
         </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={openEditDialog}>
+            <Pencil className="mr-2 h-4 w-4" />
+            {t('common:customer_detail.edit')}
+          </Button>
+          <Button variant="destructive" size="sm" onClick={() => setDeleteOpen(true)} disabled={!customer.is_active}>
+            <Trash2 className="mr-2 h-4 w-4" />
+            {t('common:customer_detail.delete')}
+          </Button>
+        </div>
       </div>
 
       {/* KPI Cards */}
@@ -154,7 +258,7 @@ export function CustomerDetailPage() {
           icon={<Users className="h-4 w-4" />}
           label={t('common:customer_detail.portal_users')}
           value={stats.portal_users}
-          onClick={() => navigate('/settings')}
+          onClick={() => document.getElementById('section-portal-users')?.scrollIntoView({ behavior: 'smooth' })}
         />
         <KpiCard
           icon={<BookOpen className="h-4 w-4" />}
@@ -357,7 +461,267 @@ export function CustomerDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* AUDIT-FIX: H-08 — Portal Users Section */}
+      <PortalUsersSection customerId={id!} />
+
+      {/* Edit Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('common:customer_detail.edit')}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="edit-name">{t('common:customers.name')} *</Label>
+              <Input
+                id="edit-name"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-email">{t('common:customers.email')}</Label>
+              <Input
+                id="edit-email"
+                type="email"
+                value={editEmail}
+                onChange={(e) => setEditEmail(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-industry">{t('common:customers.industry')}</Label>
+              <Input
+                id="edit-industry"
+                value={editIndustry}
+                onChange={(e) => setEditIndustry(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)}>
+              {t('common:actions.cancel')}
+            </Button>
+            <Button onClick={handleEdit} disabled={!editName.trim() || updateMutation.isPending}>
+              {t('common:actions.save')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('common:customer_detail.delete_confirm_title')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('common:customer_detail.delete_confirm_description')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common:actions.cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {t('common:customer_detail.delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// AUDIT-FIX: H-08 — Portal Users Section
+// ---------------------------------------------------------------------------
+
+function PortalUsersSection({ customerId }: { customerId: string }) {
+  const { t } = useTranslation(['common']);
+  const { data: portalUsers, isLoading } = usePortalUsers(customerId);
+  const createMutation = useCreatePortalUser();
+  const updateMutation = useUpdatePortalUser();
+
+  const [createOpen, setCreateOpen] = useState(false);
+  const [editUser, setEditUser] = useState<PortalUser | null>(null);
+  const [formEmail, setFormEmail] = useState('');
+  const [formName, setFormName] = useState('');
+  const [formPassword, setFormPassword] = useState('');
+
+  function openCreate() {
+    setFormEmail('');
+    setFormName('');
+    setFormPassword('');
+    setCreateOpen(true);
+  }
+
+  function openEdit(user: PortalUser) {
+    setEditUser(user);
+    setFormName(user.display_name);
+  }
+
+  function handleCreate() {
+    if (!formEmail.trim() || !formName.trim() || !formPassword) return;
+    createMutation.mutate(
+      { customerId, email: formEmail.trim(), display_name: formName.trim(), password: formPassword },
+      {
+        onSuccess: () => {
+          toast.success(t('common:portal_users.create_success'));
+          setCreateOpen(false);
+        },
+      },
+    );
+  }
+
+  function handleEditSave() {
+    if (!editUser || !formName.trim()) return;
+    updateMutation.mutate(
+      { customerId, userId: editUser.id, display_name: formName.trim() },
+      {
+        onSuccess: () => {
+          toast.success(t('common:portal_users.update_success'));
+          setEditUser(null);
+        },
+      },
+    );
+  }
+
+  function handleToggleActive(user: PortalUser) {
+    updateMutation.mutate(
+      { customerId, userId: user.id, is_active: user.is_active ? 0 : 1 },
+      {
+        onSuccess: () => {
+          toast.success(t('common:portal_users.update_success'));
+        },
+      },
+    );
+  }
+
+  return (
+    <>
+      <Card id="section-portal-users">
+        <CardHeader className="py-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              {t('common:portal_users.title')} ({portalUsers?.length ?? 0})
+            </CardTitle>
+            <Button variant="outline" size="sm" onClick={openCreate}>
+              <UserPlus className="mr-2 h-4 w-4" />
+              {t('common:portal_users.create')}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="py-0 pb-4">
+          {isLoading ? (
+            <div className="space-y-2">
+              {[1, 2].map((i) => <Skeleton key={i} className="h-10 rounded" />)}
+            </div>
+          ) : !portalUsers || portalUsers.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-2">{t('common:portal_users.empty')}</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-xs">{t('common:portal_users.email')}</TableHead>
+                  <TableHead className="text-xs">{t('common:portal_users.name')}</TableHead>
+                  <TableHead className="text-xs">{t('common:portal_users.status')}</TableHead>
+                  <TableHead className="text-xs">{t('common:portal_users.last_login')}</TableHead>
+                  <TableHead className="text-xs w-20" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {portalUsers.map((pu) => (
+                  <TableRow key={pu.id}>
+                    <TableCell className="text-sm">{pu.email}</TableCell>
+                    <TableCell className="text-sm">{pu.display_name}</TableCell>
+                    <TableCell>
+                      <Badge variant={pu.is_active ? 'default' : 'secondary'} className="text-xs">
+                        {pu.is_active ? t('common:portal_users.active') : t('common:portal_users.inactive')}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {pu.last_login ? new Date(pu.last_login).toLocaleDateString() : '—'}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(pu)}>
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={() => handleToggleActive(pu)}
+                          disabled={updateMutation.isPending}
+                        >
+                          {pu.is_active ? <Trash2 className="h-3 w-3 text-destructive" /> : <Plus className="h-3 w-3 text-emerald-500" />}
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Create Portal User Dialog */}
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('common:portal_users.create')}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="pu-email">{t('common:portal_users.email')} *</Label>
+              <Input id="pu-email" type="email" value={formEmail} onChange={(e) => setFormEmail(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="pu-name">{t('common:portal_users.name')} *</Label>
+              <Input id="pu-name" value={formName} onChange={(e) => setFormName(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="pu-password">{t('common:portal_users.password')} *</Label>
+              <Input id="pu-password" type="password" value={formPassword} onChange={(e) => setFormPassword(e.target.value)} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateOpen(false)}>{t('common:actions.cancel')}</Button>
+            <Button onClick={handleCreate} disabled={!formEmail.trim() || !formName.trim() || !formPassword || createMutation.isPending}>
+              {t('common:actions.create')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Portal User Dialog */}
+      <Dialog open={!!editUser} onOpenChange={(open) => { if (!open) setEditUser(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('common:portal_users.edit')}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>{t('common:portal_users.email')}</Label>
+              <Input value={editUser?.email ?? ''} disabled readOnly />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="pu-edit-name">{t('common:portal_users.name')} *</Label>
+              <Input id="pu-edit-name" value={formName} onChange={(e) => setFormName(e.target.value)} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditUser(null)}>{t('common:actions.cancel')}</Button>
+            <Button onClick={handleEditSave} disabled={!formName.trim() || updateMutation.isPending}>
+              {t('common:actions.save')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 

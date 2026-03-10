@@ -6,6 +6,8 @@ import {
   sendPaginated,
   sendNoContent,
 } from '../../lib/response.js';
+// AUDIT-FIX: M-04 — Safe context accessors instead of non-null assertions
+import { requireTenantId, requireUserId } from '../../lib/context.js';
 import * as complianceService from './compliance.service.js';
 import type {
   ComplianceFilterParams,
@@ -28,7 +30,7 @@ export async function listFrameworks(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const params = (
     (req as unknown as Record<string, unknown>)['parsedQuery'] ?? req.query
   ) as unknown as ComplianceFilterParams;
@@ -44,7 +46,7 @@ export async function getFramework(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { id } = req.params as { id: string };
 
   const framework = await complianceService.getFramework(tenantId, id);
@@ -58,8 +60,8 @@ export async function createFramework(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
-  const userId = req.user!.id;
+  const tenantId = requireTenantId(req);
+  const userId = requireUserId(req);
   const data = req.body as CreateRegulatoryFrameworkInput;
 
   const framework = await complianceService.createFramework(tenantId, data, userId);
@@ -73,7 +75,7 @@ export async function updateFramework(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { id } = req.params as { id: string };
   const data = req.body as UpdateRegulatoryFrameworkInput;
 
@@ -88,7 +90,7 @@ export async function deleteFramework(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { id } = req.params as { id: string };
 
   await complianceService.deleteFramework(tenantId, id);
@@ -106,7 +108,7 @@ export async function listRequirements(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { id: frameworkId } = req.params as { id: string };
   const params = (
     (req as unknown as Record<string, unknown>)['parsedQuery'] ?? req.query
@@ -127,7 +129,7 @@ export async function getRequirement(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { rid } = req.params as { rid: string };
 
   const requirement = await complianceService.getRequirement(tenantId, rid);
@@ -141,7 +143,7 @@ export async function createRequirement(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { id: frameworkId } = req.params as { id: string };
   const data = req.body as CreateRequirementInput;
 
@@ -156,7 +158,7 @@ export async function updateRequirement(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { rid } = req.params as { rid: string };
   const data = req.body as UpdateRequirementInput;
 
@@ -171,7 +173,7 @@ export async function deleteRequirement(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { rid } = req.params as { rid: string };
 
   await complianceService.deleteRequirement(tenantId, rid);
@@ -189,8 +191,8 @@ export async function upsertMapping(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
-  const userId = req.user!.id;
+  const tenantId = requireTenantId(req);
+  const userId = requireUserId(req);
   const { rid, sid } = req.params as { rid: string; sid: string };
   const data = req.body as UpsertMappingInput;
 
@@ -205,7 +207,7 @@ export async function deleteMapping(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { rid, sid } = req.params as { rid: string; sid: string };
 
   await complianceService.deleteMapping(tenantId, rid, sid);
@@ -219,7 +221,7 @@ export async function getMatrix(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { id: frameworkId } = req.params as { id: string };
 
   const matrix = await complianceService.getMatrixForFramework(tenantId, frameworkId);
@@ -237,7 +239,7 @@ export async function getFrameworkAssets(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { id: frameworkId } = req.params as { id: string };
 
   const flaggedAssets = await complianceService.getFrameworkAssets(tenantId, frameworkId);
@@ -251,8 +253,8 @@ export async function flagAsset(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
-  const userId = req.user!.id;
+  const tenantId = requireTenantId(req);
+  const userId = requireUserId(req);
   const { id: frameworkId } = req.params as { id: string };
   const data = req.body as FlagAssetInput;
 
@@ -267,7 +269,7 @@ export async function unflagAsset(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { id: frameworkId, aid } = req.params as { id: string; aid: string };
 
   await complianceService.unflagAsset(tenantId, frameworkId, aid);

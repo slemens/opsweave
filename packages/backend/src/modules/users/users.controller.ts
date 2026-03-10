@@ -6,6 +6,8 @@ import {
   sendPaginated,
   sendNoContent,
 } from '../../lib/response.js';
+// AUDIT-FIX: M-04 — Safe context accessors instead of non-null assertions
+import { requireTenantId, requireUserId, requireUser } from '../../lib/context.js';
 import { ForbiddenError } from '../../lib/errors.js';
 import * as usersService from './users.service.js';
 import type {
@@ -24,7 +26,7 @@ export async function listUsers(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const params = req.query as unknown as PaginationParams;
 
   const { users, total } = await usersService.listUsers(tenantId, params);
@@ -40,7 +42,7 @@ export async function getUser(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { id } = req.params as { id: string };
 
   const user = await usersService.getUser(tenantId, id);
@@ -56,8 +58,8 @@ export async function createUser(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
-  const creatorId = req.user!.id;
+  const tenantId = requireTenantId(req);
+  const creatorId = requireUserId(req);
   const data = req.body as CreateUserInput;
 
   const user = await usersService.createUser(tenantId, data, creatorId);
@@ -74,7 +76,7 @@ export async function updateUser(
   res: Response,
 ): Promise<void> {
   const { id } = req.params as { id: string };
-  const requestUser = req.user!;
+  const requestUser = requireUser(req);
   const data = req.body as UpdateUserInput;
 
   usersService.assertCanEditUser(requestUser.id, id, requestUser.role);
@@ -92,9 +94,9 @@ export async function deleteUser(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { id } = req.params as { id: string };
-  const requestUser = req.user!;
+  const requestUser = requireUser(req);
 
   if (requestUser.id === id) {
     throw new ForbiddenError('Cannot remove yourself from the tenant');
@@ -114,7 +116,7 @@ export async function updateLanguage(
   res: Response,
 ): Promise<void> {
   const { id } = req.params as { id: string };
-  const requestUser = req.user!;
+  const requestUser = requireUser(req);
   const data = req.body as UpdateLanguageInput;
 
   usersService.assertCanEditUser(requestUser.id, id, requestUser.role);

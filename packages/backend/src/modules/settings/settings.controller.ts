@@ -5,6 +5,8 @@ import {
   sendCreated,
   sendNoContent,
 } from '../../lib/response.js';
+// AUDIT-FIX: M-04 — Safe context accessors instead of non-null assertions
+import { requireTenantId, requireUserId } from '../../lib/context.js';
 import * as settingsService from './settings.service.js';
 
 // ─── System Settings ─────────────────────────────────────
@@ -56,7 +58,7 @@ export function updateSettingByKey(
 ): void {
   const { key } = req.params as { key: string };
   const { value } = req.body as { value: unknown };
-  const userId = req.user!.id;
+  const userId = requireUserId(req);
 
   const setting = settingsService.upsertSetting(key, value, userId);
   sendSuccess(res, setting);
@@ -85,7 +87,7 @@ export function getLicense(
   req: Request,
   res: Response,
 ): void {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const info = settingsService.getLicenseInfo(tenantId);
   sendSuccess(res, info);
 }
@@ -98,7 +100,7 @@ export function getLicenseUsageHandler(
   req: Request,
   res: Response,
 ): void {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const usage = settingsService.getLicenseUsage(tenantId);
   sendSuccess(res, usage);
 }
@@ -111,7 +113,7 @@ export function activateLicenseHandler(
   req: Request,
   res: Response,
 ): void {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { license_key } = req.body as { license_key: string };
 
   const info = settingsService.activateLicense(tenantId, license_key);
@@ -126,7 +128,7 @@ export function deactivateLicenseHandler(
   req: Request,
   res: Response,
 ): void {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   settingsService.deactivateLicense(tenantId);
   sendNoContent(res);
 }

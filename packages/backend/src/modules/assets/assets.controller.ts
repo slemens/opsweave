@@ -6,6 +6,8 @@ import {
   sendPaginated,
   sendNoContent,
 } from '../../lib/response.js';
+// AUDIT-FIX: M-04 — Safe context accessors instead of non-null assertions
+import { requireTenantId, requireUserId } from '../../lib/context.js';
 import * as assetsService from './assets.service.js';
 import type {
   AssetFilterParams,
@@ -23,7 +25,7 @@ export async function listAssets(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const params = ((req as unknown as Record<string, unknown>)['parsedQuery'] ?? req.query) as unknown as AssetFilterParams;
 
   const { assets, total } = await assetsService.listAssets(tenantId, params);
@@ -39,7 +41,7 @@ export async function getAsset(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { id } = req.params as { id: string };
 
   const asset = await assetsService.getAsset(tenantId, id);
@@ -55,8 +57,8 @@ export async function createAsset(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
-  const userId = req.user!.id;
+  const tenantId = requireTenantId(req);
+  const userId = requireUserId(req);
   const data = req.body as CreateAssetInput;
 
   const asset = await assetsService.createAsset(tenantId, data, userId);
@@ -72,9 +74,9 @@ export async function updateAsset(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { id } = req.params as { id: string };
-  const userId = req.user!.id;
+  const userId = requireUserId(req);
   const data = req.body as UpdateAssetInput;
 
   const asset = await assetsService.updateAsset(tenantId, id, data, userId);
@@ -90,7 +92,7 @@ export async function deleteAsset(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { id } = req.params as { id: string };
 
   await assetsService.deleteAsset(tenantId, id);
@@ -106,7 +108,7 @@ export async function getAssetRelations(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { id } = req.params as { id: string };
 
   const relations = await assetsService.getAssetRelations(tenantId, id);
@@ -120,8 +122,8 @@ export async function createAssetRelation(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
-  const userId = req.user!.id;
+  const tenantId = requireTenantId(req);
+  const userId = requireUserId(req);
   const data = req.body as CreateAssetRelationInput;
 
   const relation = await assetsService.createAssetRelation(tenantId, data, userId);
@@ -135,7 +137,7 @@ export async function deleteAssetRelation(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { rid } = req.params as { id: string; rid: string };
 
   await assetsService.deleteAssetRelation(tenantId, rid);
@@ -151,7 +153,7 @@ export async function getAssetStats(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
 
   const stats = await assetsService.getAssetStats(tenantId);
   sendSuccess(res, stats);
@@ -166,7 +168,7 @@ export async function getFullAssetGraph(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
 
   const graph = await assetsService.getFullAssetGraph(tenantId);
   sendSuccess(res, graph);
@@ -179,7 +181,7 @@ export async function getAssetGraph(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { id } = req.params as { id: string };
 
   const graph = await assetsService.getAssetGraph(tenantId, id);
@@ -195,9 +197,53 @@ export async function getAssetTickets(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { id } = req.params as { id: string };
 
   const tickets = await assetsService.getAssetTickets(tenantId, id);
   sendSuccess(res, tickets);
+}
+
+// ─── AUDIT-FIX: H-10 — Missing Asset Sub-Endpoints ──────
+
+/**
+ * GET /api/v1/assets/:id/sla-chain
+ */
+export async function getAssetSlaChain(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const tenantId = requireTenantId(req);
+  const { id } = req.params as { id: string };
+
+  const chain = await assetsService.getAssetSlaChain(tenantId, id);
+  sendSuccess(res, chain);
+}
+
+/**
+ * GET /api/v1/assets/:id/services
+ */
+export async function getAssetServices(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const tenantId = requireTenantId(req);
+  const { id } = req.params as { id: string };
+
+  const services = await assetsService.getAssetServices(tenantId, id);
+  sendSuccess(res, services);
+}
+
+/**
+ * GET /api/v1/assets/:id/compliance
+ */
+export async function getAssetCompliance(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const tenantId = requireTenantId(req);
+  const { id } = req.params as { id: string };
+
+  const compliance = await assetsService.getAssetCompliance(tenantId, id);
+  sendSuccess(res, compliance);
 }

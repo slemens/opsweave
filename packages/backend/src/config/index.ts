@@ -1,4 +1,9 @@
 import 'dotenv/config';
+// AUDIT-FIX: H-11 — Structured logging (lazy import to avoid circular dep with logger)
+// Config is loaded before logger is initialised, so we use a deferred approach:
+// console.warn calls here run at module-load time before pino is ready.
+// We keep them as-is since they fire only once at startup and pino may not be initialised yet.
+import logger from '../lib/logger.js';
 
 export type DbDriver = 'pg' | 'sqlite';
 export type QueueDriver = 'bullmq' | 'better-queue';
@@ -35,6 +40,9 @@ export interface AppConfig {
   /** i18n */
   defaultLanguage: string;
 
+  /** Email Webhook */
+  emailWebhookSecret: string;
+
   /** Static (single-container mode) */
   serveStatic: boolean;
   staticPath: string;
@@ -69,24 +77,65 @@ function resolveQueueDriver(): QueueDriver {
   return 'bullmq';
 }
 
+// AUDIT-FIX: C-02 — Insecure default secrets not allowed in production
+const INSECURE_SECRETS = ['change-me-in-production', 'opsweave-dev-secret-change-in-production', ''];
+
+function resolveSecret(envKey: string, devFallback: string, nodeEnv: string): string {
+  const value = process.env[envKey] ?? devFallback;
+  if (nodeEnv === 'production' && INSECURE_SECRETS.includes(value)) {
+    throw new Error(
+      `FATAL: ${envKey} must be set to a secure value in production. ` +
+      `Do not use default/dev secrets. Set ${envKey} in your environment.`,
+    );
+  }
+  return value;
+}
+
+const nodeEnv = envStr('NODE_ENV', 'development');
+const dbDriver = resolveDbDriver();
+
+// AUDIT-FIX: H-03 — No DATABASE_URL fallback in production
+function resolveDatabaseUrl(): string {
+  const explicit = process.env['DATABASE_URL'];
+  if (explicit) return explicit;
+
+  if (nodeEnv === 'production') {
+    throw new Error(
+      'FATAL: DATABASE_URL must be set in production. ' +
+      'No fallback to localhost is allowed.',
+    );
+  }
+  // Dev/test fallback
+  return dbDriver === 'sqlite'
+    ? 'file:./data/opsweave.db'
+    : 'postgresql://opsweave:opsweave_secret@localhost:5432/opsweave_db';
+}
+
+// AUDIT-FIX: M-02 — Redis URL warning in production
+function resolveRedisUrl(): string {
+  const explicit = process.env['REDIS_URL'];
+  if (explicit) return explicit;
+
+  if (nodeEnv === 'production') {
+    // AUDIT-FIX: H-11 — Structured logging
+    logger.warn('REDIS_URL is not set in production, falling back to redis://localhost:6379');
+  }
+  return 'redis://localhost:6379';
+}
+
 export const config: AppConfig = {
-  nodeEnv: envStr('NODE_ENV', 'development'),
+  nodeEnv,
   port: envInt('PORT', 3000),
   logLevel: envStr('LOG_LEVEL', 'info'),
 
-  dbDriver: resolveDbDriver(),
-  databaseUrl: envStr(
-    'DATABASE_URL',
-    resolveDbDriver() === 'sqlite'
-      ? 'file:./data/opsweave.db'
-      : 'postgresql://opsweave:opsweave_secret@localhost:5432/opsweave_db',
-  ),
+  dbDriver,
+  databaseUrl: resolveDatabaseUrl(),
 
   queueDriver: resolveQueueDriver(),
-  redisUrl: envStr('REDIS_URL', 'redis://localhost:6379'),
+  redisUrl: resolveRedisUrl(),
 
-  sessionSecret: envStr('SESSION_SECRET', 'change-me-in-production'),
-  jwtSecret: envStr('JWT_SECRET', 'change-me-in-production'),
+  sessionSecret: resolveSecret('SESSION_SECRET', 'change-me-in-production', nodeEnv),
+  jwtSecret: resolveSecret('JWT_SECRET', 'change-me-in-production', nodeEnv),
   jwtExpiresIn: envStr('JWT_EXPIRES_IN', '8h'),
 
   oidcEnabled: envBool('OIDC_ENABLED', false),
@@ -99,6 +148,20 @@ export const config: AppConfig = {
 
   defaultLanguage: envStr('DEFAULT_LANGUAGE', 'de'),
 
+  // AUDIT-FIX: C-08 — Webhook secret for email provider signature validation
+  emailWebhookSecret: envStr('EMAIL_WEBHOOK_SECRET', ''),
+
   serveStatic: envBool('SERVE_STATIC', false),
   staticPath: envStr('STATIC_PATH', '../frontend/dist'),
 };
+
+// AUDIT-FIX: M-01 — Warn about localhost URIs in production
+// AUDIT-FIX: H-11 — Structured logging
+if (nodeEnv === 'production') {
+  if (config.oidcRedirectUri.includes('localhost')) {
+    logger.warn('OIDC_REDIRECT_URI contains "localhost" in production — set to your public domain');
+  }
+  if (config.corsOrigin.includes('localhost')) {
+    logger.warn('CORS_ORIGIN contains "localhost" in production — set to your public domain');
+  }
+}

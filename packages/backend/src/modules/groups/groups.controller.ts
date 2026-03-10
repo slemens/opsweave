@@ -6,6 +6,8 @@ import {
   sendPaginated,
   sendNoContent,
 } from '../../lib/response.js';
+// AUDIT-FIX: M-04 — Safe context accessors instead of non-null assertions
+import { requireTenantId } from '../../lib/context.js';
 import * as groupsService from './groups.service.js';
 import type {
   PaginationParams,
@@ -23,7 +25,7 @@ export async function listGroups(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const params = req.query as unknown as PaginationParams;
 
   const { groups, total } = await groupsService.listGroups(tenantId, params);
@@ -39,7 +41,7 @@ export async function getGroup(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { id } = req.params as { id: string };
 
   const group = await groupsService.getGroup(tenantId, id);
@@ -55,7 +57,7 @@ export async function createGroup(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const data = req.body as CreateGroupInput;
 
   const group = await groupsService.createGroup(tenantId, data);
@@ -71,7 +73,7 @@ export async function updateGroup(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { id } = req.params as { id: string };
   const data = req.body as UpdateGroupInput;
 
@@ -88,7 +90,7 @@ export async function deleteGroup(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { id } = req.params as { id: string };
 
   await groupsService.deleteGroup(tenantId, id);
@@ -104,7 +106,7 @@ export async function listGroupMembers(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { id } = req.params as { id: string };
 
   const members = await groupsService.listGroupMembers(tenantId, id);
@@ -120,7 +122,7 @@ export async function addGroupMember(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { id } = req.params as { id: string };
   const data = req.body as AddGroupMemberInput;
 
@@ -142,7 +144,7 @@ export async function removeGroupMember(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { id, uid } = req.params as { id: string; uid: string };
 
   await groupsService.removeGroupMember(tenantId, id, uid);
@@ -158,7 +160,7 @@ export async function getGroupTickets(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const tenantId = req.tenantId!;
+  const tenantId = requireTenantId(req);
   const { id } = req.params as { id: string };
   const params = req.query as unknown as PaginationParams;
 

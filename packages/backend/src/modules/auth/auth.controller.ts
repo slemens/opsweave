@@ -1,6 +1,8 @@
 import type { Request, Response } from 'express';
 
 import { sendSuccess } from '../../lib/response.js';
+// AUDIT-FIX: M-04 — Safe context accessors instead of non-null assertions
+import { requireUserId } from '../../lib/context.js';
 import * as authService from './auth.service.js';
 import type { LoginInput, SwitchTenantInput } from '@opsweave/shared';
 
@@ -35,7 +37,7 @@ export function logout(_req: Request, res: Response): void {
  * Return the current authenticated user with their tenant list.
  */
 export async function getMe(req: Request, res: Response): Promise<void> {
-  const userId = req.user!.id;
+  const userId = requireUserId(req);
 
   const result = await authService.getMe(userId);
 
@@ -52,7 +54,7 @@ export async function switchTenant(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const userId = req.user!.id;
+  const userId = requireUserId(req);
   const { tenant_id: tenantId } = req.body as SwitchTenantInput;
 
   const result = await authService.switchTenant(userId, tenantId);

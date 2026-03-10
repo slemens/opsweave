@@ -133,6 +133,39 @@
     "load_error": "Failed to load data",
     "scope_customer": "Customer-wide",
     "scope_service": "Service",
-    "scope_asset": "Asset"
+    "scope_asset": "Asset",
+    "edit": "Edit Customer",
+    "delete": "Deactivate Customer",
+    "delete_confirm_title": "Deactivate Customer?",
+    "delete_confirm_description": "The customer will be deactivated. Existing data will be preserved.",
+    "delete_success": "Customer deactivated successfully",
+    "delete_conflict": "Customer has open tickets. Please close or reassign them first.",
+    "edit_success": "Customer updated successfully"
+  },
+  "customers": {
+    "create": "New Customer",
+    "create_title": "Create New Customer",
+    "name": "Name",
+    "name_placeholder": "Company name",
+    "email": "Email",
+    "email_placeholder": "contact@company.com",
+    "industry": "Industry",
+    "industry_placeholder": "e.g. Finance, Healthcare",
+    "create_success": "Customer created successfully"
+  },
+  "portal_users": {
+    "title": "Portal Users",
+    "create": "Create Portal User",
+    "edit": "Edit Portal User",
+    "email": "Email",
+    "name": "Display Name",
+    "password": "Password",
+    "status": "Status",
+    "last_login": "Last Login",
+    "active": "Active",
+    "inactive": "Disabled",
+    "empty": "No portal users found",
+    "create_success": "Portal user created successfully",
+    "update_success": "Portal user updated successfully"
   }
 }

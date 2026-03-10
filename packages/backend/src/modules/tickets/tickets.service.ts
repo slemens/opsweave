@@ -1,8 +1,10 @@
-import { eq, and, count, like, or, asc, desc, sql } from 'drizzle-orm';
+import { eq, ne, and, count, like, or, asc, desc, sql } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 
 import { getDb, type TypedDb } from '../../config/database.js';
 import { slaEngine } from '../../lib/sla-engine.js';
+// AUDIT-FIX: H-11 — Structured logging
+import logger from '../../lib/logger.js';
 import {
   tickets,
   ticketCategories,
@@ -13,7 +15,7 @@ import {
   assets,
   customers,
 } from '../../db/schema/index.js';
-import { NotFoundError, ValidationError } from '../../lib/errors.js';
+import { NotFoundError, ValidationError, ConflictError } from '../../lib/errors.js';
 import { TICKET_NUMBER_PREFIXES, TICKET_STATUSES, calculatePriority } from '@opsweave/shared';
 import type { TicketFilterParams, CreateTicketInput, UpdateTicketInput } from '@opsweave/shared';
 
@@ -115,7 +117,14 @@ export async function listTickets(
 
   const conditions = [eq(tickets.tenant_id, tenantId)];
 
-  if (status) conditions.push(eq(tickets.status, status));
+  // AUDIT-FIX: H-05 — Exclude archived tickets from standard queries.
+  // When an explicit status filter is set, respect it (even 'archived').
+  // When no status filter → hide archived.
+  if (status) {
+    conditions.push(eq(tickets.status, status));
+  } else {
+    conditions.push(ne(tickets.status, 'archived'));
+  }
   if (ticket_type) conditions.push(eq(tickets.ticket_type, ticket_type));
   if (priority) conditions.push(eq(tickets.priority, priority));
   if (assignee_id) conditions.push(eq(tickets.assignee_id, assignee_id));
@@ -415,8 +424,8 @@ export async function createTicket(
     try {
       effectiveSlaTier = await slaEngine.resolveSlaTier(tenantId, data.asset_id);
     } catch (err) {
-      // SLA resolution is best-effort — never fail ticket creation because of it
-      console.warn('SLA resolution failed for asset', data.asset_id, err);
+      // AUDIT-FIX: H-11 — Structured logging
+      logger.warn({ err, assetId: data.asset_id }, 'SLA resolution failed for asset');
     }
   }
 
@@ -1254,6 +1263,85 @@ export async function updateCategory(
     .update(ticketCategories)
     .set(updateSet)
     .where(and(eq(ticketCategories.id, categoryId), eq(ticketCategories.tenant_id, tenantId)))
+    .returning();
+
+  return updated;
+}
+
+// AUDIT-FIX: H-06 — Delete a ticket category (hard delete).
+// Returns 409 Conflict if tickets are still assigned to this category.
+export async function deleteCategory(
+  tenantId: string,
+  categoryId: string,
+): Promise<void> {
+  const d = db();
+
+  const existing = await d
+    .select()
+    .from(ticketCategories)
+    .where(and(eq(ticketCategories.id, categoryId), eq(ticketCategories.tenant_id, tenantId)))
+    .limit(1);
+
+  if (!existing[0]) {
+    throw new NotFoundError('Category not found');
+  }
+
+  // Check if any tickets use this category
+  const [ticketCount] = await d
+    .select({ cnt: count() })
+    .from(tickets)
+    .where(and(eq(tickets.tenant_id, tenantId), eq(tickets.category_id, categoryId)));
+
+  const cnt = ticketCount?.cnt ?? 0;
+  if (cnt > 0) {
+    throw new ConflictError(
+      `Category is assigned to ${cnt} ticket(s). Reassign them before deleting.`,
+      { count: cnt },
+    );
+  }
+
+  await d
+    .delete(ticketCategories)
+    .where(and(eq(ticketCategories.id, categoryId), eq(ticketCategories.tenant_id, tenantId)));
+}
+
+// AUDIT-FIX: H-05 — Archive a ticket (soft status transition).
+// Only tickets with status 'closed' or 'resolved' may be archived.
+export async function archiveTicket(
+  tenantId: string,
+  ticketId: string,
+  userId: string,
+): Promise<unknown> {
+  const d = db();
+  const now = new Date().toISOString();
+
+  const existingRows = await d
+    .select()
+    .from(tickets)
+    .where(and(eq(tickets.id, ticketId), eq(tickets.tenant_id, tenantId)))
+    .limit(1);
+
+  const existing = existingRows[0];
+  if (!existing) {
+    throw new NotFoundError('Ticket not found');
+  }
+
+  if (existing.status !== 'closed' && existing.status !== 'resolved') {
+    throw new ConflictError(
+      'Only closed or resolved tickets can be archived',
+      { current_status: existing.status },
+    );
+  }
+
+  await recordHistory(tenantId, ticketId, 'status', existing.status, 'archived', userId);
+
+  const [updated] = await d
+    .update(tickets)
+    .set({
+      status: 'archived',
+      updated_at: now,
+    })
+    .where(and(eq(tickets.id, ticketId), eq(tickets.tenant_id, tenantId)))
     .returning();
 
   return updated;

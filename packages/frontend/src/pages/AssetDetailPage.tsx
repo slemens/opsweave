@@ -71,7 +71,9 @@ import {
   useAssets,
   useAssetGraph,
 } from '@/api/assets';
-import { useGroups, useCustomers } from '@/api/tickets';
+// AUDIT-FIX: M-09 — Import from domain-specific API modules
+import { useGroups } from '@/api/groups';
+import { useCustomers } from '@/api/customers';
 import type { AssetRelationWithDetails, AssetTicketSummary } from '@/api/assets';
 import type { AssetType, RelationType } from '@opsweave/shared';
 import { ASSET_STATUSES, SLA_TIERS, ENVIRONMENTS, RELATION_TYPES } from '@opsweave/shared';

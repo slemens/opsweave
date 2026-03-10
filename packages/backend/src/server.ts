@@ -12,7 +12,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { config } from './config/index.js';
-import { initDatabase } from './config/database.js';
+import { initDatabase, getDb, type TypedDb } from './config/database.js';
 import { initI18n } from './i18n/index.js';
 import { requestIdMiddleware } from './middleware/request-id.js';
 import { languageMiddleware } from './middleware/language.js';
@@ -22,8 +22,36 @@ import {
   startEmailPollingWorker,
   stopEmailPollingWorker,
 } from './modules/email-inbound/email-poll.worker.js';
+// AUDIT-FIX: H-11 — Structured logging
+import logger from './lib/logger.js';
+// AUDIT-FIX: H-02 — Warn if default admin password unchanged in production
+import bcrypt from 'bcryptjs';
+import { eq } from 'drizzle-orm';
+import { users } from './db/schema/index.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// ─── AUDIT-FIX: H-02 — Warn about default seed password ────
+
+async function checkDefaultAdminPassword(): Promise<void> {
+  try {
+    const db = getDb() as TypedDb;
+    const [admin] = await db
+      .select({ password_hash: users.password_hash })
+      .from(users)
+      .where(eq(users.email, 'admin@opsweave.local'))
+      .limit(1);
+
+    if (admin?.password_hash) {
+      const isDefault = await bcrypt.compare('changeme', admin.password_hash);
+      if (isDefault) {
+        logger.warn('Default admin password unchanged — change immediately! (admin@opsweave.local)');
+      }
+    }
+  } catch {
+    // Non-fatal: seed user may not exist
+  }
+}
 
 // ─── Bootstrap ─────────────────────────────────────────────
 
@@ -47,11 +75,11 @@ async function bootstrap(): Promise<void> {
   // Make io available to routes via app.locals
   app.locals['io'] = io;
 
-  // Socket.IO connection handler (placeholder)
+  // AUDIT-FIX: H-11 — Structured logging
   io.on('connection', (socket) => {
-    console.log(`[Socket.IO] Client connected: ${socket.id}`);
+    logger.debug({ socketId: socket.id }, 'Socket.IO client connected');
     socket.on('disconnect', () => {
-      console.log(`[Socket.IO] Client disconnected: ${socket.id}`);
+      logger.debug({ socketId: socket.id }, 'Socket.IO client disconnected');
     });
   });
 
@@ -114,44 +142,47 @@ async function bootstrap(): Promise<void> {
   app.use(errorHandler);
 
   // ── Start server ───────────────────────────────────────────
+  // AUDIT-FIX: H-11 — Structured logging
   httpServer.listen(config.port, () => {
-    console.log(`
-╔══════════════════════════════════════════════════╗
-║           OpsWeave Backend v0.2.9                ║
-║──────────────────────────────────────────────────║
-║  Port:     ${String(config.port).padEnd(37)}║
-║  DB:       ${config.dbDriver.padEnd(37)}║
-║  Queue:    ${config.queueDriver.padEnd(37)}║
-║  Env:      ${config.nodeEnv.padEnd(37)}║
-║  Language: ${config.defaultLanguage.padEnd(37)}║
-║  Static:   ${String(config.serveStatic).padEnd(37)}║
-╚══════════════════════════════════════════════════╝
-    `.trim());
+    logger.info(
+      {
+        port: config.port,
+        db: config.dbDriver,
+        queue: config.queueDriver,
+        env: config.nodeEnv,
+        language: config.defaultLanguage,
+        serveStatic: config.serveStatic,
+      },
+      'OpsWeave Backend v0.3.0 started',
+    );
 
-    // Start background IMAP polling worker after the server is ready
     startEmailPollingWorker().catch((err: unknown) => {
-      console.error('[Server] Failed to start email polling worker:', err);
+      logger.error({ err }, 'Failed to start email polling worker');
     });
+
+    // AUDIT-FIX: H-02 — Check default admin password in production
+    if (config.nodeEnv === 'production') {
+      checkDefaultAdminPassword().catch(() => { /* non-fatal */ });
+    }
   });
 
   // ── Graceful shutdown ──────────────────────────────────────
+  // AUDIT-FIX: H-11 — Structured logging
   const shutdown = (signal: string) => {
-    console.log(`\n[Server] Received ${signal}. Shutting down gracefully...`);
+    logger.info({ signal }, 'Received shutdown signal, shutting down gracefully');
 
-    // Stop IMAP polling before closing the HTTP server
     stopEmailPollingWorker();
 
     httpServer.close(() => {
-      console.log('[Server] HTTP server closed.');
+      logger.info('HTTP server closed');
       io.close(() => {
-        console.log('[Server] Socket.IO server closed.');
+        logger.info('Socket.IO server closed');
         process.exit(0);
       });
     });
 
-    // Force shutdown after 10s
     setTimeout(() => {
-      console.error('[Server] Forced shutdown after timeout.');
+      logger.error('Forced shutdown after timeout');
       process.exit(1);
     }, 10_000);
   };
@@ -161,7 +192,8 @@ async function bootstrap(): Promise<void> {
 }
 
 // ─── Run ───────────────────────────────────────────────────
+// AUDIT-FIX: H-11 — Structured logging
 bootstrap().catch((err: unknown) => {
-  console.error('[Server] Failed to start:', err);
+  logger.fatal({ err }, 'Failed to start server');
   process.exit(1);
 });

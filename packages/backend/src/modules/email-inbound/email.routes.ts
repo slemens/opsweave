@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, json } from 'express';
 
 import { requireAuth } from '../../middleware/auth.js';
 import { requireRole } from '../../middleware/auth.js';
@@ -22,6 +22,7 @@ import {
   getMessage,
   processWebhook,
 } from './email.controller.js';
+import { validateWebhookSignature, webhookPayloadSchema } from './webhook.schema.js';
 
 // ─── Router ───────────────────────────────────────────────
 
@@ -34,8 +35,13 @@ const emailRouter = Router();
  * Public inbound webhook called by email providers (Mailgun, SendGrid, etc.).
  * Must be declared BEFORE the requireAuth middleware below.
  */
+// AUDIT-FIX: C-08 — Webhook signature validation
+// AUDIT-FIX: C-09 — Zod schema validation + 5mb body limit
 emailRouter.post(
   '/webhook',
+  json({ limit: '5mb' }),
+  validateWebhookSignature,
+  validate(webhookPayloadSchema),
   processWebhook,
 );
 

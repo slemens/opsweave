@@ -58,7 +58,8 @@ import {
   useAssets,
   useCreateAsset,
 } from '@/api/assets';
-import { useCustomers } from '@/api/tickets';
+// AUDIT-FIX: M-09 — Import from domain-specific API module
+import { useCustomers } from '@/api/customers';
 import type { AssetListParams, AssetWithRelations, CreateAssetPayload } from '@/api/assets';
 import type { AssetType, AssetStatus } from '@opsweave/shared';
 import { ASSET_TYPES, ASSET_STATUSES, SLA_TIERS, ENVIRONMENTS } from '@opsweave/shared';

@@ -72,5 +72,8 @@
     "healthy": "System ist betriebsbereit.",
     "db_connected": "Datenbankverbindung hergestellt.",
     "db_disconnected": "Datenbankverbindung unterbrochen."
+  },
+  "email": {
+    "webhook_no_test": "Webhook-basierte Provider benötigen keinen Verbindungstest. Konfigurieren Sie die Webhook-URL in Ihrem E-Mail-Provider."
   }
 }

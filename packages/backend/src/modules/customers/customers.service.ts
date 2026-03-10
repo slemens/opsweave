@@ -15,7 +15,7 @@ import {
   serviceDescriptions,
 } from '../../db/schema/index.js';
 import { isNull } from 'drizzle-orm';
-import { NotFoundError } from '../../lib/errors.js';
+import { NotFoundError, ConflictError } from '../../lib/errors.js';
 import type { PaginationParams } from '@opsweave/shared';
 
 // ─── DB Helper ────────────────────────────────────────────
@@ -207,6 +207,56 @@ export async function updateCustomer(
   if (!updated) {
     throw new NotFoundError('Customer not found');
   }
+
+  return updated;
+}
+
+// ─── Deactivate Customer ─────────────────────────────────
+
+// AUDIT-FIX: C-14 — Soft-delete (deactivate) a customer.
+// Returns 409 Conflict if the customer has open tickets.
+export async function deactivateCustomer(
+  tenantId: string,
+  customerId: string,
+): Promise<CustomerRow> {
+  const d = db();
+
+  // Verify customer exists
+  const existing = await getCustomer(tenantId, customerId);
+
+  // Check for open tickets (status != 'closed' and != 'resolved')
+  const [openResult] = await d
+    .select({ cnt: count() })
+    .from(tickets)
+    .where(and(
+      eq(tickets.tenant_id, tenantId),
+      eq(tickets.customer_id, customerId),
+      or(eq(tickets.status, 'open'), eq(tickets.status, 'in_progress'), eq(tickets.status, 'waiting')),
+    ));
+
+  const openCount = openResult?.cnt ?? 0;
+  if (openCount > 0) {
+    throw new ConflictError(
+      `Customer has ${openCount} open ticket(s). Close or reassign them before deactivating.`,
+      { open_tickets: openCount },
+    );
+  }
+
+  const [updated] = await d
+    .update(customers)
+    .set({ is_active: 0 })
+    .where(and(
+      eq(customers.id, customerId),
+      eq(customers.tenant_id, tenantId),
+    ))
+    .returning();
+
+  if (!updated) {
+    throw new NotFoundError('Customer not found');
+  }
+
+  // Suppress unused variable warning — existing is used for the existence check above
+  void existing;
 
   return updated;
 }
