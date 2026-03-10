@@ -89,10 +89,10 @@ const stateConfig: Record<string, { icon: React.ComponentType<{ className?: stri
 };
 
 function StateBadge({ state }: { state: string }) {
-  const cfg = stateConfig[state] ?? stateConfig.unknown;
-  const Icon = cfg.icon;
+  const resolved = (stateConfig[state] ?? stateConfig['unknown'])!;
+  const Icon = resolved.icon;
   return (
-    <span className={cn('inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium', cfg.color)}>
+    <span className={cn('inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium', resolved.color)}>
       <Icon className="h-3 w-3" />
       {state.toUpperCase()}
     </span>
@@ -149,18 +149,18 @@ function sourceToForm(s: MonitoringSource): SourceForm {
   };
 }
 
-function formToPayload(form: SourceForm) {
+function formToPayload(form: SourceForm): Partial<MonitoringSource> {
   return {
     name: form.name,
     type: form.type,
-    config: {
+    config: JSON.stringify({
       url: form.url || undefined,
       username: form.username || undefined,
       password: form.password || undefined,
       api_key: form.api_key || undefined,
       poll_interval: form.poll_interval,
-    },
-    is_active: form.is_active,
+    }),
+    is_active: form.is_active ? 1 : 0,
   };
 }
 
@@ -270,7 +270,7 @@ export function MonitoringPage() {
       {/* Stats cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {(['ok', 'warning', 'critical', 'unknown'] as const).map((state) => {
-          const cfg = stateConfig[state];
+          const cfg = stateConfig[state]!;
           const Icon = cfg.icon;
           const count = stats?.[state] ?? 0;
           return (

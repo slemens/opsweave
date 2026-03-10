@@ -9,6 +9,65 @@ und das Projekt folgt [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 Alle Releases mit Download-Paketen: [GitHub Releases](https://github.com/slemens/opsweave/releases)
 :::
 
+## [0.4.1] - 2026-03-10
+
+### Neu
+- **Create Ticket Page**: Vollständige Seite statt Dialog für Ticket-Erstellung mit RFC-Feldern
+- **CAB Board**: Change Advisory Board mit Pending/All-Tabs und Entscheidungs-Workflow (Approve/Reject/Defer)
+- **Monitoring Page**: Event-Dashboard mit Status-Karten, Quellen-Management und Event-Tabelle
+
+### Behoben
+- SQLite Boolean-Binding für `cab_required` (Integer statt Boolean)
+- Navigate-Fehler nach Entfernung des Create-Ticket-Dialogs
+
+## [0.4.0] - 2026-03-10
+
+### Neu
+- **ITIL Phase B**: Monitoring Events UI, Service Request Subtypen, SLA Performance Reports
+- **KB-Suche**: Volltextsuche in der Wissensdatenbank
+- **CAB-Grundstruktur**: Backend-Endpoints für CAB-Entscheidungen
+
+## [0.3.9] - 2026-03-10
+
+### Neu
+- **Notification System**: Toast-Benachrichtigungen für Ticket-Updates und SLA-Warnungen
+
+## [0.3.8] - 2026-03-10
+
+### Neu
+- **Escalation Management**: Eskalationsstufen (L1–L3) mit Zielgruppe und Begründung
+- **Known Error Database (KEDB)**: Erfassung, Bearbeitung und Suche bekannter Fehler
+
+## [0.3.7] - 2026-03-10
+
+### Neu
+- **Major Incident Management**: Deklaration, Incident Commander, Bridge Call URL
+- **Root Cause Analysis**: Ursachenanalyse auf Problem-Tickets
+
+## [0.3.6] - 2026-03-10
+
+### Neu
+- **Parent-Child Tickets**: Hierarchische Ticket-Verknüpfungen mit Schließ-Blockierung
+- **Ticket-Kategorien**: Kategorisierung mit Inline-Erstellung
+
+## [0.3.5] - 2026-03-10
+
+### Neu
+- **RFC-Felder für Changes**: Begründung, Risikobewertung, Implementierungsplan, Rollback-Plan
+- **SLA-Definitionen**: Gold/Silver/Bronze Tiers mit konfigurierbaren Zeiten
+
+## [0.3.4] - 2026-03-10
+
+### Neu
+- **Service Requests**: Eigener Ticket-Typ mit Subtypes (Standard)
+- **Ticket-Listenansicht**: Sortierbare Spalten, SLA-Indikatoren, Paginierung
+
+## [0.3.3] - 2026-03-10
+
+### Neu
+- **Impact × Urgency Matrix**: Automatische Prioritätsberechnung nach ITIL
+- **SLA-Tracking-Verbesserungen**: Breach-Indikatoren im Board und in der Liste
+
 ## [0.3.2] - 2026-03-10
 
 ### Geändert

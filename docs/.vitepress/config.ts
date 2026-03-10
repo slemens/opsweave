@@ -11,7 +11,9 @@ export default defineConfig({
   ],
 
   head: [
+    ['link', { rel: 'icon', type: 'image/x-icon', href: '/opsweave/favicon.ico' }],
     ['link', { rel: 'icon', type: 'image/svg+xml', href: '/opsweave/logo-icon.svg' }],
+    ['link', { rel: 'apple-touch-icon', href: '/opsweave/apple-touch-icon.png' }],
     ['meta', { property: 'og:type', content: 'website' }],
     ['meta', { property: 'og:title', content: 'OpsWeave — IT Service Management' }],
     ['meta', { property: 'og:description', content: 'Asset-zentriertes, workflow-gesteuertes Open-Source ITSM' }],
@@ -34,7 +36,7 @@ export default defineConfig({
         ],
       },
       {
-        text: 'v0.4.1',
+        text: 'v0.4.2',
         items: [
           { text: 'Roadmap', link: '/project/roadmap' },
           { text: 'ITIL Compliance', link: '/project/itil-compliance' },
@@ -68,6 +70,10 @@ export default defineConfig({
             { text: 'Wissensdatenbank', link: '/features/kb' },
             { text: 'Kundenportal', link: '/features/portal' },
             { text: 'E-Mail Inbound', link: '/features/email' },
+            { text: 'Monitoring', link: '/features/monitoring' },
+            { text: 'SLA Management', link: '/features/sla' },
+            { text: 'CAB Board', link: '/features/cab' },
+            { text: 'Major Incidents & Eskalation', link: '/features/incidents' },
           ],
         },
       ],
@@ -107,7 +113,7 @@ export default defineConfig({
 
     footer: {
       message: 'Veröffentlicht unter der AGPL-3.0 Lizenz.',
-      copyright: 'Copyright © 2025–2026 OpsWeave Contributors',
+      copyright: 'Copyright © 2025–2026 Sebastian Lemens & OpsWeave Contributors',
     },
 
     editLink: {
