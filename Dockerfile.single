@@ -7,16 +7,17 @@
 FROM node:20-alpine AS build
 WORKDIR /build
 
-# Copy root workspace config, lockfile, and shared tsconfig
-COPY package.json package-lock.json tsconfig.base.json ./
+# Copy root workspace config and shared tsconfig
+COPY package.json tsconfig.base.json ./
 
 # Copy workspace package.json files (for dependency resolution)
 COPY packages/shared/package.json ./packages/shared/
 COPY packages/backend/package.json ./packages/backend/
 COPY packages/frontend/package.json ./packages/frontend/
 
-# Install all workspace dependencies from root lockfile
-RUN npm ci
+# Install dependencies (npm install instead of npm ci to resolve
+# cross-platform optional dependency issues with rollup on Alpine)
+RUN npm install --no-audit --no-fund
 
 # Copy source code
 COPY packages/shared/ ./packages/shared/
@@ -38,13 +39,13 @@ RUN apk add --no-cache tini
 
 WORKDIR /app
 
-# Copy root workspace config + lockfile for production install
-COPY package.json package-lock.json ./
+# Copy root workspace config for production install
+COPY package.json ./
 COPY packages/shared/package.json ./packages/shared/
 COPY packages/backend/package.json ./packages/backend/
 
 # Install production dependencies only
-RUN npm ci --omit=dev --ignore-scripts -w packages/backend -w packages/shared
+RUN npm install --omit=dev --ignore-scripts --no-audit --no-fund -w packages/backend -w packages/shared
 
 # Copy built shared package
 COPY --from=build /build/packages/shared/dist ./packages/shared/dist
