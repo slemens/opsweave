@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Mail,
@@ -6,6 +6,7 @@ import {
   Pencil,
   Trash2,
   MoreHorizontal,
+  ShieldCheck,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -59,6 +60,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useAuthStore } from '@/stores/auth-store';
+import { usePasswordPolicy, useUpdatePasswordPolicy } from '@/api/password-policy';
+import type { PasswordPolicy } from '@/api/password-policy';
 
 // ============================================================
 // Tenant Section
@@ -389,12 +392,176 @@ function EmailSection() {
 }
 
 // ============================================================
+// Password Policy Section
+// ============================================================
+function PasswordPolicySection() {
+  const { t } = useTranslation(['settings', 'common']);
+  const { data: policy, isLoading } = usePasswordPolicy();
+  const updatePolicy = useUpdatePasswordPolicy();
+
+  const [form, setForm] = useState<PasswordPolicy>({
+    min_length: 8,
+    require_uppercase: false,
+    require_lowercase: false,
+    require_digit: false,
+    require_special: false,
+    expiry_days: 0,
+    history_count: 0,
+  });
+
+  useEffect(() => {
+    if (policy) {
+      setForm(policy);
+    }
+  }, [policy]);
+
+  async function handleSave() {
+    try {
+      await updatePolicy.mutateAsync(form);
+      toast.success(t('settings:saved'));
+    } catch {
+      toast.error(t('settings:save_error'));
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="py-8">
+          <div className="space-y-3">
+            {[1, 2, 3].map(i => <div key={i} className="h-8 bg-slate-100 dark:bg-slate-800 rounded animate-pulse" />)}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <ShieldCheck className="h-5 w-5 text-muted-foreground" />
+          <div>
+            <CardTitle className="text-base">
+              {t('settings:password_policy.title')}
+            </CardTitle>
+            <CardDescription className="text-sm">
+              {t('settings:password_policy.description')}
+            </CardDescription>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* Minimum length */}
+        <div className="space-y-2">
+          <Label>{t('settings:password_policy.min_length')}</Label>
+          <div className="flex items-center gap-4 max-w-md">
+            <Input
+              type="number"
+              value={form.min_length}
+              onChange={e => setForm(f => ({ ...f, min_length: Math.max(8, Math.min(128, parseInt(e.target.value) || 8)) }))}
+              min={8}
+              max={128}
+              className="w-24"
+            />
+            <span className="text-sm text-muted-foreground">
+              {t('settings:password_policy.characters')}
+            </span>
+          </div>
+        </div>
+
+        {/* Complexity requirements */}
+        <div className="space-y-3">
+          <Label>{t('settings:password_policy.complexity')}</Label>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={form.require_uppercase}
+                onCheckedChange={v => setForm(f => ({ ...f, require_uppercase: v }))}
+              />
+              <Label className="font-normal">{t('settings:password_policy.require_uppercase')}</Label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={form.require_lowercase}
+                onCheckedChange={v => setForm(f => ({ ...f, require_lowercase: v }))}
+              />
+              <Label className="font-normal">{t('settings:password_policy.require_lowercase')}</Label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={form.require_digit}
+                onCheckedChange={v => setForm(f => ({ ...f, require_digit: v }))}
+              />
+              <Label className="font-normal">{t('settings:password_policy.require_digit')}</Label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={form.require_special}
+                onCheckedChange={v => setForm(f => ({ ...f, require_special: v }))}
+              />
+              <Label className="font-normal">{t('settings:password_policy.require_special')}</Label>
+            </div>
+          </div>
+        </div>
+
+        {/* Expiry */}
+        <div className="space-y-2">
+          <Label>{t('settings:password_policy.expiry_days')}</Label>
+          <div className="flex items-center gap-4 max-w-md">
+            <Input
+              type="number"
+              value={form.expiry_days}
+              onChange={e => setForm(f => ({ ...f, expiry_days: parseInt(e.target.value) || 0 }))}
+              min={0}
+              max={365}
+              className="w-24"
+            />
+            <span className="text-sm text-muted-foreground">
+              {form.expiry_days === 0
+                ? t('settings:password_policy.no_expiry')
+                : t('settings:password_policy.days')}
+            </span>
+          </div>
+        </div>
+
+        {/* History */}
+        <div className="space-y-2">
+          <Label>{t('settings:password_policy.history_count')}</Label>
+          <div className="flex items-center gap-4 max-w-md">
+            <Input
+              type="number"
+              value={form.history_count}
+              onChange={e => setForm(f => ({ ...f, history_count: parseInt(e.target.value) || 0 }))}
+              min={0}
+              max={24}
+              className="w-24"
+            />
+            <span className="text-sm text-muted-foreground">
+              {form.history_count === 0
+                ? t('settings:password_policy.no_history')
+                : t('settings:password_policy.remembered')}
+            </span>
+          </div>
+        </div>
+      </CardContent>
+      <CardFooter className="justify-end border-t pt-6">
+        <Button onClick={() => { void handleSave(); }} disabled={updatePolicy.isPending}>
+          {t('settings:tenant.save')}
+        </Button>
+      </CardFooter>
+    </Card>
+  );
+}
+
+// ============================================================
 // Combined Tenant Settings Page
 // ============================================================
 export default function TenantSettingsPage() {
   return (
     <div className="space-y-8">
       <TenantSection />
+      <PasswordPolicySection />
       <EmailSection />
     </div>
   );

@@ -14,6 +14,8 @@ import {
   getLicenseUsageHandler,
   activateLicenseHandler,
   deactivateLicenseHandler,
+  getPasswordPolicy,
+  updatePasswordPolicy,
 } from './settings.controller.js';
 
 // ─── Validation Schemas ──────────────────────────────────
@@ -29,6 +31,16 @@ const activateLicenseSchema = z.object({
 // AUDIT-FIX: M-03 — Validate settings key param to prevent path traversal
 const settingsKeyParamSchema = z.object({
   key: z.string().regex(/^[a-zA-Z0-9._-]+$/),
+});
+
+const passwordPolicySchema = z.object({
+  min_length: z.number().int().min(8).max(128).optional(),
+  require_uppercase: z.boolean().optional(),
+  require_lowercase: z.boolean().optional(),
+  require_digit: z.boolean().optional(),
+  require_special: z.boolean().optional(),
+  expiry_days: z.number().int().min(0).max(365).optional(),
+  history_count: z.number().int().min(0).max(24).optional(),
 });
 
 // ─── Settings Router ─────────────────────────────────────
@@ -47,6 +59,24 @@ settingsRouter.get('/', listSettings);
  * IMPORTANT: must be before /:key to avoid matching 'runtime' as a key.
  */
 settingsRouter.get('/runtime', requireRole('admin'), getRuntime);
+
+/**
+ * GET /api/v1/settings/password-policy
+ * Get the password policy for the current tenant.
+ * IMPORTANT: must be before /:key to avoid matching 'password-policy' as a key.
+ */
+settingsRouter.get('/password-policy', getPasswordPolicy);
+
+/**
+ * PUT /api/v1/settings/password-policy
+ * Update the password policy for the current tenant (admin only).
+ */
+settingsRouter.put(
+  '/password-policy',
+  requireRole('admin'),
+  validate(passwordPolicySchema),
+  updatePasswordPolicy,
+);
 
 /**
  * GET /api/v1/settings/:key

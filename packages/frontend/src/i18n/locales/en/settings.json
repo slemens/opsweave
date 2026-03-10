@@ -94,6 +94,23 @@
     "members": "Members",
     "save": "Save"
   },
+  "password_policy": {
+    "title": "Password Policy",
+    "description": "Configure password requirements for your organization.",
+    "min_length": "Minimum Length",
+    "characters": "characters",
+    "complexity": "Complexity Requirements",
+    "require_uppercase": "Require uppercase letter (A-Z)",
+    "require_lowercase": "Require lowercase letter (a-z)",
+    "require_digit": "Require digit (0-9)",
+    "require_special": "Require special character (!@#$...)",
+    "expiry_days": "Password Expiry",
+    "no_expiry": "No expiry",
+    "days": "days",
+    "history_count": "Password History",
+    "no_history": "No history",
+    "remembered": "remembered passwords"
+  },
   "users": {
     "import": {
       "title": "Import Users",
