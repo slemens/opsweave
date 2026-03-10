@@ -615,7 +615,12 @@ async function setup() {
     .filter(s => s.length > 0);
 
   for (const stmt of statements) {
-    db.run(sql.raw(stmt));
+    // db.run() is SQLite-only; db.execute() works for both PG and SQLite
+    if (typeof (db as any).run === 'function') {
+      (db as any).run(sql.raw(stmt));
+    } else {
+      await (db as any).execute(sql.raw(stmt));
+    }
   }
 
   logger.info({ count: statements.length }, 'Created objects (tables + indexes)');
