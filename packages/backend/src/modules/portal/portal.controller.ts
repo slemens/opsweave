@@ -10,6 +10,20 @@ import type {
   PaginationParams,
 } from '@opsweave/shared';
 
+// ─── snake_case → camelCase helper ──────────────────────────
+
+function snakeToCamel(str: string): string {
+  return str.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
+}
+
+function mapKeys<T extends Record<string, unknown>>(obj: T): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    result[snakeToCamel(key)] = value;
+  }
+  return result;
+}
+
 // ─── Auth ────────────────────────────────────────────────────
 
 /**
@@ -48,7 +62,7 @@ export async function listTickets(req: Request, res: Response): Promise<void> {
     params,
   );
 
-  sendPaginated(res, tickets, total, params.page, params.limit);
+  sendPaginated(res, tickets.map(mapKeys), total, params.page, params.limit);
 }
 
 /**
@@ -61,7 +75,10 @@ export async function getTicket(req: Request, res: Response): Promise<void> {
   const { id } = req.params as { id: string };
 
   const result = await portalService.getPortalTicket(tenantId, customerId, id);
-  sendSuccess(res, result);
+  sendSuccess(res, {
+    ticket: mapKeys(result.ticket),
+    comments: result.comments.map(mapKeys),
+  });
 }
 
 /**
@@ -81,7 +98,7 @@ export async function createTicket(req: Request, res: Response): Promise<void> {
     data,
   );
 
-  sendCreated(res, ticket);
+  sendCreated(res, mapKeys(ticket));
 }
 
 /**
@@ -103,7 +120,7 @@ export async function addComment(req: Request, res: Response): Promise<void> {
     data,
   );
 
-  sendCreated(res, comment);
+  sendCreated(res, mapKeys(comment));
 }
 
 // ─── Knowledge Base ──────────────────────────────────────────
@@ -117,7 +134,7 @@ export async function listKb(req: Request, res: Response): Promise<void> {
   const q = typeof req.query['q'] === 'string' ? req.query['q'] : undefined;
 
   const articles = await portalService.listPublicKb(tenantId, q);
-  sendSuccess(res, articles);
+  sendSuccess(res, articles.map(mapKeys));
 }
 
 // ─── Service Catalog ──────────────────────────────────────────
