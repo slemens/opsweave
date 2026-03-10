@@ -206,6 +206,8 @@ export interface Ticket {
   sla_breached: number; // 0 | 1
   sla_paused_at: string | null;
   sla_paused_total: number; // cumulative pause seconds
+  root_cause: string | null; // only for problem tickets
+  known_error_id: string | null; // FK → knownErrors, only for incidents
   source: TicketSource;
   created_at: string;
   updated_at: string;
@@ -536,6 +538,26 @@ export interface KbArticleLink {
   article_id: string;
   ticket_id: string;
   tenant_id: string;
+}
+
+// ---------------------------------------------------------------------------
+// Known Error Database (KEDB)
+// ---------------------------------------------------------------------------
+
+export type KnownErrorStatus = 'identified' | 'workaround_available' | 'resolved';
+
+export interface KnownError {
+  id: string;
+  tenant_id: string;
+  title: string;
+  symptom: string;
+  workaround: string | null;
+  root_cause: string | null;
+  status: KnownErrorStatus;
+  problem_id: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
 }
 
 // ---------------------------------------------------------------------------

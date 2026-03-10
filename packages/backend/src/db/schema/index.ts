@@ -59,6 +59,9 @@ export { emailInboundConfigs, emailMessages } from './email.js';
 // Knowledge Base
 export { kbArticles, kbArticleLinks } from './knowledge-base.js';
 
+// Known Error Database (KEDB)
+export { knownErrors } from './known-errors.js';
+
 // SLA Definitions & Assignments
 export { slaDefinitions, slaAssignments } from './sla.js';
 

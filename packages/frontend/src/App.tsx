@@ -18,6 +18,7 @@ import { KnowledgeBasePage } from '@/pages/KnowledgeBasePage';
 import { SettingsLayout } from '@/pages/settings/SettingsLayout';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { MonitoringPage } from '@/pages/MonitoringPage';
+import KnownErrorsPage from '@/pages/KnownErrorsPage';
 import { CustomersPage } from '@/pages/CustomersPage';
 import { CustomerDetailPage } from '@/pages/CustomerDetailPage';
 import { PortalLoginPage } from '@/pages/portal/PortalLoginPage';
@@ -67,6 +68,7 @@ export function App() {
             <Route path="/services" element={<ServiceCatalogPage />} />
             <Route path="/compliance" element={<CompliancePage />} />
             <Route path="/knowledge-base" element={<KnowledgeBasePage />} />
+            <Route path="/known-errors" element={<KnownErrorsPage />} />
             <Route path="/monitoring" element={<MonitoringPage />} />
             <Route path="/settings" element={<SettingsLayout />}>
               <Route index element={<Navigate to="/settings/general" replace />} />
