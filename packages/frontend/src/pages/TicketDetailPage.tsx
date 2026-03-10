@@ -2017,9 +2017,12 @@ export function TicketDetailPage() {
                   <div className="space-y-3">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="text-sm font-medium truncate">
+                        <Link
+                          to="/known-errors"
+                          className="text-sm font-medium truncate text-primary hover:underline"
+                        >
                           {ticket.known_error.title}
-                        </p>
+                        </Link>
                       </div>
                       <Button
                         variant="ghost"

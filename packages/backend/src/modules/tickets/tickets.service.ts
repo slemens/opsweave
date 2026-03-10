@@ -1216,7 +1216,7 @@ export async function getTicketHistory(
     throw new NotFoundError('Ticket not found');
   }
 
-  const history = await d
+  const rows = await d
     .select({
       id: ticketHistory.id,
       tenant_id: ticketHistory.tenant_id,
@@ -1226,6 +1226,7 @@ export async function getTicketHistory(
       new_value: ticketHistory.new_value,
       changed_by: ticketHistory.changed_by,
       changed_at: ticketHistory.changed_at,
+      changed_by_id: users.id,
       changed_by_name: users.display_name,
     })
     .from(ticketHistory)
@@ -1238,7 +1239,19 @@ export async function getTicketHistory(
     )
     .orderBy(desc(ticketHistory.changed_at));
 
-  return history;
+  return rows.map((row) => ({
+    id: row.id,
+    tenant_id: row.tenant_id,
+    ticket_id: row.ticket_id,
+    field_changed: row.field_changed,
+    old_value: row.old_value,
+    new_value: row.new_value,
+    changed_by: row.changed_by,
+    changed_at: row.changed_at,
+    changed_by_user: row.changed_by_id
+      ? { id: row.changed_by_id, display_name: row.changed_by_name ?? '' }
+      : null,
+  }));
 }
 
 /**
