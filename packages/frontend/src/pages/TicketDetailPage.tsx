@@ -24,6 +24,7 @@ import {
   Info,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import ReactMarkdown from 'react-markdown';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -586,6 +587,7 @@ export function TicketDetailPage() {
   // ── Knowledge Base ─────────────────────────────────────────
   const [kbSearch, setKbSearch] = useState('');
   const [kbDebouncedSearch, setKbDebouncedSearch] = useState('');
+  const [viewingKbArticle, setViewingKbArticle] = useState<KbArticle | null>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => setKbDebouncedSearch(kbSearch), 400);
@@ -1506,7 +1508,13 @@ export function TicketDetailPage() {
                           <div key={article.id} className="flex items-center gap-3 px-3 py-2.5">
                             <BookOpen className="h-4 w-4 shrink-0 text-muted-foreground" />
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium truncate">{article.title}</p>
+                              <button
+                                type="button"
+                                className="text-sm font-medium truncate text-primary hover:underline text-left"
+                                onClick={() => setViewingKbArticle(article)}
+                              >
+                                {article.title}
+                              </button>
                               {article.category && (
                                 <p className="text-xs text-muted-foreground">{article.category}</p>
                               )}
@@ -2262,6 +2270,43 @@ export function TicketDetailPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* KB Article Viewer Dialog */}
+      <Dialog open={viewingKbArticle !== null} onOpenChange={(open) => { if (!open) setViewingKbArticle(null); }}>
+        {viewingKbArticle && (
+          <DialogContent className="sm:max-w-2xl flex flex-col max-h-[85vh]">
+            <DialogHeader className="shrink-0">
+              <DialogTitle className="text-lg font-semibold leading-snug pr-6">
+                {viewingKbArticle.title}
+              </DialogTitle>
+              <DialogDescription asChild>
+                <div className="flex items-center gap-2 flex-wrap pt-1">
+                  {viewingKbArticle.category && (
+                    <Badge variant="outline" className="text-xs">
+                      {viewingKbArticle.category}
+                    </Badge>
+                  )}
+                  <Badge variant={viewingKbArticle.visibility === 'public' ? 'default' : 'secondary'} className="text-xs">
+                    {tKb(`visibility.${viewingKbArticle.visibility}`)}
+                  </Badge>
+                </div>
+              </DialogDescription>
+            </DialogHeader>
+            <Separator />
+            <div className="flex-1 overflow-y-auto min-h-0 py-2">
+              <div className="prose prose-sm dark:prose-invert max-w-none break-words [&_pre]:whitespace-pre-wrap [&_code]:break-all [&_pre]:overflow-hidden">
+                <ReactMarkdown>{viewingKbArticle.content || '*—*'}</ReactMarkdown>
+              </div>
+            </div>
+            <Separator />
+            <DialogFooter className="shrink-0">
+              <Button variant="outline" onClick={() => setViewingKbArticle(null)}>
+                {tCommon('actions.close')}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        )}
+      </Dialog>
     </div>
   );
 }
