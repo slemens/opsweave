@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { getDb, type TypedDb } from '../../config/database.js';
 import { slaEngine } from '../../lib/sla-engine.js';
+import { resolveEffectiveSla, type SlaDefinitionRow } from '../sla/sla.service.js';
 // AUDIT-FIX: H-11 — Structured logging
 import logger from '../../lib/logger.js';
 import {
@@ -102,6 +103,41 @@ async function recordHistory(
   });
 }
 
+// ─── SLA Due-Date Calculation ─────────────────────────────
+
+/**
+ * Calculate SLA response and resolution due dates from an SLA definition.
+ * Uses priority-specific overrides if available.
+ */
+function calculateSlaDueDates(
+  slaDef: SlaDefinitionRow,
+  priority: string,
+  now: Date,
+): { responseDue: string; resolveDue: string } {
+  let responseMinutes = slaDef.response_time_minutes;
+  let resolutionMinutes = slaDef.resolution_time_minutes;
+
+  // Check for priority-specific overrides
+  try {
+    const overrides = JSON.parse(slaDef.priority_overrides || '{}') as Record<string, { response?: number; resolution?: number }>;
+    const pOverride = overrides[priority];
+    if (pOverride) {
+      if (pOverride.response) responseMinutes = pOverride.response;
+      if (pOverride.resolution) resolutionMinutes = pOverride.resolution;
+    }
+  } catch {
+    // Invalid JSON in overrides — use defaults
+  }
+
+  const responseDue = new Date(now.getTime() + responseMinutes * 60_000);
+  const resolveDue = new Date(now.getTime() + resolutionMinutes * 60_000);
+
+  return {
+    responseDue: responseDue.toISOString(),
+    resolveDue: resolveDue.toISOString(),
+  };
+}
+
 // ─── Service ──────────────────────────────────────────────
 
 /**
@@ -182,6 +218,8 @@ export async function listTickets(
       sla_response_due: tickets.sla_response_due,
       sla_resolve_due: tickets.sla_resolve_due,
       sla_breached: tickets.sla_breached,
+      sla_paused_at: tickets.sla_paused_at,
+      sla_paused_total: tickets.sla_paused_total,
       parent_ticket_id: tickets.parent_ticket_id,
       source: tickets.source,
       created_at: tickets.created_at,
@@ -229,6 +267,8 @@ export async function listTickets(
     sla_response_due: row.sla_response_due,
     sla_resolve_due: row.sla_resolve_due,
     sla_breached: row.sla_breached,
+    sla_paused_at: row.sla_paused_at,
+    sla_paused_total: row.sla_paused_total,
     parent_ticket_id: row.parent_ticket_id,
     source: row.source,
     created_at: row.created_at,
@@ -278,6 +318,8 @@ export async function getTicket(
       sla_response_due: tickets.sla_response_due,
       sla_resolve_due: tickets.sla_resolve_due,
       sla_breached: tickets.sla_breached,
+      sla_paused_at: tickets.sla_paused_at,
+      sla_paused_total: tickets.sla_paused_total,
       parent_ticket_id: tickets.parent_ticket_id,
       source: tickets.source,
       created_at: tickets.created_at,
@@ -356,6 +398,8 @@ export async function getTicket(
     sla_response_due: row.sla_response_due,
     sla_resolve_due: row.sla_resolve_due,
     sla_breached: row.sla_breached,
+    sla_paused_at: row.sla_paused_at,
+    sla_paused_total: row.sla_paused_total,
     parent_ticket_id: row.parent_ticket_id,
     source: row.source,
     created_at: row.created_at,
@@ -429,6 +473,33 @@ export async function createTicket(
     }
   }
 
+  // SLA Due-Date Calculation: resolve SLA definition and calculate deadlines
+  let slaResponseDue: string | null = null;
+  let slaResolveDue: string | null = null;
+
+  try {
+    const slaDef = resolveEffectiveSla(tenantId, {
+      asset_id: data.asset_id ?? null,
+      customer_id: data.customer_id ?? null,
+    });
+    if (slaDef) {
+      const dueDates = calculateSlaDueDates(slaDef, priority, new Date(now));
+      slaResponseDue = dueDates.responseDue;
+      slaResolveDue = dueDates.resolveDue;
+      // If we got an SLA definition but no tier from asset hierarchy, use definition name as tier hint
+      if (!effectiveSlaTier && slaDef.name) {
+        // Map well-known SLA names to tiers
+        const nameLower = slaDef.name.toLowerCase();
+        if (nameLower.includes('platinum')) effectiveSlaTier = 'platinum';
+        else if (nameLower.includes('gold')) effectiveSlaTier = 'gold';
+        else if (nameLower.includes('silver')) effectiveSlaTier = 'silver';
+        else if (nameLower.includes('bronze')) effectiveSlaTier = 'bronze';
+      }
+    }
+  } catch (err) {
+    logger.warn({ err }, 'SLA due-date calculation failed');
+  }
+
   const [created] = await d
     .insert(tickets)
     .values({
@@ -451,6 +522,8 @@ export async function createTicket(
       category_id: data.category_id ?? null,
       parent_ticket_id: data.parent_ticket_id ?? null,
       sla_tier: effectiveSlaTier ?? null,
+      sla_response_due: slaResponseDue,
+      sla_resolve_due: slaResolveDue,
       sla_breached: 0,
       source: data.source ?? 'manual',
       created_at: now,
@@ -602,6 +675,48 @@ export async function updateTicket(
     }
     if (data.status === 'closed' && existing.status !== 'closed') {
       updateSet['closed_at'] = now;
+    }
+
+    // SLA Pause/Unpause: pause timer when entering pending, unpause when leaving
+    const oldStatus = existing.status as string;
+    const newStatus = data.status as string;
+
+    if (newStatus === 'pending' && oldStatus !== 'pending') {
+      // Entering pending → pause SLA timer
+      updateSet['sla_paused_at'] = now;
+      historyPromises.push(
+        recordHistory(tenantId, ticketId, 'sla_paused', null, 'paused', userId),
+      );
+    } else if (oldStatus === 'pending' && newStatus !== 'pending') {
+      // Leaving pending → unpause SLA timer, shift due dates
+      const pausedAt = existing.sla_paused_at as string | null;
+      if (pausedAt) {
+        const pauseStart = new Date(pausedAt).getTime();
+        const pauseEnd = new Date(now).getTime();
+        const pauseDurationMs = pauseEnd - pauseStart;
+        const pauseDurationSec = Math.floor(pauseDurationMs / 1000);
+        const existingPausedTotal = (existing.sla_paused_total as number) ?? 0;
+
+        updateSet['sla_paused_at'] = null;
+        updateSet['sla_paused_total'] = existingPausedTotal + pauseDurationSec;
+
+        // Shift SLA due dates forward by pause duration
+        const responseDue = existing.sla_response_due as string | null;
+        const resolveDue = existing.sla_resolve_due as string | null;
+
+        if (responseDue) {
+          const shifted = new Date(new Date(responseDue).getTime() + pauseDurationMs);
+          updateSet['sla_response_due'] = shifted.toISOString();
+        }
+        if (resolveDue) {
+          const shifted = new Date(new Date(resolveDue).getTime() + pauseDurationMs);
+          updateSet['sla_resolve_due'] = shifted.toISOString();
+        }
+
+        historyPromises.push(
+          recordHistory(tenantId, ticketId, 'sla_paused', 'paused', `unpaused (+${pauseDurationSec}s)`, userId),
+        );
+      }
     }
   }
 

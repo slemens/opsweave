@@ -20,6 +20,8 @@
   "no_description": "No description provided",
   "sla_approaching": "SLA deadline approaching",
   "sla_tier": "SLA Tier",
+  "sla_paused_label": "SLA Status",
+  "sla_paused": "SLA Paused",
   "sla_yes": "Yes",
   "sla_no": "No",
   "dates_title": "Dates",

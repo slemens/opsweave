@@ -20,6 +20,8 @@
   "no_description": "Keine Beschreibung vorhanden",
   "sla_approaching": "SLA-Frist naht",
   "sla_tier": "SLA-Stufe",
+  "sla_paused_label": "SLA-Status",
+  "sla_paused": "SLA pausiert",
   "sla_yes": "Ja",
   "sla_no": "Nein",
   "dates_title": "Zeitangaben",
