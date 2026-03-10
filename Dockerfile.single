@@ -7,8 +7,8 @@
 FROM node:20-alpine AS build
 WORKDIR /build
 
-# Copy root workspace config + lockfile
-COPY package.json package-lock.json ./
+# Copy root workspace config, lockfile, and shared tsconfig
+COPY package.json package-lock.json tsconfig.base.json ./
 
 # Copy workspace package.json files (for dependency resolution)
 COPY packages/shared/package.json ./packages/shared/
