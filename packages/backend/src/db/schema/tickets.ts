@@ -76,6 +76,13 @@ export const tickets = sqliteTable(
     change_actual_start: text('change_actual_start'),
     change_actual_end: text('change_actual_end'),
     incident_commander_id: text('incident_commander_id').references(() => users.id),
+    // Escalation tracking
+    escalation_level: integer('escalation_level').notNull().default(0),
+    escalated_at: text('escalated_at'),
+    is_major_incident: integer('is_major_incident').notNull().default(0),
+    major_declared_at: text('major_declared_at'),
+    major_declared_by: text('major_declared_by'),
+    bridge_call_url: text('bridge_call_url'),
     parent_ticket_id: text('parent_ticket_id'),
     source: text('source').notNull().default('manual'),
     created_at: text('created_at').notNull(),

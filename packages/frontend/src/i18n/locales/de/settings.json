@@ -12,6 +12,7 @@
     "categories": "Kategorien",
     "sla": "SLA",
     "notifications": "Benachrichtigungen",
+    "escalation": "Eskalation",
     "system": "System"
   },
   "general": {
@@ -234,6 +235,28 @@
       "major_incident_resolved": "Major Incident gelöst",
       "major_incident_resolved_hint": "Benachrichtigung wenn ein Major Incident gelöst wurde"
     }
+  },
+  "escalation": {
+    "title": "Eskalationsregeln",
+    "description": "Definieren Sie Regeln für die automatische Eskalation von Tickets basierend auf SLA-Fortschritt.",
+    "create": "Regel erstellen",
+    "edit": "Regel bearbeiten",
+    "name": "Name",
+    "ticket_type": "Ticket-Typ",
+    "ticket_type_all": "Alle Typen",
+    "priority": "Priorität",
+    "priority_all": "Alle Prioritäten",
+    "threshold": "SLA-Schwellenwert",
+    "threshold_hint": "Prozent der SLA-Zeit die vergangen sein muss",
+    "target_group": "Zielgruppe",
+    "level": "Eskalationsstufe",
+    "active": "Aktiv",
+    "empty": "Keine Eskalationsregeln vorhanden",
+    "empty_hint": "Erstellen Sie die erste Regel für automatische Eskalation.",
+    "delete_confirm": "Möchten Sie diese Eskalationsregel wirklich löschen?",
+    "create_success": "Eskalationsregel erstellt",
+    "update_success": "Eskalationsregel aktualisiert",
+    "delete_success": "Eskalationsregel gelöscht"
   },
   "saved": "Einstellungen gespeichert",
   "save_error": "Fehler beim Speichern",

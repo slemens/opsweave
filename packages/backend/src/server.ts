@@ -26,6 +26,10 @@ import {
   startSlaBreachWorker,
   stopSlaBreachWorker,
 } from './workers/sla-breach.worker.js';
+import {
+  startEscalationWorker,
+  stopEscalationWorker,
+} from './workers/escalation.worker.js';
 // AUDIT-FIX: H-11 — Structured logging
 import logger from './lib/logger.js';
 // AUDIT-FIX: H-02 — Warn if default admin password unchanged in production
@@ -167,6 +171,9 @@ async function bootstrap(): Promise<void> {
     // SLA breach detection worker
     startSlaBreachWorker();
 
+    // Auto-escalation worker
+    startEscalationWorker();
+
     // AUDIT-FIX: H-02 — Check default admin password in production
     if (config.nodeEnv === 'production') {
       checkDefaultAdminPassword().catch(() => { /* non-fatal */ });
@@ -180,6 +187,7 @@ async function bootstrap(): Promise<void> {
 
     stopEmailPollingWorker();
     stopSlaBreachWorker();
+    stopEscalationWorker();
 
     httpServer.close(() => {
       logger.info('HTTP server closed');

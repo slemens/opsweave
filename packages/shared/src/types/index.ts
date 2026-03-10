@@ -219,8 +219,14 @@ export interface Ticket {
   change_planned_end: string | null;
   change_actual_start: string | null;
   change_actual_end: string | null;
-  // Major Incident
+  // Major Incident & Escalation
   incident_commander_id: string | null;
+  escalation_level: number;
+  escalated_at: string | null;
+  is_major_incident: number; // 0 | 1
+  major_declared_at: string | null;
+  major_declared_by: string | null;
+  bridge_call_url: string | null;
   source: TicketSource;
   created_at: string;
   updated_at: string;

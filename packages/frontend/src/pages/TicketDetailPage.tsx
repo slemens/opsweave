@@ -100,6 +100,10 @@ import type { KbArticle } from '@/api/kb';
 import { Input } from '@/components/ui/input';
 import { useSearchKnownErrors } from '@/api/known-errors';
 import type { KnownErrorSearchResult } from '@/api/known-errors';
+import {
+  useDeclareMajorIncident,
+  useResolveMajorIncident,
+} from '@/api/escalation';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -558,6 +562,8 @@ export function TicketDetailPage() {
   const updatePriority = useUpdateTicketPriority();
   const assignTicket = useAssignTicket();
   const updateTicket = useUpdateTicket();
+  const declareMajorMutation = useDeclareMajorIncident();
+  const resolveMajorMutation = useResolveMajorIncident();
   const createCategory = useCreateCategory();
   const { data: groupsData } = useGroups();
   const { data: usersData } = useUsers();
@@ -936,6 +942,48 @@ export function TicketDetailPage() {
           </h2>
         </div>
       </div>
+
+      {/* Major Incident Banner */}
+      {ticket.is_major_incident === 1 && (
+        <div className="flex items-center gap-3 rounded-lg border-2 border-red-500 bg-red-50 px-4 py-3 dark:bg-red-950/30">
+          <ShieldAlert className="h-5 w-5 shrink-0 text-red-600 dark:text-red-400" />
+          <div className="flex-1">
+            <p className="text-sm font-bold text-red-700 dark:text-red-400">
+              {t('major_incident.banner')}
+            </p>
+            {ticket.bridge_call_url && (
+              <a
+                href={ticket.bridge_call_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-red-600 underline hover:text-red-800 dark:text-red-400"
+              >
+                {t('major_incident.bridge_call')} <ExternalLink className="inline h-3 w-3" />
+              </a>
+            )}
+          </div>
+          {ticket.incident_commander_id && (
+            <Badge variant="outline" className="border-red-300 text-red-700 dark:text-red-400">
+              {t('major_incident.commander')}: {ticket.incident_commander_id}
+            </Badge>
+          )}
+        </div>
+      )}
+
+      {/* Escalation Level Indicator */}
+      {ticket.escalation_level > 0 && (
+        <div className="flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 dark:bg-amber-950/30">
+          <AlertCircle className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+          <span className="text-sm font-medium text-amber-700 dark:text-amber-400">
+            {t('escalation.title')} — {t('escalation.level')} {ticket.escalation_level}
+          </span>
+          {ticket.escalated_at && (
+            <span className="text-xs text-amber-600 dark:text-amber-500">
+              ({formatDate(ticket.escalated_at)})
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Parent Ticket Link */}
       {ticket.parent_ticket && (
@@ -2041,6 +2089,69 @@ export function TicketDetailPage() {
                       </div>
                     )}
                   </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Escalation & Major Incident Actions */}
+          {ticket.ticket_type === 'incident' && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <ShieldAlert className="h-4 w-4" />
+                  {t('escalation.title')}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {/* Escalation info */}
+                <div className="text-sm">
+                  <span className="text-muted-foreground">{t('escalation.level')}:</span>{' '}
+                  <span className="font-medium">
+                    {ticket.escalation_level > 0
+                      ? `Level ${ticket.escalation_level}`
+                      : t('escalation.no_escalation')}
+                  </span>
+                </div>
+
+                {/* Major Incident toggle */}
+                {ticket.is_major_incident !== 1 ? (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => {
+                      if (confirm(t('major_incident.declare_confirm'))) {
+                        declareMajorMutation.mutate(
+                          { ticketId: ticket.id },
+                          {
+                            onSuccess: () => toast.success(t('major_incident.declared_success')),
+                          },
+                        );
+                      }
+                    }}
+                    disabled={declareMajorMutation.isPending}
+                  >
+                    <ShieldAlert className="mr-1 h-4 w-4" />
+                    {t('major_incident.declare')}
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => {
+                      if (confirm(t('major_incident.resolve_confirm'))) {
+                        resolveMajorMutation.mutate(ticket.id, {
+                          onSuccess: () => toast.success(t('major_incident.resolved_success')),
+                        });
+                      }
+                    }}
+                    disabled={resolveMajorMutation.isPending}
+                  >
+                    <CheckCircle2 className="mr-1 h-4 w-4" />
+                    {t('major_incident.resolve')}
+                  </Button>
                 )}
               </CardContent>
             </Card>

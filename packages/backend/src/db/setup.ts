@@ -175,6 +175,12 @@ CREATE TABLE IF NOT EXISTS tickets (
   change_actual_start TEXT,
   change_actual_end TEXT,
   incident_commander_id TEXT REFERENCES users(id),
+  escalation_level INTEGER NOT NULL DEFAULT 0,
+  escalated_at TEXT,
+  is_major_incident INTEGER NOT NULL DEFAULT 0,
+  major_declared_at TEXT,
+  major_declared_by TEXT,
+  bridge_call_url TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   resolved_at TEXT,
@@ -506,6 +512,21 @@ CREATE TABLE IF NOT EXISTS known_errors (
   updated_at TEXT NOT NULL
 );
 
+-- escalation_rules
+CREATE TABLE IF NOT EXISTS escalation_rules (
+  id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  name TEXT NOT NULL,
+  ticket_type TEXT,
+  priority TEXT,
+  sla_threshold_pct INTEGER NOT NULL DEFAULT 80,
+  target_group_id TEXT NOT NULL REFERENCES assignee_groups(id),
+  escalation_level INTEGER NOT NULL DEFAULT 1,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
 -- notification_preferences
 CREATE TABLE IF NOT EXISTS notification_preferences (
   id TEXT PRIMARY KEY,
@@ -547,6 +568,8 @@ CREATE INDEX IF NOT EXISTS idx_ke_tenant_problem ON known_errors(tenant_id, prob
 CREATE INDEX IF NOT EXISTS idx_np_tenant ON notification_preferences(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_np_tenant_user ON notification_preferences(tenant_id, user_id);
 CREATE INDEX IF NOT EXISTS idx_np_tenant_user_event ON notification_preferences(tenant_id, user_id, event_type, channel);
+CREATE INDEX IF NOT EXISTS idx_esc_tenant ON escalation_rules(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_esc_tenant_active ON escalation_rules(tenant_id, is_active);
 `;
 
 async function setup() {

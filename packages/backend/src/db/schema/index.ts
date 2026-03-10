@@ -65,6 +65,9 @@ export { knownErrors } from './known-errors.js';
 // Notifications
 export { notificationPreferences } from './notifications.js';
 
+// Escalation Rules
+export { escalationRules } from './escalation.js';
+
 // SLA Definitions & Assignments
 export { slaDefinitions, slaAssignments } from './sla.js';
 

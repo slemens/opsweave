@@ -258,6 +258,27 @@
   "major_incident": {
     "banner": "MAJOR INCIDENT",
     "commander": "Incident Commander",
-    "no_commander": "No Incident Commander"
+    "no_commander": "No Incident Commander",
+    "declare": "Declare as Major Incident",
+    "resolve": "Resolve Major Incident",
+    "declared_at": "Declared at",
+    "declared_by": "Declared by",
+    "bridge_call": "Bridge Call URL",
+    "bridge_call_placeholder": "https://teams.microsoft.com/...",
+    "declare_confirm": "Do you want to declare this ticket as a Major Incident? All administrators and managers will be notified.",
+    "resolve_confirm": "Do you want to resolve the Major Incident status?",
+    "declared_success": "Major Incident declared",
+    "resolved_success": "Major Incident resolved"
+  },
+  "escalation": {
+    "title": "Escalation",
+    "level": "Escalation Level",
+    "escalate": "Escalate",
+    "escalated_at": "Escalated at",
+    "target_group": "Target Group",
+    "reason": "Reason",
+    "reason_placeholder": "Reason for escalation...",
+    "escalated_success": "Ticket escalated",
+    "no_escalation": "Not escalated"
   }
 }
