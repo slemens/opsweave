@@ -16,6 +16,7 @@ import {
   Building2,
   Bug,
   BarChart3,
+  Gavel,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -47,6 +48,7 @@ const navItems: NavItem[] = [
   { labelKey: 'nav.knowledge_base', href: '/knowledge-base', icon: FileText },
   { labelKey: 'nav.monitoring', href: '/monitoring', icon: Activity },
   { labelKey: 'nav.sla_reports', href: '/reports/sla', icon: BarChart3 },
+  { labelKey: 'nav.cab', href: '/cab', icon: Gavel },
 ];
 
 const bottomNavItems: NavItem[] = [

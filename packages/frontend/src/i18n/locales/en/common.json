@@ -15,7 +15,8 @@
     "knowledge_base": "Knowledge Base",
     "settings": "Settings",
     "monitoring": "Monitoring",
-    "sla_reports": "SLA Reports"
+    "sla_reports": "SLA Reports",
+    "cab": "CAB Board"
   },
   "actions": {
     "save": "Save",

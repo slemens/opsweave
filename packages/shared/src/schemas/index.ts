@@ -262,6 +262,7 @@ export const updateTicketSchema = z.object({
   change_planned_end: z.string().nullable().optional(),
   change_actual_start: z.string().nullable().optional(),
   change_actual_end: z.string().nullable().optional(),
+  cab_required: z.boolean().optional(),
   incident_commander_id: uuidSchema.nullable().optional(),
   bridge_call_url: z.string().url().max(2000).nullable().optional(),
 });

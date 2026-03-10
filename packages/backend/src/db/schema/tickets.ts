@@ -75,6 +75,12 @@ export const tickets = sqliteTable(
     change_planned_end: text('change_planned_end'),
     change_actual_start: text('change_actual_start'),
     change_actual_end: text('change_actual_end'),
+    // CAB (Change Advisory Board) fields
+    cab_required: integer('cab_required').notNull().default(0),         // 0/1 — does this change need CAB approval?
+    cab_decision: text('cab_decision'),                                   // approved, rejected, deferred
+    cab_decision_by: text('cab_decision_by'),                             // user who approved/rejected
+    cab_decision_at: text('cab_decision_at'),                             // ISO 8601
+    cab_notes: text('cab_notes'),                                         // reason for decision
     incident_commander_id: text('incident_commander_id').references(() => users.id),
     // Escalation tracking
     escalation_level: integer('escalation_level').notNull().default(0),

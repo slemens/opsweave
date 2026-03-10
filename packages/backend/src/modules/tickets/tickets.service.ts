@@ -234,6 +234,11 @@ export async function listTickets(
       change_planned_end: tickets.change_planned_end,
       change_actual_start: tickets.change_actual_start,
       change_actual_end: tickets.change_actual_end,
+      cab_required: tickets.cab_required,
+      cab_decision: tickets.cab_decision,
+      cab_decision_by: tickets.cab_decision_by,
+      cab_decision_at: tickets.cab_decision_at,
+      cab_notes: tickets.cab_notes,
       incident_commander_id: tickets.incident_commander_id,
       escalation_level: tickets.escalation_level,
       escalated_at: tickets.escalated_at,
@@ -302,6 +307,11 @@ export async function listTickets(
     change_planned_end: row.change_planned_end,
     change_actual_start: row.change_actual_start,
     change_actual_end: row.change_actual_end,
+    cab_required: row.cab_required,
+    cab_decision: row.cab_decision,
+    cab_decision_by: row.cab_decision_by,
+    cab_decision_at: row.cab_decision_at,
+    cab_notes: row.cab_notes,
     incident_commander_id: row.incident_commander_id,
     escalation_level: row.escalation_level,
     escalated_at: row.escalated_at,
@@ -372,6 +382,11 @@ export async function getTicket(
       change_planned_end: tickets.change_planned_end,
       change_actual_start: tickets.change_actual_start,
       change_actual_end: tickets.change_actual_end,
+      cab_required: tickets.cab_required,
+      cab_decision: tickets.cab_decision,
+      cab_decision_by: tickets.cab_decision_by,
+      cab_decision_at: tickets.cab_decision_at,
+      cab_notes: tickets.cab_notes,
       incident_commander_id: tickets.incident_commander_id,
       escalation_level: tickets.escalation_level,
       escalated_at: tickets.escalated_at,
@@ -484,6 +499,11 @@ export async function getTicket(
     change_planned_end: row.change_planned_end,
     change_actual_start: row.change_actual_start,
     change_actual_end: row.change_actual_end,
+    cab_required: row.cab_required,
+    cab_decision: row.cab_decision,
+    cab_decision_by: row.cab_decision_by,
+    cab_decision_at: row.cab_decision_at,
+    cab_notes: row.cab_notes,
     incident_commander_id: row.incident_commander_id,
     escalation_level: row.escalation_level,
     escalated_at: row.escalated_at,
@@ -722,6 +742,7 @@ export async function updateTicket(
     { key: 'change_planned_end', dbKey: 'change_planned_end' },
     { key: 'change_actual_start', dbKey: 'change_actual_start' },
     { key: 'change_actual_end', dbKey: 'change_actual_end' },
+    { key: 'cab_required', dbKey: 'cab_required' },
     { key: 'incident_commander_id', dbKey: 'incident_commander_id' },
     { key: 'bridge_call_url', dbKey: 'bridge_call_url' },
   ];
@@ -1853,6 +1874,122 @@ export async function archiveTicket(
     })
     .where(and(eq(tickets.id, ticketId), eq(tickets.tenant_id, tenantId)))
     .returning();
+
+  return updated;
+}
+
+// =============================================================================
+// CAB (Change Advisory Board)
+// =============================================================================
+
+/**
+ * List change tickets pending CAB approval.
+ */
+export async function listCabPending(tenantId: string) {
+  const d = db();
+
+  const rows = await d
+    .select({
+      id: tickets.id,
+      ticket_number: tickets.ticket_number,
+      title: tickets.title,
+      status: tickets.status,
+      priority: tickets.priority,
+      change_risk_level: tickets.change_risk_level,
+      change_planned_start: tickets.change_planned_start,
+      change_planned_end: tickets.change_planned_end,
+      cab_required: tickets.cab_required,
+      cab_decision: tickets.cab_decision,
+      created_at: tickets.created_at,
+      reporter_name: users.display_name,
+    })
+    .from(tickets)
+    .leftJoin(users, eq(users.id, tickets.reporter_id))
+    .where(
+      and(
+        eq(tickets.tenant_id, tenantId),
+        eq(tickets.ticket_type, 'change'),
+        eq(tickets.cab_required, 1),
+        sql`(${tickets.cab_decision} IS NULL OR ${tickets.cab_decision} = 'deferred')`,
+      ),
+    )
+    .orderBy(desc(tickets.created_at));
+
+  return rows;
+}
+
+/**
+ * List all CAB items (including decided) for the board view.
+ */
+export async function listCabAll(tenantId: string) {
+  const d = db();
+
+  const rows = await d
+    .select({
+      id: tickets.id,
+      ticket_number: tickets.ticket_number,
+      title: tickets.title,
+      status: tickets.status,
+      priority: tickets.priority,
+      change_risk_level: tickets.change_risk_level,
+      change_planned_start: tickets.change_planned_start,
+      change_planned_end: tickets.change_planned_end,
+      cab_required: tickets.cab_required,
+      cab_decision: tickets.cab_decision,
+      cab_decision_at: tickets.cab_decision_at,
+      cab_notes: tickets.cab_notes,
+      created_at: tickets.created_at,
+      reporter_name: users.display_name,
+    })
+    .from(tickets)
+    .leftJoin(users, eq(users.id, tickets.reporter_id))
+    .where(
+      and(
+        eq(tickets.tenant_id, tenantId),
+        eq(tickets.ticket_type, 'change'),
+        eq(tickets.cab_required, 1),
+      ),
+    )
+    .orderBy(desc(tickets.created_at));
+
+  return rows;
+}
+
+/**
+ * Submit a CAB decision (approve/reject/defer).
+ */
+export async function setCabDecision(
+  tenantId: string,
+  ticketId: string,
+  decision: string,
+  notes: string | null,
+  userId: string,
+) {
+  const d = db();
+  const now = new Date().toISOString();
+
+  const existing = d
+    .select({ id: tickets.id, cab_required: tickets.cab_required, cab_decision: tickets.cab_decision })
+    .from(tickets)
+    .where(and(eq(tickets.id, ticketId), eq(tickets.tenant_id, tenantId)))
+    .get();
+
+  if (!existing) throw new NotFoundError('Ticket not found');
+  if (existing.cab_required !== 1) throw new ValidationError('This change does not require CAB approval');
+
+  const [updated] = await d
+    .update(tickets)
+    .set({
+      cab_decision: decision,
+      cab_decision_by: userId,
+      cab_decision_at: now,
+      cab_notes: notes,
+      updated_at: now,
+    })
+    .where(and(eq(tickets.id, ticketId), eq(tickets.tenant_id, tenantId)))
+    .returning();
+
+  await recordHistory(tenantId, ticketId, 'cab_decision', existing.cab_decision ?? '', decision, userId);
 
   return updated;
 }

@@ -34,7 +34,7 @@ export default defineConfig({
         ],
       },
       {
-        text: 'v0.3.9',
+        text: 'v0.4.0',
         items: [
           { text: 'Roadmap', link: '/project/roadmap' },
           { text: 'ITIL Compliance', link: '/project/itil-compliance' },

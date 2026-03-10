@@ -12,6 +12,7 @@ import {
   createCommentSchema,
   TICKET_PRIORITIES,
   TICKET_STATUSES,
+  CAB_DECISIONS,
 } from '@opsweave/shared';
 
 import {
@@ -36,6 +37,9 @@ import {
   getTicketsByCustomer,
   archiveTicketCtrl,
   batchUpdateTickets,
+  listCabPending,
+  listCabAll,
+  setCabDecision,
 } from './tickets.controller.js';
 // AUDIT-FIX: M-14 — Alias GET /tickets/:id/workflow → workflow controller
 import { getTicketWorkflow as _getTicketWorkflow } from '../workflows/workflows.controller.js';
@@ -46,6 +50,11 @@ const ticketRouter = Router();
 
 const updatePrioritySchema = z.object({
   priority: z.enum(TICKET_PRIORITIES),
+});
+
+const cabDecisionSchema = z.object({
+  decision: z.enum(CAB_DECISIONS),
+  notes: z.string().max(5000).optional(),
 });
 
 // AUDIT-FIX: C-10 — Zod schema for ticket categories
@@ -280,5 +289,11 @@ ticketRouter.get(
     _getTicketWorkflow(req, res).catch(next);
   },
 );
+
+// ─── CAB (Change Advisory Board) ────────────────────────
+
+ticketRouter.get('/cab/pending', listCabPending);
+ticketRouter.get('/cab/all', listCabAll);
+ticketRouter.post('/:id/cab/decision', validateParams(idParamSchema), validate(cabDecisionSchema), setCabDecision);
 
 export { ticketRouter };
