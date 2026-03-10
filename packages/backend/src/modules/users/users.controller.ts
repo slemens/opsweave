@@ -10,6 +10,7 @@ import {
 import { requireTenantId, requireUserId, requireUser } from '../../lib/context.js';
 import { ForbiddenError } from '../../lib/errors.js';
 import * as usersService from './users.service.js';
+import { ValidationError } from '../../lib/errors.js';
 import type {
   PaginationParams,
   CreateUserInput,
@@ -123,4 +124,25 @@ export async function updateLanguage(
 
   await usersService.updateLanguage(id, data.language);
   sendSuccess(res, { language: data.language });
+}
+
+// ─── Import Users (CSV Bulk) ────────────────────────────
+
+/**
+ * POST /api/v1/users/import
+ * Bulk-create users from a CSV string.
+ */
+export async function importUsers(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const tenantId = requireTenantId(req);
+
+  const body = req.body as { csv?: unknown };
+  if (!body.csv || typeof body.csv !== 'string') {
+    throw new ValidationError('Request body must include a "csv" string field');
+  }
+
+  const result = await usersService.importUsers(tenantId, body.csv);
+  sendSuccess(res, result);
 }

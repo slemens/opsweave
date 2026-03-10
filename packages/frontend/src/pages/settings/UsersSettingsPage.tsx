@@ -5,6 +5,7 @@ import {
   Pencil,
   Trash2,
   MoreHorizontal,
+  Upload,
   Users,
   Tag,
 } from 'lucide-react';
@@ -57,6 +58,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import UserImportDialog from '@/pages/settings/UserImportDialog';
 import {
   Table,
   TableBody,
@@ -85,6 +87,7 @@ function GroupsSection() {
   const deleteGroup = useDeleteGroup();
 
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [editing, setEditing] = useState<AssigneeGroup | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AssigneeGroup | null>(null);
   const [form, setForm] = useState({ ...BLANK_GROUP_FORM });
@@ -142,10 +145,16 @@ function GroupsSection() {
         <div>
           <CardTitle className="text-base">{t('settings:groups.title')}</CardTitle>
         </div>
-        <Button size="sm" onClick={openCreate}>
-          <Plus className="h-4 w-4 mr-2" />
-          {t('settings:groups.create')}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
+            <Upload className="h-4 w-4 mr-2" />
+            {t('settings:users.import.button')}
+          </Button>
+          <Button size="sm" onClick={openCreate}>
+            <Plus className="h-4 w-4 mr-2" />
+            {t('settings:groups.create')}
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         {isLoading ? (
@@ -270,6 +279,9 @@ function GroupsSection() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* CSV Import Dialog */}
+      <UserImportDialog open={importOpen} onOpenChange={setImportOpen} />
     </Card>
   );
 }

@@ -18,6 +18,7 @@ import {
   updateUser,
   deleteUser,
   updateLanguage,
+  importUsers,
 } from './users.controller.js';
 import { countUsersInTenant } from './users.service.js';
 
@@ -44,6 +45,17 @@ userRouter.post(
   checkUserLimit(countUsersInTenant),
   validate(createUserSchema),
   createUser,
+);
+
+/**
+ * POST /api/v1/users/import
+ * Bulk-create users from a CSV payload.
+ * Expects JSON body: { csv: string }
+ */
+userRouter.post(
+  '/import',
+  requireRole('admin'),
+  importUsers,
 );
 
 /**
