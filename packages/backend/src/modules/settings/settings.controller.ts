@@ -9,6 +9,7 @@ import {
 import { requireTenantId, requireUserId } from '../../lib/context.js';
 import * as settingsService from './settings.service.js';
 import type { PasswordPolicy } from '../../lib/password-policy.js';
+import { writeAuditLog, resolveActorEmail } from '../audit/audit.service.js';
 
 // ─── System Settings ─────────────────────────────────────
 
@@ -115,9 +116,23 @@ export function activateLicenseHandler(
   res: Response,
 ): void {
   const tenantId = requireTenantId(req);
+  const userId = requireUserId(req);
   const { license_key } = req.body as { license_key: string };
 
   const info = settingsService.activateLicense(tenantId, license_key);
+
+  writeAuditLog(
+    tenantId,
+    userId,
+    resolveActorEmail(userId),
+    'license.activated',
+    'tenant',
+    tenantId,
+    { edition: info.edition, subject: info.subject },
+    req.ip,
+    req.headers['user-agent'] ?? null,
+  );
+
   sendCreated(res, info);
 }
 
@@ -130,7 +145,21 @@ export function deactivateLicenseHandler(
   res: Response,
 ): void {
   const tenantId = requireTenantId(req);
+  const userId = requireUserId(req);
   settingsService.deactivateLicense(tenantId);
+
+  writeAuditLog(
+    tenantId,
+    userId,
+    resolveActorEmail(userId),
+    'license.deactivated',
+    'tenant',
+    tenantId,
+    {},
+    req.ip,
+    req.headers['user-agent'] ?? null,
+  );
+
   sendNoContent(res);
 }
 
@@ -158,7 +187,21 @@ export function updatePasswordPolicy(
   res: Response,
 ): void {
   const tenantId = requireTenantId(req);
+  const userId = requireUserId(req);
   const data = req.body as Partial<PasswordPolicy>;
   const updated = settingsService.updatePasswordPolicy(tenantId, data);
+
+  writeAuditLog(
+    tenantId,
+    userId,
+    resolveActorEmail(userId),
+    'settings.password_policy_updated',
+    'tenant',
+    tenantId,
+    updated as unknown as Record<string, unknown>,
+    req.ip,
+    req.headers['user-agent'] ?? null,
+  );
+
   sendSuccess(res, updated);
 }

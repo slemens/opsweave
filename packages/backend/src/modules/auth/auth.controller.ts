@@ -4,6 +4,7 @@ import { sendSuccess } from '../../lib/response.js';
 // AUDIT-FIX: M-04 — Safe context accessors instead of non-null assertions
 import { requireUserId, requireTenantId } from '../../lib/context.js';
 import * as authService from './auth.service.js';
+import { writeAuditLog } from '../audit/audit.service.js';
 import type { LoginInput, SwitchTenantInput } from '@opsweave/shared';
 
 // ─── POST /api/v1/auth/login ────────────────────────────────
@@ -16,6 +17,18 @@ export async function login(req: Request, res: Response): Promise<void> {
   const { email, password } = req.body as LoginInput;
 
   const result = await authService.login(email, password);
+
+  writeAuditLog(
+    result.user.activeTenantId,
+    result.user.id,
+    result.user.email,
+    'auth.login',
+    'user',
+    result.user.id,
+    { passwordExpired: result.passwordExpired },
+    req.ip,
+    req.headers['user-agent'] ?? null,
+  );
 
   sendSuccess(res, result);
 }
@@ -80,6 +93,19 @@ export async function changePassword(
   };
 
   await authService.changePassword(userId, tenantId, current_password, new_password);
+
+  const user = await authService.getMe(userId);
+  writeAuditLog(
+    tenantId,
+    userId,
+    user.user.email,
+    'auth.password_changed',
+    'user',
+    userId,
+    {},
+    req.ip,
+    req.headers['user-agent'] ?? null,
+  );
 
   sendSuccess(res, { message: 'Password changed successfully' });
 }

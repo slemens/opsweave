@@ -13,6 +13,7 @@
     "sla": "SLA",
     "notifications": "Benachrichtigungen",
     "escalation": "Eskalation",
+    "audit": "Audit-Log",
     "system": "System"
   },
   "general": {
@@ -274,6 +275,24 @@
     "create_success": "Eskalationsregel erstellt",
     "update_success": "Eskalationsregel aktualisiert",
     "delete_success": "Eskalationsregel gelöscht"
+  },
+  "audit": {
+    "title": "Audit-Log",
+    "description": "Protokoll aller sicherheitsrelevanten Aktionen in Ihrer Organisation.",
+    "search_placeholder": "Suchen...",
+    "all_events": "Alle Ereignisse",
+    "all_resources": "Alle Ressourcen",
+    "empty": "Keine Audit-Einträge vorhanden",
+    "empty_hint": "Aktionen werden automatisch protokolliert.",
+    "columns": {
+      "time": "Zeitpunkt",
+      "actor": "Benutzer",
+      "event": "Ereignis",
+      "resource": "Ressource",
+      "ip": "IP-Adresse",
+      "details": "Details"
+    },
+    "page_info": "Seite {{page}} von {{total}} ({{count}} Einträge)"
   },
   "saved": "Einstellungen gespeichert",
   "save_error": "Fehler beim Speichern",
