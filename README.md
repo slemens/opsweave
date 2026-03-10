@@ -31,6 +31,38 @@ OpsWeave is a modular, asset-centric IT Service Management platform. It combines
 
 **Everything revolves around the asset.** Every ticket, SLA, service contract, and compliance requirement links back to assets in the CMDB. This gives you full context at a glance — when an incident comes in, you immediately see the affected infrastructure, applicable SLAs, regulatory requirements, and service agreements.
 
+<p align="center">
+  <img src="docs/public/screenshots/dashboard.png" alt="OpsWeave Dashboard" width="800" />
+</p>
+
+### Kanban Board
+
+<p align="center">
+  <img src="docs/public/screenshots/ticket-board.png" alt="Ticket Kanban Board" width="800" />
+</p>
+
+### Ticket Detail
+
+<p align="center">
+  <img src="docs/public/screenshots/ticket-detail.png" alt="Ticket Detail View" width="800" />
+</p>
+
+### CMDB & Asset Topology
+
+<p align="center">
+  <img src="docs/public/screenshots/cmdb-table.png" alt="CMDB Asset Table" width="800" />
+</p>
+
+<p align="center">
+  <img src="docs/public/screenshots/cmdb-topology.png" alt="CMDB Topology Graph" width="800" />
+</p>
+
+### Workflow Designer
+
+<p align="center">
+  <img src="docs/public/screenshots/workflow-detail.png" alt="Workflow Designer" width="800" />
+</p>
+
 ## Quick Start
 
 **Single container — up and running in 30 seconds:**
