@@ -16,7 +16,7 @@ COPY packages/backend/package.json ./packages/backend/
 COPY packages/frontend/package.json ./packages/frontend/
 
 # Install all workspace dependencies from root lockfile
-RUN npm ci --ignore-scripts
+RUN npm ci
 
 # Copy source code
 COPY packages/shared/ ./packages/shared/
