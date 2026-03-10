@@ -67,4 +67,28 @@ features:
   - icon: 🌍
     title: Zweisprachig
     details: Deutsche und englische UI ab Tag 1. Vollständiges i18n-System mit 9 Namespaces.
+
+  - icon: 🔍
+    title: Monitoring Integration
+    details: Check_MK-Anbindung (v1 + v2), Event-Dashboard mit Status-Karten, Auto-Incident-Erstellung, Asset-Matching.
+
+  - icon: ⏱️
+    title: SLA Management
+    details: Gold/Silver/Bronze SLA-Tiers, Breach-Tracking, Performance-Reports, automatische Fristenberechnung.
+
+  - icon: 🛡️
+    title: Change Advisory Board
+    details: CAB-Board für Change-Genehmigungen. Risikobewertung, RFC-Details, Approve/Reject/Defer Workflow.
+
+  - icon: 🚨
+    title: Major Incidents
+    details: Major-Incident-Deklaration, Incident Commander, Bridge Call, KEDB mit Workarounds.
+
+  - icon: ⬆️
+    title: Eskalation
+    details: Mehrstufige Eskalation (L1→L2→L3) mit Zielgruppe, Begründung und automatischer Benachrichtigung.
+
+  - icon: 📊
+    title: Reporting & Dashboard
+    details: KPI-Dashboard mit Ticket-Statistiken, SLA-Performance, Compliance-Status und Trend-Analysen.
 ---

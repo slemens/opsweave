@@ -77,6 +77,41 @@ Jede Änderung an einem Ticket wird im Verlauf-Tab protokolliert:
 - Alter und neuer Wert
 - Benutzer und Zeitstempel
 
+## Ticket-Erstellung
+
+Tickets werden über eine dedizierte Seite erstellt (nicht als Dialog). Die Seite ist in drei Bereiche gegliedert:
+
+- **Grunddaten**: Titel, Beschreibung, Typ, Subtyp
+- **Klassifizierung**: Auswirkung × Dringlichkeit → automatische Priorität, Kategorie
+- **Zuordnung**: Bearbeiter, Gruppe, Asset, Kunde
+
+Für **Change-Tickets** erscheint ein zusätzlicher RFC-Bereich:
+- Begründung, Implementierungsplan, Rollback-Plan
+- Risikobewertung (Stufe × Eintrittswahrscheinlichkeit)
+- Geplante Start-/Endzeit
+- CAB-Genehmigung erforderlich (Ja/Nein)
+
+## Service Requests
+
+Neben Incidents, Problems und Changes gibt es **Service Requests** (`SRQ`) für standardisierte Anfragen:
+
+| Subtyp | Beschreibung |
+|--------|--------------|
+| Standard | Routinemäßige Service-Anfrage |
+
+## Parent-Child Tickets
+
+Tickets können hierarchisch verknüpft werden:
+- Ein Parent-Ticket kann mehrere Child-Tickets haben
+- Child-Tickets müssen denselben Typ wie das Parent haben
+- **Schließ-Blockierung**: Das Parent kann erst geschlossen werden, wenn alle Child-Tickets gelöst oder geschlossen sind
+
+## Batch-Updates
+
+In der Listenansicht können mehrere Tickets gleichzeitig bearbeitet werden:
+- Checkbox-Selektion (max. 100 Tickets)
+- Massenänderung von Status, Priorität, Bearbeiter, Gruppe
+
 ## Quellen
 
 Tickets können aus verschiedenen Quellen entstehen:
