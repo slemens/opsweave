@@ -1305,6 +1305,179 @@ export async function deleteCategory(
     .where(and(eq(ticketCategories.id, categoryId), eq(ticketCategories.tenant_id, tenantId)));
 }
 
+// ─── Batch Update ───────────────────────────────────────────────────
+
+interface BatchUpdateFields {
+  status?: string;
+  priority?: string;
+  assigned_to?: string | null;
+  assigned_group?: string | null;
+  category_id?: string | null;
+}
+
+interface BatchUpdateResult {
+  updated: number;
+  errors: Array<{ ticket_id: string; message: string }>;
+}
+
+/**
+ * Batch update multiple tickets within a transaction.
+ * Each ticket is validated individually; failures are collected, not thrown.
+ */
+export async function batchUpdateTickets(
+  tenantId: string,
+  ticketIds: string[],
+  updates: BatchUpdateFields,
+  userId: string,
+): Promise<BatchUpdateResult> {
+  const d = db();
+  const now = new Date().toISOString();
+  const result: BatchUpdateResult = { updated: 0, errors: [] };
+
+  await d.transaction(async (tx) => {
+    for (const ticketId of ticketIds) {
+      try {
+        // Verify ticket exists and belongs to tenant
+        const existingRows = await tx
+          .select()
+          .from(tickets)
+          .where(
+            and(
+              eq(tickets.id, ticketId),
+              eq(tickets.tenant_id, tenantId),
+            ),
+          )
+          .limit(1);
+
+        const existing = existingRows[0];
+        if (!existing) {
+          result.errors.push({ ticket_id: ticketId, message: 'Ticket not found' });
+          continue;
+        }
+
+        const updateSet: Record<string, unknown> = { updated_at: now };
+        const historyEntries: Array<{
+          field: string;
+          oldVal: string | null;
+          newVal: string | null;
+        }> = [];
+
+        // Status
+        if (updates.status !== undefined && updates.status !== existing.status) {
+          updateSet['status'] = updates.status;
+          historyEntries.push({
+            field: 'status',
+            oldVal: existing.status,
+            newVal: updates.status,
+          });
+
+          if (updates.status === 'resolved' && existing.status !== 'resolved') {
+            updateSet['resolved_at'] = now;
+          }
+          if (updates.status === 'closed' && existing.status !== 'closed') {
+            updateSet['closed_at'] = now;
+          }
+        }
+
+        // Priority
+        if (updates.priority !== undefined && updates.priority !== existing.priority) {
+          updateSet['priority'] = updates.priority;
+          historyEntries.push({
+            field: 'priority',
+            oldVal: existing.priority,
+            newVal: updates.priority,
+          });
+        }
+
+        // Assignee
+        if (updates.assigned_to !== undefined) {
+          const newVal = updates.assigned_to;
+          if (String(existing.assignee_id ?? '') !== String(newVal ?? '')) {
+            updateSet['assignee_id'] = newVal;
+            historyEntries.push({
+              field: 'assignee_id',
+              oldVal: existing.assignee_id,
+              newVal,
+            });
+          }
+        }
+
+        // Assignee group
+        if (updates.assigned_group !== undefined) {
+          const newVal = updates.assigned_group;
+          if (String(existing.assignee_group_id ?? '') !== String(newVal ?? '')) {
+            updateSet['assignee_group_id'] = newVal;
+            historyEntries.push({
+              field: 'assignee_group_id',
+              oldVal: existing.assignee_group_id,
+              newVal,
+            });
+          }
+        }
+
+        // Category
+        if (updates.category_id !== undefined) {
+          const newVal = updates.category_id;
+          if (String(existing.category_id ?? '') !== String(newVal ?? '')) {
+            updateSet['category_id'] = newVal;
+            historyEntries.push({
+              field: 'category_id',
+              oldVal: existing.category_id,
+              newVal,
+            });
+          }
+        }
+
+        // Only update if there are actual changes beyond updated_at
+        if (Object.keys(updateSet).length <= 1) {
+          // No actual field changes — skip but don't count as error
+          continue;
+        }
+
+        // Apply update
+        await tx
+          .update(tickets)
+          .set(updateSet)
+          .where(
+            and(
+              eq(tickets.id, ticketId),
+              eq(tickets.tenant_id, tenantId),
+            ),
+          );
+
+        // Record history entries
+        for (const entry of historyEntries) {
+          await tx.insert(ticketHistory).values({
+            id: uuidv4(),
+            tenant_id: tenantId,
+            ticket_id: ticketId,
+            field_changed: entry.field,
+            old_value: entry.oldVal,
+            new_value: entry.newVal,
+            changed_by: userId,
+            changed_at: now,
+          });
+        }
+
+        result.updated++;
+      } catch (err) {
+        logger.warn({ err, ticketId }, 'Batch update failed for ticket');
+        result.errors.push({
+          ticket_id: ticketId,
+          message: err instanceof Error ? err.message : 'Unknown error',
+        });
+      }
+    }
+  });
+
+  logger.info(
+    { tenantId, updated: result.updated, errors: result.errors.length, userId },
+    'Batch ticket update completed',
+  );
+
+  return result;
+}
+
 // AUDIT-FIX: H-05 — Archive a ticket (soft status transition).
 // Only tickets with status 'closed' or 'resolved' may be archived.
 export async function archiveTicket(

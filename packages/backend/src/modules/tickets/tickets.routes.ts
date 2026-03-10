@@ -11,6 +11,7 @@ import {
   assignTicketSchema,
   createCommentSchema,
   TICKET_PRIORITIES,
+  TICKET_STATUSES,
 } from '@opsweave/shared';
 
 import {
@@ -34,6 +35,7 @@ import {
   getTicketTimeline,
   getTicketsByCustomer,
   archiveTicketCtrl,
+  batchUpdateTickets,
 } from './tickets.controller.js';
 // AUDIT-FIX: M-14 — Alias GET /tickets/:id/workflow → workflow controller
 import { getTicketWorkflow as _getTicketWorkflow } from '../workflows/workflows.controller.js';
@@ -135,6 +137,32 @@ ticketRouter.put('/categories/:id', validateParams(idParamSchema), validate(cate
  * Delete a ticket category.
  */
 ticketRouter.delete('/categories/:id', validateParams(idParamSchema), deleteCategoryCtrl);
+
+// ─── Batch Update Schema ────────────────────────────────
+
+const batchUpdateSchema = z.object({
+  ticket_ids: z.array(z.string().uuid()).min(1).max(100),
+  updates: z.object({
+    status: z.enum(TICKET_STATUSES).optional(),
+    priority: z.enum(TICKET_PRIORITIES).optional(),
+    assigned_to: z.string().uuid().nullable().optional(),
+    assigned_group: z.string().uuid().nullable().optional(),
+    category_id: z.string().uuid().nullable().optional(),
+  }).refine(obj => Object.values(obj).some(v => v !== undefined), {
+    message: 'At least one update field is required',
+  }),
+});
+
+/**
+ * PATCH /api/v1/tickets/batch
+ * Batch update multiple tickets.
+ * IMPORTANT: must be before /:id to avoid matching 'batch' as an ID.
+ */
+ticketRouter.patch(
+  '/batch',
+  validate(batchUpdateSchema),
+  batchUpdateTickets,
+);
 
 /**
  * GET /api/v1/tickets/:id

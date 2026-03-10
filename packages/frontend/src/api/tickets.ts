@@ -415,6 +415,38 @@ export function useAddComment() {
 // Category Mutations
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Batch Update
+// ---------------------------------------------------------------------------
+
+export interface BatchUpdateRequest {
+  ticket_ids: string[];
+  updates: {
+    status?: string;
+    priority?: string;
+    assignee_id?: string | null;
+    assignee_group_id?: string | null;
+    category_id?: string | null;
+  };
+}
+
+export interface BatchUpdateResponse {
+  updated: number;
+  errors: Array<{ ticket_id: string; reason: string }>;
+}
+
+export function useBatchUpdateTickets() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: BatchUpdateRequest) =>
+      apiClient.patch<BatchUpdateResponse>('/tickets/batch', data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ticketKeys.all });
+    },
+  });
+}
+
+
 export function useCreateCategory() {
   const queryClient = useQueryClient();
   return useMutation({

@@ -175,5 +175,18 @@
   "create_category_description": "Erstellen Sie eine neue Kategorie und weisen Sie sie diesem Ticket zu.",
   "category_name_placeholder": "Kategoriename eingeben...",
   "category_created": "Kategorie erstellt und zugewiesen",
-  "creating": "Erstelle..."
+  "creating": "Erstelle...",
+  "batch": {
+    "selected": "{{count}} Tickets ausgewählt",
+    "status": "Status ändern",
+    "priority": "Priorität ändern",
+    "assign": "Zuweisen",
+    "apply": "Anwenden",
+    "success": "{{count}} Tickets aktualisiert",
+    "error": "{{count}} Fehler bei der Aktualisierung",
+    "select_status": "Neuer Status",
+    "select_priority": "Neue Priorität",
+    "select_assignee": "Neuer Bearbeiter",
+    "select_group": "Neue Gruppe"
+  }
 }

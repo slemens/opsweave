@@ -175,5 +175,18 @@
   "create_category_description": "Create a new category and assign it to this ticket.",
   "category_name_placeholder": "Enter category name...",
   "category_created": "Category created and assigned",
-  "creating": "Creating..."
+  "creating": "Creating...",
+  "batch": {
+    "selected": "{{count}} tickets selected",
+    "status": "Change status",
+    "priority": "Change priority",
+    "assign": "Assign",
+    "apply": "Apply",
+    "success": "{{count}} tickets updated",
+    "error": "{{count}} errors during update",
+    "select_status": "New status",
+    "select_priority": "New priority",
+    "select_assignee": "New assignee",
+    "select_group": "New group"
+  }
 }

@@ -341,6 +341,37 @@ export async function deleteCategoryCtrl(
   sendSuccess(res, { deleted: true });
 }
 
+// ─── Batch Update Tickets ──────────────────────────────
+
+/**
+ * PATCH /api/v1/tickets/batch
+ */
+export async function batchUpdateTickets(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const tenantId = requireTenantId(req);
+  const userId = requireUserId(req);
+  const { ticket_ids, updates } = req.body as {
+    ticket_ids: string[];
+    updates: {
+      status?: string;
+      priority?: string;
+      assigned_to?: string | null;
+      assigned_group?: string | null;
+      category_id?: string | null;
+    };
+  };
+
+  const result = await ticketsService.batchUpdateTickets(
+    tenantId,
+    ticket_ids,
+    updates,
+    userId,
+  );
+  sendSuccess(res, result);
+}
+
 // AUDIT-FIX: H-05 — Archive ticket controller
 /**
  * PATCH /api/v1/tickets/:id/archive

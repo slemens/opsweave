@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -19,6 +19,7 @@ import {
   FilterX,
   GitBranch,
   Download,
+  X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -53,12 +54,15 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Separator } from '@/components/ui/separator';
 import { cn, formatDate, formatRelativeTime } from '@/lib/utils';
 import {
   useBoardData,
   useTickets,
   useCreateTicket,
   useCategories,
+  useBatchUpdateTickets,
 } from '@/api/tickets';
 // AUDIT-FIX: M-09 — Import from domain-specific API modules
 import { useGroups } from '@/api/groups';
@@ -419,6 +423,11 @@ interface TicketListViewProps {
   groupOptions: Array<{ value: string; label: string }>;
   customerOptions: Array<{ value: string; label: string }>;
   categoryOptions: Array<{ value: string; label: string }>;
+  // Multi-select
+  selectedTickets: Set<string>;
+  onToggleSelect: (id: string) => void;
+  onSelectAll: () => void;
+  onClearSelection: () => void;
 }
 
 function TicketListView({
@@ -452,6 +461,10 @@ function TicketListView({
   groupOptions,
   customerOptions,
   categoryOptions,
+  selectedTickets,
+  onToggleSelect,
+  onSelectAll,
+  onClearSelection,
 }: TicketListViewProps) {
   const { t } = useTranslation('tickets');
   const { t: tCommon } = useTranslation();
@@ -657,9 +670,28 @@ function TicketListView({
         </Button>
       </div>
       <div className="border rounded-lg overflow-x-auto">
-        <Table className="min-w-[1250px]">
+        <Table className="min-w-[1300px]">
           <TableHeader>
             <TableRow className="bg-muted/30 hover:bg-muted/30">
+              <TableHead className="w-10 px-3">
+                <Checkbox
+                  checked={
+                    tickets.length > 0 && selectedTickets.size === tickets.length
+                      ? true
+                      : selectedTickets.size > 0
+                        ? 'indeterminate'
+                        : false
+                  }
+                  onCheckedChange={() => {
+                    if (selectedTickets.size === tickets.length) {
+                      onClearSelection();
+                    } else {
+                      onSelectAll();
+                    }
+                  }}
+                  aria-label="Select all"
+                />
+              </TableHead>
               <SortableHead field="ticket_number">{t('fields.ticket_number')}</SortableHead>
               <SortableHead field="title">{t('fields.title')}</SortableHead>
               <FilterableHead
@@ -728,12 +760,20 @@ function TicketListView({
           <TableBody>
             {tickets.map((ticket) => {
               const slaStatus = isSlaApproachingBreach(ticket);
+              const isSelected = selectedTickets.has(ticket.id);
               return (
                 <TableRow
                   key={ticket.id}
-                  className="cursor-pointer"
+                  className={cn('cursor-pointer', isSelected && 'bg-primary/5')}
                   onClick={() => navigate(`/tickets/${ticket.id}`)}
                 >
+                  <TableCell className="px-3" onClick={(e) => e.stopPropagation()}>
+                    <Checkbox
+                      checked={isSelected}
+                      onCheckedChange={() => onToggleSelect(ticket.id)}
+                      aria-label={`Select ${ticket.ticket_number}`}
+                    />
+                  </TableCell>
                   <TableCell className="font-mono text-xs whitespace-nowrap">
                     <div className="flex items-center gap-2">
                       <Badge
@@ -1230,6 +1270,69 @@ export function TicketBoardPage() {
     }
   }, [parentParam, setSearchParams]);
 
+  // ---- Multi-select & batch update state ----
+  const [selectedTickets, setSelectedTickets] = useState<Set<string>>(new Set());
+  const [batchDialog, setBatchDialog] = useState<'status' | 'priority' | 'assign' | null>(null);
+  const [batchValue, setBatchValue] = useState('');
+  const [batchGroupValue, setBatchGroupValue] = useState('');
+  const batchUpdate = useBatchUpdateTickets();
+
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedTickets((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }, []);
+
+  const selectAll = useCallback((tickets: TicketWithRelations[]) => {
+    setSelectedTickets(new Set(tickets.map((t) => t.id)));
+  }, []);
+
+  const clearSelection = useCallback(() => {
+    setSelectedTickets(new Set());
+  }, []);
+
+  const handleBatchApply = useCallback(async () => {
+    if (!batchDialog || selectedTickets.size === 0) return;
+
+    const updates: Record<string, string | null> = {};
+    if (batchDialog === 'status' && batchValue) {
+      updates.status = batchValue;
+    } else if (batchDialog === 'priority' && batchValue) {
+      updates.priority = batchValue;
+    } else if (batchDialog === 'assign') {
+      if (batchValue) updates.assignee_id = batchValue;
+      if (batchGroupValue) updates.assignee_group_id = batchGroupValue;
+      if (!batchValue && !batchGroupValue) return;
+    }
+
+    if (Object.keys(updates).length === 0) return;
+
+    try {
+      const result = await batchUpdate.mutateAsync({
+        ticket_ids: Array.from(selectedTickets),
+        updates,
+      });
+      if (result.updated > 0) {
+        toast.success(t('batch.success', { count: result.updated }));
+      }
+      if (result.errors?.length > 0) {
+        toast.error(t('batch.error', { count: result.errors.length }));
+      }
+      clearSelection();
+      setBatchDialog(null);
+      setBatchValue('');
+      setBatchGroupValue('');
+    } catch {
+      toast.error(t('batch.error', { count: selectedTickets.size }));
+    }
+  }, [batchDialog, batchValue, batchGroupValue, selectedTickets, batchUpdate, t, clearSelection]);
+
   const hasActiveColumnFilters = typeFilter !== 'all' || priorityFilter !== 'all' || statusFilter !== 'all' || assigneeFilter !== 'all' || groupFilter !== 'all' || customerFilter !== 'all' || categoryFilter !== 'all';
   const resetColumnFilters = useCallback(() => {
     setTypeFilter('all');
@@ -1261,6 +1364,22 @@ export function TicketBoardPage() {
       setSortOrder(field === 'created_at' ? 'desc' : 'asc');
     }
   }, [sortField]);
+
+  // Clear selection on view mode or page change
+  useEffect(() => {
+    clearSelection();
+  }, [viewMode, listPage, clearSelection]);
+
+  // ESC key clears selection
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && selectedTickets.size > 0) {
+        clearSelection();
+      }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [selectedTickets.size, clearSelection]);
 
   // Build query params for list view
   const listParams = useMemo((): TicketListParams => {
@@ -1546,6 +1665,10 @@ export function TicketBoardPage() {
           groupOptions={groupOptions}
           customerOptions={customerOptions}
           categoryOptions={categoryOptions}
+          selectedTickets={selectedTickets}
+          onToggleSelect={toggleSelect}
+          onSelectAll={() => selectAll(listTickets)}
+          onClearSelection={clearSelection}
         />
       ) : (
         <>
@@ -1586,6 +1709,142 @@ export function TicketBoardPage() {
         parentTicketId={parentParam}
         parentTicketType={typeParam}
       />
+
+      {/* Floating Batch Action Bar */}
+      {selectedTickets.size > 0 && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-xl border bg-background px-6 py-3 shadow-xl animate-in slide-in-from-bottom-4 fade-in duration-200">
+          <span className="text-sm font-medium tabular-nums">
+            {t('batch.selected', { count: selectedTickets.size })}
+          </span>
+          <Separator orientation="vertical" className="h-6" />
+          <Button variant="outline" size="sm" onClick={() => { setBatchDialog('status'); setBatchValue(''); }}>
+            {t('batch.status')}
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => { setBatchDialog('priority'); setBatchValue(''); }}>
+            {t('batch.priority')}
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => { setBatchDialog('assign'); setBatchValue(''); setBatchGroupValue(''); }}>
+            {t('batch.assign')}
+          </Button>
+          <Button variant="ghost" size="sm" onClick={clearSelection}>
+            <X className="h-4 w-4 mr-1" />
+            {tCommon('actions.cancel')}
+          </Button>
+        </div>
+      )}
+
+      {/* Batch Action Dialog */}
+      <Dialog open={batchDialog !== null} onOpenChange={(open) => { if (!open) { setBatchDialog(null); setBatchValue(''); setBatchGroupValue(''); } }}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>
+              {batchDialog === 'status' && t('batch.status')}
+              {batchDialog === 'priority' && t('batch.priority')}
+              {batchDialog === 'assign' && t('batch.assign')}
+            </DialogTitle>
+            <DialogDescription>
+              {t('batch.selected', { count: selectedTickets.size })}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            {batchDialog === 'status' && (
+              <div className="space-y-2">
+                <Label>{t('batch.select_status')}</Label>
+                <Select value={batchValue} onValueChange={setBatchValue}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t('batch.select_status')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TICKET_STATUSES.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        <span className="flex items-center gap-1.5">
+                          <span className={cn('h-2 w-2 rounded-full', statusDotColors[s])} />
+                          {t(`statuses.${s}`)}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {batchDialog === 'priority' && (
+              <div className="space-y-2">
+                <Label>{t('batch.select_priority')}</Label>
+                <Select value={batchValue} onValueChange={setBatchValue}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t('batch.select_priority')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TICKET_PRIORITIES.map((p) => (
+                      <SelectItem key={p} value={p}>
+                        <span className="flex items-center gap-2">
+                          <span className={cn(
+                            'h-2 w-2 rounded-full',
+                            p === 'critical' && 'bg-red-500',
+                            p === 'high' && 'bg-orange-500',
+                            p === 'medium' && 'bg-blue-500',
+                            p === 'low' && 'bg-slate-400',
+                          )} />
+                          {t(`priorities.${p}`)}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {batchDialog === 'assign' && (
+              <>
+                <div className="space-y-2">
+                  <Label>{t('batch.select_assignee')}</Label>
+                  <Select value={batchValue} onValueChange={setBatchValue}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={t('batch.select_assignee')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {assigneeOptions.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>{t('batch.select_group')}</Label>
+                  <Select value={batchGroupValue} onValueChange={setBatchGroupValue}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={t('batch.select_group')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {groupOptions.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setBatchDialog(null); setBatchValue(''); setBatchGroupValue(''); }}>
+              {tCommon('actions.cancel')}
+            </Button>
+            <Button
+              onClick={() => void handleBatchApply()}
+              disabled={batchUpdate.isPending || (batchDialog !== 'assign' && !batchValue) || (batchDialog === 'assign' && !batchValue && !batchGroupValue)}
+            >
+              {batchUpdate.isPending ? tCommon('status.saving') : t('batch.apply')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
