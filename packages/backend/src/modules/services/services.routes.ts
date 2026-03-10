@@ -25,6 +25,13 @@ import {
   deleteHorizontalCatalog,
   addCatalogItem,
   removeCatalogItem,
+  listVerticalCatalogs,
+  getVerticalCatalog,
+  createVerticalCatalog,
+  updateVerticalCatalog,
+  deleteVerticalCatalog,
+  addVerticalOverride,
+  removeVerticalOverride,
 } from './services.controller.js';
 
 const serviceCatalogRouter = Router();
@@ -155,5 +162,15 @@ serviceCatalogRouter.delete(
   validateParams(idParamSchema),
   removeCatalogItem,
 );
+
+// ─── Vertical Catalogs (Enterprise) ──────────────────────
+
+serviceCatalogRouter.get('/catalogs/vertical', listVerticalCatalogs);
+serviceCatalogRouter.post('/catalogs/vertical', createVerticalCatalog);
+serviceCatalogRouter.get('/catalogs/vertical/:id', validateParams(idParamSchema), getVerticalCatalog);
+serviceCatalogRouter.put('/catalogs/vertical/:id', validateParams(idParamSchema), updateVerticalCatalog);
+serviceCatalogRouter.delete('/catalogs/vertical/:id', validateParams(idParamSchema), deleteVerticalCatalog);
+serviceCatalogRouter.post('/catalogs/vertical/:id/overrides', validateParams(idParamSchema), addVerticalOverride);
+serviceCatalogRouter.delete('/catalogs/vertical/:id/overrides/:oid', removeVerticalOverride);
 
 export { serviceCatalogRouter };

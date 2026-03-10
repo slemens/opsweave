@@ -263,8 +263,27 @@
   Keine Warnung vor ablaufenden SLA-Deadlines.
   - Soll: Notification X Minuten vor Response/Resolve-Deadline
 
-- [ ] **FEAT-10: Benutzerverwaltung (User Management UI)**
+- [ ] **FEAT-10: Screenshots & Anhänge in Ticket-Kommentaren**
+  Aktuell nur Text-Kommentare möglich. Keine Möglichkeit Bilder, Screenshots oder Dateien anzuhängen.
+  - Soll: File-Upload (Drag & Drop + Dateiauswahl) in Kommentar-Editor
+  - Bilder inline anzeigen (Preview/Lightbox), andere Dateien als Download-Link
+  - Backend: `POST /api/v1/tickets/:id/comments/attachments` (Multipart Upload)
+  - Storage: Lokales Filesystem (`/data/attachments/`) oder S3-kompatibel (konfigurierbar)
+  - DB: `ticket_attachments` Tabelle (id, tenant_id, ticket_id, comment_id, filename, mime_type, size, path)
+  - Maximale Dateigröße konfigurierbar (Default: 10 MB)
+  - Erlaubte MIME-Types konfigurierbar (Default: Bilder + PDF + Office + ZIP)
+
+- [ ] **FEAT-11: System-User für automatische Änderungen**
+  Im Ticket-Verlauf wird "Unbekannter Benutzer" angezeigt wenn OpsWeave selbst Änderungen vornimmt (z.B. Workflow-Engine, SLA-Berechnung, E-Mail-Inbound).
+  - Soll: Dedizierter System-User (UUID, display_name="System") im Seed anlegen
+  - Alle automatischen Änderungen (created_by, changed_by, author_id) referenzieren diesen System-User
+  - Frontend: "System" als Anzeigename statt "Unbekannter Benutzer"
+  - Betrifft: `email.service.ts`, `portal.service.ts`, `tickets.service.ts` (Workflow-Trigger), `sla-engine.ts`
+  - Siehe auch: DATA-02 in diesem Dokument
+
+- [ ] **FEAT-12: Benutzerverwaltung (User Management UI)**
   Kein Admin-UI zum Verwalten von Benutzern. Users können nur per API/Seed erstellt werden.
+  - HINWEIS: Nummerierung geändert (war FEAT-10)
   - Soll: Settings-Tab "Benutzer" mit CRUD (erstellen, bearbeiten, deaktivieren, Rolle ändern)
   - User-Liste mit Name, Email, Rolle, Status, letzter Login
   - Passwort-Reset durch Admin

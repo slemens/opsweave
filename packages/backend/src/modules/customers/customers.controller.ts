@@ -72,3 +72,19 @@ export async function updateCustomer(
   const customer = await customersService.updateCustomer(tenantId, id, data);
   sendSuccess(res, customer);
 }
+
+// ─── Customer Overview ────────────────────────────────────
+
+/**
+ * GET /api/v1/customers/:id/overview
+ */
+export async function getCustomerOverview(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const tenantId = req.tenantId!;
+  const { id } = req.params as { id: string };
+
+  const overview = await customersService.getCustomerOverview(tenantId, id);
+  sendSuccess(res, overview);
+}

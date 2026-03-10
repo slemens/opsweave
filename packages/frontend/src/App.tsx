@@ -16,6 +16,8 @@ import { KnowledgeBasePage } from '@/pages/KnowledgeBasePage';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { MonitoringPage } from '@/pages/MonitoringPage';
+import { CustomersPage } from '@/pages/CustomersPage';
+import { CustomerDetailPage } from '@/pages/CustomerDetailPage';
 import { PortalLoginPage } from '@/pages/portal/PortalLoginPage';
 import { PortalLayout } from '@/pages/portal/PortalLayout';
 import { PortalTicketsPage } from '@/pages/portal/PortalTicketsPage';
@@ -39,6 +41,8 @@ export function App() {
             <Route path="/assets/:id" element={<AssetDetailPage />} />
             <Route path="/workflows" element={<WorkflowsPage />} />
             <Route path="/workflows/:id" element={<WorkflowDetailPage />} />
+            <Route path="/customers" element={<CustomersPage />} />
+            <Route path="/customers/:id" element={<CustomerDetailPage />} />
             <Route path="/services" element={<ServiceCatalogPage />} />
             <Route path="/compliance" element={<CompliancePage />} />
             <Route path="/knowledge-base" element={<KnowledgeBasePage />} />

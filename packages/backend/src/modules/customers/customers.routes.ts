@@ -9,6 +9,7 @@ import {
   getCustomer,
   createCustomer,
   updateCustomer,
+  getCustomerOverview,
 } from './customers.controller.js';
 
 const customerRouter = Router();
@@ -52,6 +53,16 @@ customerRouter.put(
   requireRole('admin', 'manager'),
   validateParams(idParamSchema),
   updateCustomer,
+);
+
+/**
+ * GET /api/v1/customers/:id/overview
+ * Get comprehensive customer overview (assets, tickets, SLAs, services).
+ */
+customerRouter.get(
+  '/:id/overview',
+  validateParams(idParamSchema),
+  getCustomerOverview,
 );
 
 export { customerRouter };

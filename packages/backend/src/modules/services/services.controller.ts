@@ -199,3 +199,94 @@ export async function removeCatalogItem(
   await servicesService.removeCatalogItem(tenantId, id, sid);
   sendNoContent(res);
 }
+
+// ─── Vertical Catalogs (Enterprise) ──────────────────────
+
+/**
+ * GET /api/v1/services/catalogs/vertical
+ */
+export async function listVerticalCatalogs(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const tenantId = req.tenantId!;
+  const catalogs = await servicesService.listVerticalCatalogs(tenantId);
+  sendSuccess(res, catalogs);
+}
+
+/**
+ * GET /api/v1/services/catalogs/vertical/:id
+ */
+export async function getVerticalCatalog(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const tenantId = req.tenantId!;
+  const { id } = req.params as { id: string };
+  const catalog = await servicesService.getVerticalCatalog(tenantId, id);
+  sendSuccess(res, catalog);
+}
+
+/**
+ * POST /api/v1/services/catalogs/vertical
+ */
+export async function createVerticalCatalog(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const tenantId = req.tenantId!;
+  const catalog = await servicesService.createVerticalCatalog(tenantId, req.body);
+  sendCreated(res, catalog);
+}
+
+/**
+ * PUT /api/v1/services/catalogs/vertical/:id
+ */
+export async function updateVerticalCatalog(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const tenantId = req.tenantId!;
+  const { id } = req.params as { id: string };
+  const catalog = await servicesService.updateVerticalCatalog(tenantId, id, req.body);
+  sendSuccess(res, catalog);
+}
+
+/**
+ * DELETE /api/v1/services/catalogs/vertical/:id
+ */
+export async function deleteVerticalCatalog(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const tenantId = req.tenantId!;
+  const { id } = req.params as { id: string };
+  await servicesService.deleteVerticalCatalog(tenantId, id);
+  sendNoContent(res);
+}
+
+/**
+ * POST /api/v1/services/catalogs/vertical/:id/overrides
+ */
+export async function addVerticalOverride(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const tenantId = req.tenantId!;
+  const { id } = req.params as { id: string };
+  const catalog = await servicesService.addVerticalOverride(tenantId, id, req.body);
+  sendCreated(res, catalog);
+}
+
+/**
+ * DELETE /api/v1/services/catalogs/vertical/:id/overrides/:oid
+ */
+export async function removeVerticalOverride(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const tenantId = req.tenantId!;
+  const { id, oid } = req.params as { id: string; oid: string };
+  await servicesService.removeVerticalOverride(tenantId, id, oid);
+  sendNoContent(res);
+}

@@ -77,8 +77,16 @@ import {
   useDeleteHorizontalCatalog,
   useAddCatalogItem,
   useRemoveCatalogItem,
+  useVerticalCatalogs,
+  useVerticalCatalog,
+  useCreateVerticalCatalog,
+  useDeleteVerticalCatalog,
+  useAddVerticalOverride,
+  useRemoveVerticalOverride,
 } from '@/api/services';
-import type { ServiceDescription, HorizontalCatalog } from '@/api/services';
+import type { ServiceDescription, HorizontalCatalog, VerticalCatalog } from '@/api/services';
+import { useLicenseInfo } from '@/api/settings';
+import { useCustomers } from '@/api/tickets';
 import { ApiRequestError } from '@/api/client';
 
 // =============================================================================
@@ -1097,27 +1105,440 @@ function HorizontalCatalogsTab() {
 }
 
 // =============================================================================
-// Vertical Catalogs Tab (Enterprise gate)
+// Vertical Catalogs Tab
 // =============================================================================
 
 function VerticalCatalogsTab() {
   const { t: tCatalog } = useTranslation('catalog');
+  const { t: tCommon } = useTranslation('common');
+
+  const { data: licenseInfo } = useLicenseInfo();
+  const isEnterprise = licenseInfo?.edition === 'enterprise';
+
+  const { data: catalogs, isLoading, isError, refetch } = useVerticalCatalogs();
+  const { data: customersData } = useCustomers();
+  const { data: horizontalCatalogsData } = useHorizontalCatalogs();
+  const createMutation = useCreateVerticalCatalog();
+  const deleteMutation = useDeleteVerticalCatalog();
+
+  const [createOpen, setCreateOpen] = useState(false);
+  const [detailId, setDetailId] = useState<string | null>(null);
+  const [createName, setCreateName] = useState('');
+  const [createBaseCatalogId, setCreateBaseCatalogId] = useState('');
+  const [createCustomerId, setCreateCustomerId] = useState('');
+  const [createIndustry, setCreateIndustry] = useState('');
+  const [createDescription, setCreateDescription] = useState('');
+
+  const customers = customersData?.data ?? [];
+  const horizontalCatalogs = horizontalCatalogsData?.data ?? [];
+
+  // Enterprise gate
+  if (!isEnterprise) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-5 rounded-xl border border-dashed border-border bg-muted/20">
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted">
+          <Lock className="h-7 w-7 text-muted-foreground" />
+        </div>
+        <div className="text-center space-y-1.5 max-w-xs">
+          <p className="font-semibold text-base">{tCatalog('vertical.enterprise_only')}</p>
+          <p className="text-sm text-muted-foreground">{tCatalog('vertical.upgrade_hint')}</p>
+        </div>
+        <Badge variant="secondary" className="px-3 py-1 text-xs font-semibold tracking-wide uppercase">
+          Enterprise
+        </Badge>
+      </div>
+    );
+  }
+
+  async function handleCreate() {
+    if (!createName.trim() || !createBaseCatalogId) return;
+    try {
+      await createMutation.mutateAsync({
+        name: createName.trim(),
+        base_catalog_id: createBaseCatalogId,
+        customer_id: createCustomerId || null,
+        industry: createIndustry.trim() || null,
+        description: createDescription.trim() || null,
+      });
+      toast.success(tCommon('created'));
+      setCreateOpen(false);
+      setCreateName('');
+      setCreateBaseCatalogId('');
+      setCreateCustomerId('');
+      setCreateIndustry('');
+      setCreateDescription('');
+    } catch {
+      toast.error(tCommon('error'));
+    }
+  }
+
+  async function handleDelete(id: string) {
+    try {
+      await deleteMutation.mutateAsync(id);
+      toast.success(tCommon('deleted'));
+      if (detailId === id) setDetailId(null);
+    } catch {
+      toast.error(tCommon('error'));
+    }
+  }
+
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 gap-3">
+        <p className="text-sm text-red-400">{tCommon('load_error')}</p>
+        <Button variant="outline" size="sm" onClick={() => void refetch()}>
+          <RefreshCw className="mr-2 h-4 w-4" />
+          {tCommon('retry')}
+        </Button>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        {[1, 2, 3].map((i) => (
+          <Skeleton key={i} className="h-16 w-full rounded-lg" />
+        ))}
+      </div>
+    );
+  }
 
   return (
-    <div className="flex flex-col items-center justify-center py-20 gap-5 rounded-xl border border-dashed border-border bg-muted/20">
-      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted">
-        <Lock className="h-7 w-7 text-muted-foreground" />
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          {tCatalog('vertical.subtitle')} — {(catalogs ?? []).length} {tCatalog('vertical.title').toLowerCase()}
+        </p>
+        <Button size="sm" onClick={() => setCreateOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          {tCatalog('vertical.create')}
+        </Button>
       </div>
-      <div className="text-center space-y-1.5 max-w-xs">
-        <p className="font-semibold text-base">{tCatalog('vertical.enterprise_only')}</p>
-        <p className="text-sm text-muted-foreground">{tCatalog('vertical.upgrade_hint')}</p>
-      </div>
-      <Badge
-        variant="secondary"
-        className="px-3 py-1 text-xs font-semibold tracking-wide uppercase"
-      >
-        Enterprise
-      </Badge>
+
+      {/* Empty State */}
+      {(!catalogs || catalogs.length === 0) && (
+        <div className="flex flex-col items-center justify-center py-16 gap-3 rounded-xl border border-dashed border-border bg-muted/20">
+          <Layers className="h-10 w-10 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">{tCatalog('vertical.empty')}</p>
+          <Button variant="outline" size="sm" onClick={() => setCreateOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            {tCatalog('vertical.create')}
+          </Button>
+        </div>
+      )}
+
+      {/* Catalog List */}
+      {catalogs && catalogs.length > 0 && (
+        <div className="grid gap-3">
+          {catalogs.map((vc: VerticalCatalog) => (
+            <Card
+              key={vc.id}
+              className={`cursor-pointer transition-colors hover:bg-muted/40 ${detailId === vc.id ? 'ring-2 ring-primary' : ''}`}
+              onClick={() => setDetailId(detailId === vc.id ? null : vc.id)}
+            >
+              <CardContent className="py-4 flex items-center justify-between">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold">{vc.name}</span>
+                    <Badge variant={vc.status === 'active' ? 'default' : 'secondary'} className="text-xs">
+                      {tCatalog(`statuses.${vc.status}`)}
+                    </Badge>
+                    {vc.override_count > 0 && (
+                      <Badge variant="outline" className="text-xs">
+                        {vc.override_count} {tCatalog('vertical.overrides')}
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                    {vc.customer_name && <span>{tCatalog('fields.customer')}: {vc.customer_name}</span>}
+                    {vc.industry && <span>{tCatalog('fields.industry')}: {vc.industry}</span>}
+                    {vc.base_catalog_name && <span>{tCatalog('fields.base_catalog')}: {vc.base_catalog_name}</span>}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-destructive"
+                    onClick={(e) => { e.stopPropagation(); void handleDelete(vc.id); }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                  {detailId === vc.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Detail Panel */}
+      {detailId && <VerticalCatalogDetail verticalId={detailId} />}
+
+      {/* Create Dialog */}
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{tCatalog('vertical.create')}</DialogTitle>
+            <DialogDescription>{tCatalog('vertical.create_hint')}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>{tCatalog('fields.name')}</Label>
+              <Input value={createName} onChange={(e) => setCreateName(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>{tCatalog('fields.base_catalog')}</Label>
+              <Select value={createBaseCatalogId} onValueChange={setCreateBaseCatalogId}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {horizontalCatalogs.map((hc: HorizontalCatalog) => (
+                    <SelectItem key={hc.id} value={hc.id}>{hc.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>{tCatalog('fields.customer')}</Label>
+              <Select value={createCustomerId} onValueChange={setCreateCustomerId}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">—</SelectItem>
+                  {customers.map((c: { id: string; name: string }) => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>{tCatalog('fields.industry')}</Label>
+              <Input value={createIndustry} onChange={(e) => setCreateIndustry(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>{tCatalog('fields.description')}</Label>
+              <Textarea value={createDescription} onChange={(e) => setCreateDescription(e.target.value)} rows={3} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateOpen(false)}>
+              {tCommon('cancel')}
+            </Button>
+            <Button onClick={() => void handleCreate()} disabled={!createName.trim() || !createBaseCatalogId || createMutation.isPending}>
+              {tCommon('create')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+// =============================================================================
+// Vertical Catalog Detail (overrides + effective services)
+// =============================================================================
+
+function VerticalCatalogDetail({ verticalId }: { verticalId: string }) {
+  const { t: tCatalog } = useTranslation('catalog');
+  const { t: tCommon } = useTranslation('common');
+
+  const { data: catalog, isLoading } = useVerticalCatalog(verticalId);
+  const { data: descriptionsData } = useServiceDescriptions({ limit: 500 });
+  const addOverrideMutation = useAddVerticalOverride();
+  const removeOverrideMutation = useRemoveVerticalOverride();
+
+  const [addOverrideOpen, setAddOverrideOpen] = useState(false);
+  const [origDescId, setOrigDescId] = useState('');
+  const [overrideDescId, setOverrideDescId] = useState('');
+  const [overrideType, setOverrideType] = useState('replace');
+  const [overrideReason, setOverrideReason] = useState('');
+
+  const descriptions = descriptionsData?.data ?? [];
+
+  if (isLoading || !catalog) {
+    return <Skeleton className="h-40 w-full rounded-lg" />;
+  }
+
+  async function handleAddOverride() {
+    if (!origDescId || !overrideDescId) return;
+    try {
+      await addOverrideMutation.mutateAsync({
+        verticalId,
+        data: {
+          original_desc_id: origDescId,
+          override_desc_id: overrideDescId,
+          override_type: overrideType,
+          reason: overrideReason.trim() || null,
+        },
+      });
+      toast.success(tCommon('created'));
+      setAddOverrideOpen(false);
+      setOrigDescId('');
+      setOverrideDescId('');
+      setOverrideReason('');
+    } catch {
+      toast.error(tCommon('error'));
+    }
+  }
+
+  async function handleRemoveOverride(overrideId: string) {
+    try {
+      await removeOverrideMutation.mutateAsync({ verticalId, overrideId });
+      toast.success(tCommon('deleted'));
+    } catch {
+      toast.error(tCommon('error'));
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      {catalog.description && (
+        <p className="text-sm text-muted-foreground">{catalog.description}</p>
+      )}
+
+      {/* Overrides */}
+      <Card>
+        <CardHeader className="py-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm">{tCatalog('vertical.overrides')} ({catalog.overrides?.length ?? 0})</CardTitle>
+            <Button size="sm" variant="outline" onClick={() => setAddOverrideOpen(true)}>
+              <Plus className="mr-1 h-3 w-3" />
+              {tCatalog('vertical.add_override')}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="py-0 pb-4">
+          {(!catalog.overrides || catalog.overrides.length === 0) ? (
+            <p className="text-xs text-muted-foreground py-2">{tCatalog('vertical.no_overrides')}</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-xs">{tCatalog('vertical.original')}</TableHead>
+                  <TableHead className="text-xs">{tCatalog('vertical.override')}</TableHead>
+                  <TableHead className="text-xs">{tCatalog('vertical.type')}</TableHead>
+                  <TableHead className="text-xs">{tCatalog('vertical.reason')}</TableHead>
+                  <TableHead className="text-xs w-10"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {catalog.overrides!.map((ov) => (
+                  <TableRow key={ov.id}>
+                    <TableCell className="text-xs">{ov.original_code} — {ov.original_title}</TableCell>
+                    <TableCell className="text-xs font-medium">{ov.override_code} — {ov.override_title}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-xs">{ov.override_type}</Badge>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{ov.reason ?? '—'}</TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => void handleRemoveOverride(ov.id)}>
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Effective Services */}
+      <Card>
+        <CardHeader className="py-3">
+          <CardTitle className="text-sm">{tCatalog('vertical.effective_services')} ({catalog.effective_services?.length ?? 0})</CardTitle>
+          <CardDescription className="text-xs">{tCatalog('vertical.effective_hint')}</CardDescription>
+        </CardHeader>
+        <CardContent className="py-0 pb-4">
+          {(!catalog.effective_services || catalog.effective_services.length === 0) ? (
+            <p className="text-xs text-muted-foreground py-2">{tCatalog('vertical.no_services')}</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-xs">{tCatalog('fields.code')}</TableHead>
+                  <TableHead className="text-xs">{tCatalog('fields.title')}</TableHead>
+                  <TableHead className="text-xs">{tCatalog('fields.status')}</TableHead>
+                  <TableHead className="text-xs">{tCatalog('vertical.source')}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {catalog.effective_services!.map((svc) => (
+                  <TableRow key={svc.service_desc_id}>
+                    <TableCell className="text-xs font-mono">{svc.code}</TableCell>
+                    <TableCell className="text-xs">{svc.title}</TableCell>
+                    <TableCell className="text-xs">{svc.status}</TableCell>
+                    <TableCell>
+                      {svc.is_override ? (
+                        <Badge variant="outline" className="text-xs bg-amber-50 dark:bg-amber-900/20">
+                          {svc.override_type} ({svc.original_code})
+                        </Badge>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">{tCatalog('vertical.from_base')}</span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Add Override Dialog */}
+      <Dialog open={addOverrideOpen} onOpenChange={setAddOverrideOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{tCatalog('vertical.add_override')}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>{tCatalog('vertical.original')}</Label>
+              <Select value={origDescId} onValueChange={setOrigDescId}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {descriptions.map((d: ServiceDescription) => (
+                    <SelectItem key={d.id} value={d.id}>{d.code} — {d.title}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>{tCatalog('vertical.override')}</Label>
+              <Select value={overrideDescId} onValueChange={setOverrideDescId}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {descriptions.map((d: ServiceDescription) => (
+                    <SelectItem key={d.id} value={d.id}>{d.code} — {d.title}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>{tCatalog('vertical.type')}</Label>
+              <Select value={overrideType} onValueChange={setOverrideType}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="replace">{tCatalog('vertical.type_replace')}</SelectItem>
+                  <SelectItem value="extend">{tCatalog('vertical.type_extend')}</SelectItem>
+                  <SelectItem value="restrict">{tCatalog('vertical.type_restrict')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>{tCatalog('vertical.reason')}</Label>
+              <Input value={overrideReason} onChange={(e) => setOverrideReason(e.target.value)} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddOverrideOpen(false)}>{tCommon('cancel')}</Button>
+            <Button onClick={() => void handleAddOverride()} disabled={!origDescId || !overrideDescId || addOverrideMutation.isPending}>
+              {tCommon('create')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

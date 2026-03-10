@@ -13,6 +13,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Activity,
+  Building2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -35,6 +36,7 @@ const navItems: NavItem[] = [
   { labelKey: 'nav.dashboard', href: '/', icon: LayoutDashboard },
   { labelKey: 'nav.tickets', href: '/tickets', icon: Ticket },
   { labelKey: 'nav.assets', href: '/assets', icon: Server },
+  { labelKey: 'nav.customers', href: '/customers', icon: Building2 },
   { labelKey: 'nav.workflows', href: '/workflows', icon: GitBranch },
   { labelKey: 'nav.services', href: '/services', icon: BookOpen },
   { labelKey: 'nav.compliance', href: '/compliance', icon: Shield },

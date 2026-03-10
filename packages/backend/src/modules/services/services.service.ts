@@ -6,6 +6,9 @@ import {
   serviceDescriptions,
   horizontalCatalog,
   horizontalCatalogItems,
+  verticalCatalogs,
+  verticalCatalogOverrides,
+  customers,
 } from '../../db/schema/index.js';
 import { NotFoundError, ConflictError } from '../../lib/errors.js';
 import type {
@@ -739,4 +742,379 @@ export async function removeCatalogItem(
         eq(horizontalCatalogItems.service_desc_id, serviceDescId),
       ),
     );
+}
+
+// ─── Vertical Catalogs (Enterprise) ─────────────────────
+
+/**
+ * List vertical catalogs with customer and base catalog names.
+ */
+export async function listVerticalCatalogs(
+  tenantId: string,
+): Promise<unknown[]> {
+  const d = db();
+
+  const rows = await d
+    .select({
+      id: verticalCatalogs.id,
+      tenant_id: verticalCatalogs.tenant_id,
+      name: verticalCatalogs.name,
+      base_catalog_id: verticalCatalogs.base_catalog_id,
+      customer_id: verticalCatalogs.customer_id,
+      industry: verticalCatalogs.industry,
+      description: verticalCatalogs.description,
+      status: verticalCatalogs.status,
+      created_at: verticalCatalogs.created_at,
+      base_catalog_name: horizontalCatalog.name,
+      customer_name: customers.name,
+    })
+    .from(verticalCatalogs)
+    .leftJoin(horizontalCatalog, eq(verticalCatalogs.base_catalog_id, horizontalCatalog.id))
+    .leftJoin(customers, eq(verticalCatalogs.customer_id, customers.id))
+    .where(eq(verticalCatalogs.tenant_id, tenantId))
+    .orderBy(asc(verticalCatalogs.name));
+
+  // Count overrides per catalog
+  const catalogIds = rows.map((r) => r.id);
+  const overrideCountMap = new Map<string, number>();
+
+  if (catalogIds.length > 0) {
+    const countRows = await d
+      .select({
+        vertical_id: verticalCatalogOverrides.vertical_id,
+        count: count(),
+      })
+      .from(verticalCatalogOverrides)
+      .where(inArray(verticalCatalogOverrides.vertical_id, catalogIds))
+      .groupBy(verticalCatalogOverrides.vertical_id);
+
+    for (const cr of countRows) {
+      overrideCountMap.set(cr.vertical_id, cr.count);
+    }
+  }
+
+  return rows.map((row) => ({
+    id: row.id,
+    tenant_id: row.tenant_id,
+    name: row.name,
+    base_catalog_id: row.base_catalog_id,
+    base_catalog_name: row.base_catalog_name ?? null,
+    customer_id: row.customer_id,
+    customer_name: row.customer_name ?? null,
+    industry: row.industry,
+    description: row.description,
+    status: row.status,
+    created_at: row.created_at,
+    override_count: overrideCountMap.get(row.id) ?? 0,
+  }));
+}
+
+/**
+ * Get a single vertical catalog with its overrides and effective services.
+ */
+export async function getVerticalCatalog(
+  tenantId: string,
+  id: string,
+): Promise<unknown> {
+  const d = db();
+
+  const [row] = await d
+    .select({
+      id: verticalCatalogs.id,
+      tenant_id: verticalCatalogs.tenant_id,
+      name: verticalCatalogs.name,
+      base_catalog_id: verticalCatalogs.base_catalog_id,
+      customer_id: verticalCatalogs.customer_id,
+      industry: verticalCatalogs.industry,
+      description: verticalCatalogs.description,
+      status: verticalCatalogs.status,
+      created_at: verticalCatalogs.created_at,
+      base_catalog_name: horizontalCatalog.name,
+      customer_name: customers.name,
+    })
+    .from(verticalCatalogs)
+    .leftJoin(horizontalCatalog, eq(verticalCatalogs.base_catalog_id, horizontalCatalog.id))
+    .leftJoin(customers, eq(verticalCatalogs.customer_id, customers.id))
+    .where(and(eq(verticalCatalogs.id, id), eq(verticalCatalogs.tenant_id, tenantId)))
+    .limit(1);
+
+  if (!row) {
+    throw new NotFoundError('Vertical catalog not found');
+  }
+
+  // Get overrides
+  const overrides = await d
+    .select({
+      id: verticalCatalogOverrides.id,
+      vertical_id: verticalCatalogOverrides.vertical_id,
+      original_desc_id: verticalCatalogOverrides.original_desc_id,
+      override_desc_id: verticalCatalogOverrides.override_desc_id,
+      override_type: verticalCatalogOverrides.override_type,
+      reason: verticalCatalogOverrides.reason,
+    })
+    .from(verticalCatalogOverrides)
+    .where(eq(verticalCatalogOverrides.vertical_id, id));
+
+  // Enrich overrides with service description details
+  const enrichedOverrides: Array<typeof overrides[number] & { original_code: string; original_title: string; override_code: string; override_title: string }> = [];
+  for (const ov of overrides) {
+    const [origSvc] = await d
+      .select({ code: serviceDescriptions.code, title: serviceDescriptions.title })
+      .from(serviceDescriptions)
+      .where(eq(serviceDescriptions.id, ov.original_desc_id))
+      .limit(1);
+    const [overrideSvc] = await d
+      .select({ code: serviceDescriptions.code, title: serviceDescriptions.title })
+      .from(serviceDescriptions)
+      .where(eq(serviceDescriptions.id, ov.override_desc_id))
+      .limit(1);
+
+    enrichedOverrides.push({
+      ...ov,
+      original_code: origSvc?.code ?? '',
+      original_title: origSvc?.title ?? '',
+      override_code: overrideSvc?.code ?? '',
+      override_title: overrideSvc?.title ?? '',
+    });
+  }
+
+  // Get base catalog items to build effective service list
+  const baseItems = await d
+    .select({
+      service_desc_id: horizontalCatalogItems.service_desc_id,
+      sd_code: serviceDescriptions.code,
+      sd_title: serviceDescriptions.title,
+      sd_status: serviceDescriptions.status,
+    })
+    .from(horizontalCatalogItems)
+    .leftJoin(serviceDescriptions, eq(horizontalCatalogItems.service_desc_id, serviceDescriptions.id))
+    .where(eq(horizontalCatalogItems.catalog_id, row.base_catalog_id));
+
+  // Build effective services: apply overrides
+  const overrideMap = new Map(overrides.map((o) => [o.original_desc_id, o]));
+  const effectiveServices = baseItems.map((item) => {
+    const override = overrideMap.get(item.service_desc_id);
+    if (override) {
+      const ovSvc = enrichedOverrides.find((e) => e.id === override.id);
+      return {
+        service_desc_id: override.override_desc_id,
+        code: ovSvc?.override_code ?? '',
+        title: ovSvc?.override_title ?? '',
+        status: item.sd_status ?? '',
+        is_override: true,
+        override_type: override.override_type,
+        original_code: ovSvc?.original_code ?? '',
+      };
+    }
+    return {
+      service_desc_id: item.service_desc_id,
+      code: item.sd_code ?? '',
+      title: item.sd_title ?? '',
+      status: item.sd_status ?? '',
+      is_override: false,
+      override_type: null,
+      original_code: null,
+    };
+  });
+
+  return {
+    id: row.id,
+    tenant_id: row.tenant_id,
+    name: row.name,
+    base_catalog_id: row.base_catalog_id,
+    base_catalog_name: row.base_catalog_name ?? null,
+    customer_id: row.customer_id,
+    customer_name: row.customer_name ?? null,
+    industry: row.industry,
+    description: row.description,
+    status: row.status,
+    created_at: row.created_at,
+    overrides: enrichedOverrides,
+    effective_services: effectiveServices,
+  };
+}
+
+/**
+ * Create a new vertical catalog.
+ */
+export async function createVerticalCatalog(
+  tenantId: string,
+  data: {
+    name: string;
+    base_catalog_id: string;
+    customer_id?: string | null;
+    industry?: string | null;
+    description?: string | null;
+    status?: string;
+  },
+): Promise<unknown> {
+  const d = db();
+  const id = uuidv4();
+  const now = new Date().toISOString();
+
+  // Verify base catalog exists
+  const [baseCatalog] = await d
+    .select({ id: horizontalCatalog.id })
+    .from(horizontalCatalog)
+    .where(and(eq(horizontalCatalog.id, data.base_catalog_id), eq(horizontalCatalog.tenant_id, tenantId)))
+    .limit(1);
+
+  if (!baseCatalog) {
+    throw new NotFoundError('Base horizontal catalog not found');
+  }
+
+  await d.insert(verticalCatalogs).values({
+    id,
+    tenant_id: tenantId,
+    name: data.name,
+    base_catalog_id: data.base_catalog_id,
+    customer_id: data.customer_id ?? null,
+    industry: data.industry ?? null,
+    description: data.description ?? null,
+    status: data.status ?? 'active',
+    created_at: now,
+  });
+
+  return getVerticalCatalog(tenantId, id);
+}
+
+/**
+ * Update a vertical catalog.
+ */
+export async function updateVerticalCatalog(
+  tenantId: string,
+  id: string,
+  data: {
+    name?: string;
+    customer_id?: string | null;
+    industry?: string | null;
+    description?: string | null;
+    status?: string;
+  },
+): Promise<unknown> {
+  const d = db();
+
+  const [existing] = await d
+    .select({ id: verticalCatalogs.id })
+    .from(verticalCatalogs)
+    .where(and(eq(verticalCatalogs.id, id), eq(verticalCatalogs.tenant_id, tenantId)))
+    .limit(1);
+
+  if (!existing) {
+    throw new NotFoundError('Vertical catalog not found');
+  }
+
+  const updateData: Record<string, unknown> = {};
+  if (data.name !== undefined) updateData.name = data.name;
+  if (data.customer_id !== undefined) updateData.customer_id = data.customer_id;
+  if (data.industry !== undefined) updateData.industry = data.industry;
+  if (data.description !== undefined) updateData.description = data.description;
+  if (data.status !== undefined) updateData.status = data.status;
+
+  if (Object.keys(updateData).length > 0) {
+    await d
+      .update(verticalCatalogs)
+      .set(updateData)
+      .where(and(eq(verticalCatalogs.id, id), eq(verticalCatalogs.tenant_id, tenantId)));
+  }
+
+  return getVerticalCatalog(tenantId, id);
+}
+
+/**
+ * Delete a vertical catalog and its overrides.
+ */
+export async function deleteVerticalCatalog(
+  tenantId: string,
+  id: string,
+): Promise<void> {
+  const d = db();
+
+  const [existing] = await d
+    .select({ id: verticalCatalogs.id })
+    .from(verticalCatalogs)
+    .where(and(eq(verticalCatalogs.id, id), eq(verticalCatalogs.tenant_id, tenantId)))
+    .limit(1);
+
+  if (!existing) {
+    throw new NotFoundError('Vertical catalog not found');
+  }
+
+  // Delete overrides first
+  await d.delete(verticalCatalogOverrides).where(eq(verticalCatalogOverrides.vertical_id, id));
+  // Delete the catalog
+  await d.delete(verticalCatalogs).where(and(eq(verticalCatalogs.id, id), eq(verticalCatalogs.tenant_id, tenantId)));
+}
+
+/**
+ * Add an override to a vertical catalog.
+ */
+export async function addVerticalOverride(
+  tenantId: string,
+  verticalId: string,
+  data: {
+    original_desc_id: string;
+    override_desc_id: string;
+    override_type: string;
+    reason?: string | null;
+  },
+): Promise<unknown> {
+  const d = db();
+
+  // Verify vertical catalog exists
+  const [vc] = await d
+    .select({ id: verticalCatalogs.id })
+    .from(verticalCatalogs)
+    .where(and(eq(verticalCatalogs.id, verticalId), eq(verticalCatalogs.tenant_id, tenantId)))
+    .limit(1);
+
+  if (!vc) {
+    throw new NotFoundError('Vertical catalog not found');
+  }
+
+  const id = uuidv4();
+  await d.insert(verticalCatalogOverrides).values({
+    id,
+    vertical_id: verticalId,
+    original_desc_id: data.original_desc_id,
+    override_desc_id: data.override_desc_id,
+    override_type: data.override_type,
+    reason: data.reason ?? null,
+  });
+
+  return getVerticalCatalog(tenantId, verticalId);
+}
+
+/**
+ * Remove an override from a vertical catalog.
+ */
+export async function removeVerticalOverride(
+  tenantId: string,
+  verticalId: string,
+  overrideId: string,
+): Promise<void> {
+  const d = db();
+
+  // Verify vertical catalog exists
+  const [vc] = await d
+    .select({ id: verticalCatalogs.id })
+    .from(verticalCatalogs)
+    .where(and(eq(verticalCatalogs.id, verticalId), eq(verticalCatalogs.tenant_id, tenantId)))
+    .limit(1);
+
+  if (!vc) {
+    throw new NotFoundError('Vertical catalog not found');
+  }
+
+  const [existing] = await d
+    .select({ id: verticalCatalogOverrides.id })
+    .from(verticalCatalogOverrides)
+    .where(and(eq(verticalCatalogOverrides.id, overrideId), eq(verticalCatalogOverrides.vertical_id, verticalId)))
+    .limit(1);
+
+  if (!existing) {
+    throw new NotFoundError('Override not found');
+  }
+
+  await d.delete(verticalCatalogOverrides).where(eq(verticalCatalogOverrides.id, overrideId));
 }
