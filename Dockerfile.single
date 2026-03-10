@@ -42,12 +42,10 @@ RUN apk add --no-cache tini
 WORKDIR /app
 
 # Copy node_modules from build stage (includes compiled native bindings
-# like better-sqlite3), then prune dev dependencies
+# like better-sqlite3). We keep all deps to avoid prune removing
+# workspace dependencies that npm doesn't track correctly.
 COPY --from=build /build/node_modules ./node_modules
 COPY --from=build /build/package.json ./
-
-# Prune dev dependencies
-RUN npm prune --omit=dev --no-audit --no-fund 2>/dev/null || true
 
 # Copy built shared package
 COPY --from=build /build/packages/shared/dist ./packages/shared/dist
