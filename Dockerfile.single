@@ -3,33 +3,30 @@
 # Usage: docker run -d -p 8080:8080 -v opsweave-data:/data opsweave
 # ══════════════════════════════════════════════════════════
 
-# ─── Stage 1: Build Shared Package ───────────────────────
-FROM node:20-alpine AS shared-build
-WORKDIR /build/packages/shared
-COPY packages/shared/package*.json ./
-RUN npm ci
-COPY packages/shared/ ./
-RUN npm run build
-
-# ─── Stage 2: Build Frontend ────────────────────────────
-FROM node:20-alpine AS frontend-build
+# ─── Stage 1: Install dependencies & build all packages ──
+FROM node:20-alpine AS build
 WORKDIR /build
-COPY packages/frontend/package*.json ./packages/frontend/
-COPY --from=shared-build /build/packages/shared ./packages/shared
-RUN cd packages/frontend && npm ci
-COPY packages/frontend/ ./packages/frontend/
-RUN cd packages/frontend && npm run build
 
-# ─── Stage 3: Build Backend ─────────────────────────────
-FROM node:20-alpine AS backend-build
-WORKDIR /build
-COPY packages/backend/package*.json ./packages/backend/
-COPY --from=shared-build /build/packages/shared ./packages/shared
-RUN cd packages/backend && npm ci
+# Copy root workspace config + lockfile
+COPY package.json package-lock.json ./
+
+# Copy workspace package.json files (for dependency resolution)
+COPY packages/shared/package.json ./packages/shared/
+COPY packages/backend/package.json ./packages/backend/
+COPY packages/frontend/package.json ./packages/frontend/
+
+# Install all workspace dependencies from root lockfile
+RUN npm ci --ignore-scripts
+
+# Copy source code
+COPY packages/shared/ ./packages/shared/
 COPY packages/backend/ ./packages/backend/
-RUN cd packages/backend && npm run build
+COPY packages/frontend/ ./packages/frontend/
 
-# ─── Stage 4: Production Image ──────────────────────────
+# Build in dependency order: shared → backend + frontend
+RUN npm run build:shared && npm run build:backend && npm run build:frontend
+
+# ─── Stage 2: Production image ──────────────────────────
 FROM node:20-alpine AS production
 
 LABEL org.opencontainers.image.title="OpsWeave"
@@ -41,13 +38,23 @@ RUN apk add --no-cache tini
 
 WORKDIR /app
 
-# Copy built backend + dependencies
-COPY --from=backend-build /build/packages/backend/dist ./dist
-COPY --from=backend-build /build/packages/backend/node_modules ./node_modules
-COPY --from=backend-build /build/packages/backend/package.json ./
+# Copy root workspace config + lockfile for production install
+COPY package.json package-lock.json ./
+COPY packages/shared/package.json ./packages/shared/
+COPY packages/backend/package.json ./packages/backend/
+
+# Install production dependencies only
+RUN npm ci --omit=dev --ignore-scripts -w packages/backend -w packages/shared
+
+# Copy built shared package
+COPY --from=build /build/packages/shared/dist ./packages/shared/dist
+COPY --from=build /build/packages/shared/package.json ./packages/shared/
+
+# Copy built backend
+COPY --from=build /build/packages/backend/dist ./packages/backend/dist
 
 # Copy built frontend as static files
-COPY --from=frontend-build /build/packages/frontend/dist ./public
+COPY --from=build /build/packages/frontend/dist ./public
 
 # Create data directory
 RUN mkdir -p /data && chown -R node:node /data /app
@@ -60,6 +67,7 @@ ENV DB_DRIVER=sqlite
 ENV DATABASE_URL=file:/data/opsweave.db
 ENV PORT=8080
 ENV SERVE_STATIC=true
+ENV STATIC_PATH=../../public
 ENV QUEUE_DRIVER=better-queue
 ENV LOG_LEVEL=info
 
@@ -70,4 +78,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s \
   CMD wget -q --spider http://localhost:8080/api/v1/system/health || exit 1
 
 ENTRYPOINT ["/sbin/tini", "--"]
-CMD ["node", "dist/server.js"]
+CMD ["node", "packages/backend/dist/server.js"]
