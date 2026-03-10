@@ -470,6 +470,44 @@ function TicketListView({
   const { t: tCommon } = useTranslation();
   const navigate = useNavigate();
 
+  // AUDIT-FIX: M-16 — CSV export for filtered ticket list (hook must be before early returns)
+  const handleExportCsv = useCallback(() => {
+    const headers = [
+      t('fields.ticket_number'),
+      t('fields.title'),
+      t('fields.type'),
+      t('fields.status'),
+      t('fields.priority'),
+      t('fields.created_at'),
+      t('fields.assignee'),
+    ];
+    const escapeField = (val: string) => {
+      if (val.includes(',') || val.includes('"') || val.includes('\n')) {
+        return `"${val.replace(/"/g, '""')}"`;
+      }
+      return val;
+    };
+    const rows = tickets.map((ticket) => [
+      escapeField(ticket.ticket_number),
+      escapeField(ticket.title),
+      escapeField(t(`types.${ticket.ticket_type}`)),
+      escapeField(t(`statuses.${ticket.status}`)),
+      escapeField(t(`priorities.${ticket.priority}`)),
+      escapeField(new Date(ticket.created_at).toISOString().slice(0, 10)),
+      escapeField(ticket.assignee?.display_name ?? '-'),
+    ]);
+
+    const csv = [headers.map(escapeField).join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const date = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `opsweave-tickets-${date}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [tickets, t]);
+
   function SortIcon({ field }: { field: SortField }) {
     if (sortField !== field) {
       return <ArrowUpDown className="h-3 w-3 ml-1 text-muted-foreground/40" />;
@@ -609,44 +647,6 @@ function TicketListView({
       </div>
     );
   }
-
-  // AUDIT-FIX: M-16 — CSV export for filtered ticket list
-  const handleExportCsv = useCallback(() => {
-    const headers = [
-      t('fields.ticket_number'),
-      t('fields.title'),
-      t('fields.type'),
-      t('fields.status'),
-      t('fields.priority'),
-      t('fields.created_at'),
-      t('fields.assignee'),
-    ];
-    const escapeField = (val: string) => {
-      if (val.includes(',') || val.includes('"') || val.includes('\n')) {
-        return `"${val.replace(/"/g, '""')}"`;
-      }
-      return val;
-    };
-    const rows = tickets.map((ticket) => [
-      escapeField(ticket.ticket_number),
-      escapeField(ticket.title),
-      escapeField(t(`types.${ticket.ticket_type}`)),
-      escapeField(t(`statuses.${ticket.status}`)),
-      escapeField(t(`priorities.${ticket.priority}`)),
-      escapeField(new Date(ticket.created_at).toISOString().slice(0, 10)),
-      escapeField(ticket.assignee?.display_name ?? '-'),
-    ]);
-
-    const csv = [headers.map(escapeField).join(','), ...rows.map((r) => r.join(','))].join('\n');
-    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    const date = new Date().toISOString().slice(0, 10);
-    a.href = url;
-    a.download = `opsweave-tickets-${date}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }, [tickets, t]);
 
   return (
     <div className="space-y-3">
