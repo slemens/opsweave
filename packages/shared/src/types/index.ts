@@ -204,6 +204,8 @@ export interface Ticket {
   sla_resolve_due: string | null;
   parent_ticket_id: string | null;
   sla_breached: number; // 0 | 1
+  sla_paused_at: string | null;
+  sla_paused_total: number; // cumulative pause seconds
   source: TicketSource;
   created_at: string;
   updated_at: string;

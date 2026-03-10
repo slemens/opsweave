@@ -60,6 +60,8 @@ export const tickets = sqliteTable(
     sla_response_due: text('sla_response_due'),
     sla_resolve_due: text('sla_resolve_due'),
     sla_breached: integer('sla_breached').notNull().default(0),
+    sla_paused_at: text('sla_paused_at'),          // ISO 8601 — set when status→pending
+    sla_paused_total: integer('sla_paused_total').notNull().default(0), // cumulative pause seconds
     parent_ticket_id: text('parent_ticket_id'),
     source: text('source').notNull().default('manual'),
     created_at: text('created_at').notNull(),

@@ -22,6 +22,10 @@ import {
   startEmailPollingWorker,
   stopEmailPollingWorker,
 } from './modules/email-inbound/email-poll.worker.js';
+import {
+  startSlaBreachWorker,
+  stopSlaBreachWorker,
+} from './workers/sla-breach.worker.js';
 // AUDIT-FIX: H-11 — Structured logging
 import logger from './lib/logger.js';
 // AUDIT-FIX: H-02 — Warn if default admin password unchanged in production
@@ -160,6 +164,9 @@ async function bootstrap(): Promise<void> {
       logger.error({ err }, 'Failed to start email polling worker');
     });
 
+    // SLA breach detection worker
+    startSlaBreachWorker();
+
     // AUDIT-FIX: H-02 — Check default admin password in production
     if (config.nodeEnv === 'production') {
       checkDefaultAdminPassword().catch(() => { /* non-fatal */ });
@@ -172,6 +179,7 @@ async function bootstrap(): Promise<void> {
     logger.info({ signal }, 'Received shutdown signal, shutting down gracefully');
 
     stopEmailPollingWorker();
+    stopSlaBreachWorker();
 
     httpServer.close(() => {
       logger.info('HTTP server closed');

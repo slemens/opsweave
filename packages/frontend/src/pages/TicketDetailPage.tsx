@@ -1614,6 +1614,15 @@ export function TicketDetailPage() {
                 </SidebarField>
               )}
 
+              {/* SLA Paused Indicator */}
+              {ticket.sla_paused_at && (
+                <SidebarField label={t('sla_paused_label')}>
+                  <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 text-xs">
+                    {t('sla_paused')}
+                  </Badge>
+                </SidebarField>
+              )}
+
               {/* SLA Response Due */}
               <SidebarField label={t('fields.sla_response_due')}>
                 <span className="text-xs tabular-nums">
