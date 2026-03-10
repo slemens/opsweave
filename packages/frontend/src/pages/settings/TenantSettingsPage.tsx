@@ -331,6 +331,7 @@ function EmailSection() {
                     <SelectItem value="incident">Incident</SelectItem>
                     <SelectItem value="change">Change</SelectItem>
                     <SelectItem value="problem">Problem</SelectItem>
+                    <SelectItem value="request">Service Request</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

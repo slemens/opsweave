@@ -169,7 +169,7 @@ async function bootstrap(): Promise<void> {
         language: config.defaultLanguage,
         serveStatic: config.serveStatic,
       },
-      'OpsWeave Backend v0.3.7 started',
+      'OpsWeave Backend v0.3.8 started',
     );
 
     startEmailPollingWorker().catch((err: unknown) => {

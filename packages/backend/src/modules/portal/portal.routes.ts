@@ -14,6 +14,7 @@ import {
   createTicket,
   addComment,
   listKb,
+  listServices,
 } from './portal.controller.js';
 
 // ─── Portal Request Extension ────────────────────────────────
@@ -126,6 +127,12 @@ portalRouter.post('/tickets', requirePortalAuth, createTicket);
  * Add an external comment to a ticket.
  */
 portalRouter.post('/tickets/:id/comments', requirePortalAuth, addComment);
+
+/**
+ * GET /portal/services
+ * List published service descriptions available for ordering.
+ */
+portalRouter.get('/services', requirePortalAuth, listServices);
 
 /**
  * GET /portal/kb

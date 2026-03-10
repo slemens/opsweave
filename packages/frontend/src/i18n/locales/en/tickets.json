@@ -46,7 +46,8 @@
   "types": {
     "incident": "Incident",
     "problem": "Problem",
-    "change": "Change"
+    "change": "Change",
+    "request": "Service Request"
   },
   "subtypes": {
     "standard": "Standard",

@@ -26,7 +26,7 @@ export interface PortalTicket {
   description: string;
   status: 'open' | 'in_progress' | 'pending' | 'resolved' | 'closed';
   priority: 'low' | 'medium' | 'high' | 'critical';
-  ticketType: 'incident' | 'change' | 'problem';
+  ticketType: 'incident' | 'change' | 'problem' | 'request';
   createdAt: string;
   updatedAt: string;
 }
@@ -51,11 +51,19 @@ export interface PortalKbArticle {
   publishedAt: string | null;
 }
 
+export interface PortalService {
+  id: string;
+  code: string;
+  title: string;
+  description: string | null;
+}
+
 export interface CreatePortalTicketPayload {
   title: string;
   description: string;
-  ticketType: 'incident' | 'change';
+  ticketType: 'incident' | 'change' | 'request';
   priority: 'low' | 'medium' | 'high' | 'critical';
+  serviceDescriptionId?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -185,6 +193,11 @@ export const portalApi = {
       method: 'POST',
       body: JSON.stringify({ content }),
     });
+  },
+
+  // Service Catalog (published services available for ordering)
+  listServices(): Promise<PortalService[]> {
+    return portalRequest<PortalService[]>('/portal/services');
   },
 
   // Knowledge Base (public articles only)

@@ -67,6 +67,10 @@
     "field_priority": "Priority",
     "type_incident": "Incident / Outage",
     "type_change": "Change Request",
+    "type_request": "Service Request",
+    "field_service": "Select Service",
+    "field_service_placeholder": "Optional service from the catalogue…",
+    "field_service_none": "— No Service —",
     "submit": "Create Ticket",
     "submitting": "Creating…",
     "error": "Failed to create ticket."
@@ -87,7 +91,8 @@
   "ticket_type": {
     "incident": "Incident",
     "change": "Change Request",
-    "problem": "Problem"
+    "problem": "Problem",
+    "request": "Service Request"
   },
   "kb": {
     "title": "Knowledge Base",
