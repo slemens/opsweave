@@ -601,6 +601,20 @@ CREATE INDEX IF NOT EXISTS idx_audit_tenant_event ON audit_logs(tenant_id, event
 CREATE INDEX IF NOT EXISTS idx_audit_tenant_resource ON audit_logs(tenant_id, resource_type);
 CREATE INDEX IF NOT EXISTS idx_audit_tenant_actor ON audit_logs(tenant_id, actor_id);
 CREATE INDEX IF NOT EXISTS idx_audit_tenant_created ON audit_logs(tenant_id, created_at);
+
+-- ─── Feedback Board (global, no tenant_id) ────────────────────
+CREATE TABLE IF NOT EXISTS feedback_entries (
+  id TEXT PRIMARY KEY,
+  author_name TEXT NOT NULL,
+  entry_type TEXT NOT NULL DEFAULT 'feedback',
+  title TEXT NOT NULL,
+  description TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'open',
+  votes INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_feedback_type ON feedback_entries(entry_type);
+CREATE INDEX IF NOT EXISTS idx_feedback_created ON feedback_entries(created_at);
 `;
 
 async function setup() {

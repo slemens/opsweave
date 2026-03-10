@@ -76,3 +76,6 @@ export { auditLogs } from './audit.js';
 
 // System (global, no tenant_id)
 export { systemSettings } from './system.js';
+
+// Feedback Board (global, no tenant_id, public)
+export { feedbackEntries } from './feedback.js';

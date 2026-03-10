@@ -23,6 +23,7 @@ import notificationRouter from '../modules/notifications/notification.routes.js'
 import { escalationRouter } from '../modules/escalation/escalation.routes.js';
 import { auditRouter } from '../modules/audit/audit.routes.js';
 import { monitoringRouter, monitoringWebhookRouter } from '../modules/monitoring/monitoring.routes.js';
+import { feedbackRouter } from '../modules/feedback/feedback.routes.js';
 
 // ─── Central API Router ────────────────────────────────────
 const apiRouter = Router();
@@ -32,6 +33,9 @@ apiRouter.use('/system', systemRouter);
 
 // ── Auth routes (login/logout public, /me and /switch-tenant protected) ─
 apiRouter.use('/auth', authRouter);
+
+// ── Public feedback board (no auth) ─────────────────────────
+apiRouter.use('/feedback', feedbackRouter);
 
 // ── Tenant management (auth + super-admin, handled inside tenantRouter) ─
 apiRouter.use('/tenants', tenantRouter);
