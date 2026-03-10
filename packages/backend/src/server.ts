@@ -103,7 +103,7 @@ async function bootstrap(): Promise<void> {
 
   // Security headers
   app.use(helmet({
-    contentSecurityPolicy: config.nodeEnv === 'production' ? undefined : false,
+    contentSecurityPolicy: false,
   }));
 
   // CORS
