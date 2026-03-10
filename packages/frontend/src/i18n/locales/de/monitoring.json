@@ -1,0 +1,68 @@
+{
+  "title": "Monitoring",
+  "subtitle": "Überwachung von IT-Infrastruktur und automatische Incident-Erstellung",
+  "tabs": {
+    "events": "Events",
+    "sources": "Quellen"
+  },
+  "stats": {
+    "ok": "OK",
+    "warning": "Warnung",
+    "critical": "Kritisch",
+    "unknown": "Unbekannt",
+    "last_24h": "Letzte 24 Stunden"
+  },
+  "events": {
+    "hostname": "Hostname",
+    "service": "Service",
+    "state": "Status",
+    "output": "Ausgabe",
+    "received": "Empfangen",
+    "source": "Quelle",
+    "asset": "Asset",
+    "ticket": "Ticket",
+    "acknowledged": "Bestätigt",
+    "not_acknowledged": "Offen",
+    "acknowledge": "Bestätigen",
+    "empty": "Keine Monitoring-Events vorhanden",
+    "empty_hint": "Events werden automatisch von konfigurierten Quellen erfasst.",
+    "filter_state": "Status filtern",
+    "filter_source": "Quelle filtern",
+    "all_states": "Alle Status",
+    "all_sources": "Alle Quellen",
+    "search_placeholder": "Hostname, Service oder Ausgabe suchen..."
+  },
+  "sources": {
+    "title": "Monitoring-Quellen",
+    "create": "Quelle hinzufügen",
+    "edit": "Quelle bearbeiten",
+    "name": "Name",
+    "type": "Typ",
+    "status": "Status",
+    "active": "Aktiv",
+    "inactive": "Inaktiv",
+    "webhook_secret": "Webhook-Secret",
+    "webhook_url": "Webhook-URL",
+    "config": "Konfiguration",
+    "poll_interval": "Abfrageintervall (Sekunden)",
+    "url": "Server-URL",
+    "username": "Benutzername",
+    "password": "Passwort",
+    "api_key": "API-Key",
+    "test_connection": "Verbindung testen",
+    "empty": "Keine Monitoring-Quellen konfiguriert",
+    "empty_hint": "Fügen Sie eine Monitoring-Quelle hinzu, um Events zu empfangen.",
+    "delete_confirm": "Möchten Sie diese Monitoring-Quelle wirklich deaktivieren?",
+    "created": "Monitoring-Quelle erstellt",
+    "updated": "Monitoring-Quelle aktualisiert",
+    "deleted": "Monitoring-Quelle deaktiviert",
+    "types": {
+      "checkmk_v1": "Check_MK 1.x (Livestatus)",
+      "checkmk_v2": "Check_MK 2.x (REST API)",
+      "zabbix": "Zabbix",
+      "prometheus": "Prometheus",
+      "nagios": "Nagios",
+      "other": "Sonstige (Webhook)"
+    }
+  }
+}

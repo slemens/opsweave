@@ -1,0 +1,68 @@
+{
+  "title": "Monitoring",
+  "subtitle": "IT infrastructure monitoring and automatic incident creation",
+  "tabs": {
+    "events": "Events",
+    "sources": "Sources"
+  },
+  "stats": {
+    "ok": "OK",
+    "warning": "Warning",
+    "critical": "Critical",
+    "unknown": "Unknown",
+    "last_24h": "Last 24 hours"
+  },
+  "events": {
+    "hostname": "Hostname",
+    "service": "Service",
+    "state": "State",
+    "output": "Output",
+    "received": "Received",
+    "source": "Source",
+    "asset": "Asset",
+    "ticket": "Ticket",
+    "acknowledged": "Acknowledged",
+    "not_acknowledged": "Open",
+    "acknowledge": "Acknowledge",
+    "empty": "No monitoring events",
+    "empty_hint": "Events are automatically captured from configured sources.",
+    "filter_state": "Filter by state",
+    "filter_source": "Filter by source",
+    "all_states": "All states",
+    "all_sources": "All sources",
+    "search_placeholder": "Search hostname, service, or output..."
+  },
+  "sources": {
+    "title": "Monitoring Sources",
+    "create": "Add Source",
+    "edit": "Edit Source",
+    "name": "Name",
+    "type": "Type",
+    "status": "Status",
+    "active": "Active",
+    "inactive": "Inactive",
+    "webhook_secret": "Webhook Secret",
+    "webhook_url": "Webhook URL",
+    "config": "Configuration",
+    "poll_interval": "Poll Interval (seconds)",
+    "url": "Server URL",
+    "username": "Username",
+    "password": "Password",
+    "api_key": "API Key",
+    "test_connection": "Test Connection",
+    "empty": "No monitoring sources configured",
+    "empty_hint": "Add a monitoring source to start receiving events.",
+    "delete_confirm": "Are you sure you want to deactivate this monitoring source?",
+    "created": "Monitoring source created",
+    "updated": "Monitoring source updated",
+    "deleted": "Monitoring source deactivated",
+    "types": {
+      "checkmk_v1": "Check_MK 1.x (Livestatus)",
+      "checkmk_v2": "Check_MK 2.x (REST API)",
+      "zabbix": "Zabbix",
+      "prometheus": "Prometheus",
+      "nagios": "Nagios",
+      "other": "Other (Webhook)"
+    }
+  }
+}
