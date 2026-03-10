@@ -41,7 +41,9 @@ RUN mkdir -p packages/backend && \
 # Delete lockfile and use npm install to get correct platform-specific
 # native bindings (rollup, esbuild, lightningcss) for Alpine/musl.
 # npm ci with a macOS-generated lockfile cannot resolve these correctly.
-RUN rm -f package-lock.json && npm install --no-audit --no-fund
+# Also install @types/node needed by vite.config.ts and tsconfig.node.json.
+RUN rm -f package-lock.json && npm install --no-audit --no-fund && \
+    npm install --no-save @types/node
 
 # Copy tsconfig.base.json (extended by frontend tsconfigs)
 COPY tsconfig.base.json ./tsconfig.base.json
