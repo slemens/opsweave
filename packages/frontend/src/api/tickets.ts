@@ -353,16 +353,18 @@ export interface CustomerOverview {
     sla_breached: number;
     created_at: string;
   }>;
-  sla: {
+  sla_assignments: Array<{
+    id: string;
+    scope: 'customer' | 'customer_service' | 'asset';
+    scope_label: string | null;
     definition: {
       id: string;
       name: string;
       response_time_minutes: number;
       resolution_time_minutes: number;
       business_hours: string;
-    } | null;
-    assignment_id: string | null;
-  };
+    };
+  }>;
   vertical_catalogs: Array<{
     id: string;
     name: string;

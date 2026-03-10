@@ -12,7 +12,9 @@ import {
   verticalCatalogOverrides,
   horizontalCatalog,
   customerPortalUsers,
+  serviceDescriptions,
 } from '../../db/schema/index.js';
+import { isNull } from 'drizzle-orm';
 import { NotFoundError } from '../../lib/errors.js';
 import type { PaginationParams } from '@opsweave/shared';
 
@@ -236,16 +238,18 @@ export interface CustomerOverview {
     sla_breached: number;
     created_at: string;
   }>;
-  sla: {
+  sla_assignments: Array<{
+    id: string;
+    scope: 'customer' | 'customer_service' | 'asset';
+    scope_label: string | null;
     definition: {
       id: string;
       name: string;
       response_time_minutes: number;
       resolution_time_minutes: number;
       business_hours: string;
-    } | null;
-    assignment_id: string | null;
-  };
+    };
+  }>;
   vertical_catalogs: Array<{
     id: string;
     name: string;
@@ -341,25 +345,53 @@ export async function getCustomerOverview(
     .where(and(eq(customerPortalUsers.tenant_id, tenantId), eq(customerPortalUsers.customer_id, customerId)));
   const portalUsers = portalResult?.cnt ?? 0;
 
-  // SLA assignment for this customer
-  let slaDef: CustomerOverview['sla']['definition'] = null;
-  let slaAssignmentId: string | null = null;
-
-  const slaAssignment = await d
+  // All SLA assignments relevant to this customer (customer-wide, customer+service, per-asset)
+  const customerAssignments = await d
     .select({
       id: slaAssignments.id,
       sla_definition_id: slaAssignments.sla_definition_id,
+      service_id: slaAssignments.service_id,
+      asset_id: slaAssignments.asset_id,
+      priority: slaAssignments.priority,
     })
     .from(slaAssignments)
     .where(and(
       eq(slaAssignments.tenant_id, tenantId),
       eq(slaAssignments.customer_id, customerId),
     ))
-    .orderBy(desc(slaAssignments.priority))
-    .limit(1);
+    .orderBy(desc(slaAssignments.priority));
 
-  if (slaAssignment.length > 0) {
-    slaAssignmentId = slaAssignment[0]!.id;
+  // Also find asset-specific SLA assignments (where asset belongs to this customer)
+  const customerAssetIds = assetList.map((a) => a.id);
+  const assetAssignments = customerAssetIds.length > 0
+    ? await d
+        .select({
+          id: slaAssignments.id,
+          sla_definition_id: slaAssignments.sla_definition_id,
+          service_id: slaAssignments.service_id,
+          asset_id: slaAssignments.asset_id,
+          priority: slaAssignments.priority,
+        })
+        .from(slaAssignments)
+        .where(and(
+          eq(slaAssignments.tenant_id, tenantId),
+          isNull(slaAssignments.customer_id),
+        ))
+        .then((rows) => rows.filter((r) => r.asset_id && customerAssetIds.includes(r.asset_id)))
+    : [];
+
+  // Merge and deduplicate (customer assignments + asset-specific ones)
+  const allAssignmentRows = [...customerAssignments, ...assetAssignments];
+  const seenIds = new Set<string>();
+  const uniqueAssignments = allAssignmentRows.filter((a) => {
+    if (seenIds.has(a.id)) return false;
+    seenIds.add(a.id);
+    return true;
+  });
+
+  // Enrich each assignment with definition and scope label
+  const enrichedSlaAssignments: CustomerOverview['sla_assignments'] = [];
+  for (const assignment of uniqueAssignments) {
     const [def] = await d
       .select({
         id: slaDefinitions.id,
@@ -369,9 +401,33 @@ export async function getCustomerOverview(
         business_hours: slaDefinitions.business_hours,
       })
       .from(slaDefinitions)
-      .where(eq(slaDefinitions.id, slaAssignment[0]!.sla_definition_id))
+      .where(eq(slaDefinitions.id, assignment.sla_definition_id))
       .limit(1);
-    if (def) slaDef = def;
+    if (!def) continue;
+
+    let scope: 'customer' | 'customer_service' | 'asset' = 'customer';
+    let scopeLabel: string | null = null;
+
+    if (assignment.asset_id) {
+      scope = 'asset';
+      const asset = assetList.find((a) => a.id === assignment.asset_id);
+      scopeLabel = asset?.display_name ?? assignment.asset_id;
+    } else if (assignment.service_id) {
+      scope = 'customer_service';
+      const [svc] = await d
+        .select({ title: serviceDescriptions.title })
+        .from(serviceDescriptions)
+        .where(eq(serviceDescriptions.id, assignment.service_id))
+        .limit(1);
+      scopeLabel = svc?.title ?? assignment.service_id;
+    }
+
+    enrichedSlaAssignments.push({
+      id: assignment.id,
+      scope,
+      scope_label: scopeLabel,
+      definition: def,
+    });
   }
 
   // Vertical catalogs for this customer
@@ -412,10 +468,7 @@ export async function getCustomerOverview(
     },
     assets: assetList,
     recent_tickets: recentTickets,
-    sla: {
-      definition: slaDef,
-      assignment_id: slaAssignmentId,
-    },
+    sla_assignments: enrichedSlaAssignments,
     vertical_catalogs: vertCatalogs,
   };
 }

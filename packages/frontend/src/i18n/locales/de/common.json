@@ -119,16 +119,20 @@
   },
   "customer_detail": {
     "sla_breaches": "SLA-Verletzungen",
+    "sla_agreements": "SLA-Vereinbarungen",
     "portal_users": "Portal-Benutzer",
     "response_time": "Reaktionszeit",
     "resolution_time": "Lösungszeit",
-    "no_sla": "Kein kundenspezifisches SLA zugewiesen — Tenant-Default gilt.",
+    "no_sla": "Keine SLA-Vereinbarungen zugewiesen — Tenant-Default gilt.",
     "no_vertical_catalogs": "Keine vertikalen Kataloge zugewiesen.",
     "no_assets": "Keine Assets zugewiesen.",
     "no_tickets": "Keine Tickets vorhanden.",
     "open": "offen",
     "active": "Aktiv",
     "inactive": "Inaktiv",
-    "load_error": "Daten konnten nicht geladen werden"
+    "load_error": "Daten konnten nicht geladen werden",
+    "scope_customer": "Kundenweit",
+    "scope_service": "Service",
+    "scope_asset": "Asset"
   }
 }
