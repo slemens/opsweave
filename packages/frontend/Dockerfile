@@ -38,8 +38,10 @@ COPY packages/frontend/package.json ./packages/frontend/package.json
 RUN mkdir -p packages/backend && \
     echo '{"name":"@opsweave/backend","version":"0.1.0","private":true}' > packages/backend/package.json
 
-# Use npm ci without --ignore-scripts so rollup native bindings are installed
-RUN npm ci
+# Install dependencies (use npm install instead of npm ci to resolve
+# platform-specific optional deps like @rollup/rollup-linux-x64-musl
+# which may be missing from a macOS-generated lockfile)
+RUN npm install --no-audit --no-fund
 
 # Copy tsconfig.base.json (extended by frontend tsconfigs)
 COPY tsconfig.base.json ./tsconfig.base.json
