@@ -25,7 +25,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { useAssets, type AssetListParams, type AssetWithRelations } from '@/api/assets';
 import { useCustomers } from '@/api/customers';
-import { ASSET_TYPES, ASSET_STATUSES } from '@opsweave/shared';
+import { ASSET_STATUSES } from '@opsweave/shared';
 
 // Asset type categories for quick filtering
 const TYPE_CATEGORIES: Record<string, readonly string[]> = {

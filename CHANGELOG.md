@@ -5,6 +5,66 @@ All notable changes to OpsWeave will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.2] - 2026-03-10
+
+### Changed
+- **Documentation Cleanup**: Consolidated ~15 root markdown files into structured `docs/` directory
+  - Moved `architecture.md` → `docs/development/architecture.md`
+  - Moved `ITIL_COMPLIANCE.md` → `docs/ITIL_COMPLIANCE.md`
+  - Consolidated `TODO.md` + `TODO_BACKLOG.md` → `docs/ROADMAP.md`
+  - Removed obsolete tracking files (PROGRESS.md, BUGS.md, AUDIT_RESULTS.md)
+- Updated CHANGELOG with all missing release entries (v0.2.0–v0.3.1)
+
+## [0.3.1] - 2026-03-10
+
+### Added
+- **Searchable Asset Picker**: Replaced dropdown with dialog featuring search, filters (type/status/customer), and pagination
+- **Batch Ticket Updates**: Multi-select in list view with bulk status/priority/assignee changes (max 100)
+- **Bulk User Import**: CSV upload with drag-and-drop, preview, validation, and credential display
+- **Settings Sub-Routes**: Split monolithic settings page into lazy-loaded sub-pages
+
+### Fixed
+- React hooks order error in TicketListView (useCallback before early returns)
+- Email poller startup race condition with exponential backoff (M-06)
+- Version display in sidebar from package.json (C-06)
+
+## [0.3.0] - 2026-03-10
+
+### Added
+- **Production Readiness Audit**: 51 of 60 findings resolved
+- **Dockerfile.single**: Cross-platform multi-stage build for single-container deployment
+
+### Fixed
+- Docker build: root workspace lockfile, tsconfig.base.json in context, npm install for rollup compatibility
+- CI: GHCR push permissions, release workflow permissions
+- Lint: removed unused imports across codebase
+
+## [0.2.0] - 2026-03-09
+
+### Added
+- **CMDB (Phase 2)**: Full asset CRUD, DAG relations with cycle detection, SLA inheritance, topology graph (React Flow + dagre)
+- **Workflow Engine (Phase 3)**: Template designer, step types (form/routing/approval/condition/automatic), runtime engine
+- **Service Catalog (Phase 4)**: 3-tier model (descriptions → horizontal → vertical catalogs), asset-service links
+- **Compliance (Phase 4)**: Regulatory frameworks, requirements, compliance matrix, gap analysis
+- **Email Inbound (Phase 5)**: IMAP poller, webhook support, thread matching, auto-ticket creation
+- **Knowledge Base (Phase 7)**: Markdown articles with internal/public visibility, ticket linking
+- **Customer Portal (Phase 5)**: Separate auth, ticket view/create/comment, public KB access
+- **Dashboard (Phase 7)**: KPI cards, ticket charts (Recharts)
+- **Enterprise License**: RSA keypair validation, vertical catalogs, advanced features
+- **SLA Management**: Definitions, tier assignments, breach tracking
+- **Admin Settings**: Backend config, license management, system settings UI
+- **Customers**: Customer management with SLA assignments, clickable KPI cards
+- **Ticket Enhancements**: List view with sortable columns, preset filters, inline editing
+- **CMDB Enhancements**: Category filter buttons, asset search
+- **CI/CD**: GitHub Actions for CI, E2E tests, docs deployment
+- **Docs**: VitePress documentation site, branding assets, OpenAPI spec
+
+### Fixed
+- API response envelope handling across frontend
+- Compliance and service catalog seed data
+- E2E test stability (12 failing tests fixed)
+- Community license limit banners
+
 ## [0.1.0] - 2026-03-09
 
 ### Added
