@@ -221,8 +221,17 @@
   "kedb_field_workaround": "Workaround",
   "kedb_field_root_cause": "Root Cause",
   "kedb_field_status": "Status",
+  "create_page": {
+    "title": "Create New Ticket",
+    "section_basic": "Basic Information",
+    "section_classification": "Classification",
+    "section_assignment": "Assignment",
+    "section_rfc": "RFC Details (Change Request)"
+  },
   "rfc": {
     "title": "RFC Details",
+    "cab_required": "CAB Approval Required",
+    "cab_required_hint": "This change requires Change Advisory Board approval",
     "justification": "Justification",
     "justification_placeholder": "Why is this change necessary?",
     "risk_level": "Risk Level",

@@ -39,6 +39,7 @@ const EscalationSettingsPage = lazy(() => import('@/pages/settings/EscalationSet
 const AuditLogPage = lazy(() => import('@/pages/settings/AuditLogPage'));
 const SlaReportsPage = lazy(() => import('@/pages/SlaReportsPage'));
 const CabBoardPage = lazy(() => import('@/pages/CabBoardPage'));
+const CreateTicketPage = lazy(() => import('@/pages/CreateTicketPage'));
 const SystemSettingsPage = lazy(() => import('@/pages/settings/SystemSettingsPage'));
 
 function SettingsFallback() {
@@ -63,6 +64,7 @@ export function App() {
           <Route element={<ProtectedLayout />}>
             <Route path="/" element={<DashboardPage />} />
             <Route path="/tickets" element={<TicketBoardPage />} />
+            <Route path="/tickets/new" element={<Suspense fallback={<SettingsFallback />}><CreateTicketPage /></Suspense>} />
             <Route path="/tickets/:id" element={<TicketDetailPage />} />
             <Route path="/assets" element={<AssetsPage />} />
             <Route path="/assets/:id" element={<AssetDetailPage />} />

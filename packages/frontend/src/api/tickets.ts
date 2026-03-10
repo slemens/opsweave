@@ -133,6 +133,7 @@ export interface CreateTicketPayload {
   change_rollback_plan?: string | null;
   change_planned_start?: string | null;
   change_planned_end?: string | null;
+  cab_required?: boolean;
 }
 
 export interface UpdateTicketPayload {
