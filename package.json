@@ -1,6 +1,6 @@
 {
   "name": "opsweave",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "private": true,
   "description": "Weaving your IT operations together — asset-centric, workflow-powered ITSM platform",
   "license": "AGPL-3.0",
