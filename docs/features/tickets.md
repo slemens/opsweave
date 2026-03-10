@@ -14,6 +14,8 @@ Ticket-Nummern werden automatisch vergeben: `INC-2026-00042`.
 
 ## Kanban-Board
 
+![Ticket Board](/screenshots/ticket-board.png)
+
 Das Ticket-Board zeigt alle Tickets in fünf Spalten:
 
 - **Offen** — Neu eingegangen, noch nicht in Bearbeitung
@@ -25,6 +27,8 @@ Das Ticket-Board zeigt alle Tickets in fünf Spalten:
 Tickets können per **Drag & Drop** zwischen Spalten verschoben werden.
 
 ## Ticket-Detail
+
+![Ticket Detail](/screenshots/ticket-detail.png)
 
 Jedes Ticket hat zwei Bereiche:
 
@@ -96,6 +100,11 @@ PATCH  /api/v1/tickets/:id/status   # Status ändern
 PATCH  /api/v1/tickets/:id/assign   # Zuweisen
 GET    /api/v1/tickets/:id/comments # Kommentare
 POST   /api/v1/tickets/:id/comments # Kommentar hinzufügen
+PATCH  /api/v1/tickets/batch         # Batch-Update (max 100)
 GET    /api/v1/tickets/stats        # KPI-Statistiken
+GET    /api/v1/tickets/stats/timeline    # Zeitverlauf
+GET    /api/v1/tickets/stats/by-customer # Pro Kunde
 GET    /api/v1/tickets/board        # Board-Ansicht (Kanban)
+GET    /api/v1/tickets/categories   # Kategorien
+POST   /api/v1/tickets/categories   # Kategorie erstellen
 ```

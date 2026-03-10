@@ -3,6 +3,8 @@
 Die Configuration Management Database (CMDB) ist das Herzstück von OpsWeave.
 Assets (Configuration Items) sind die zentrale Entität — alles andere referenziert sie.
 
+![CMDB Tabellenansicht](/screenshots/cmdb-table.png)
+
 ## Asset-Typen
 
 OpsWeave unterstützt 24 Asset-Typen in 7 Kategorien:
@@ -68,6 +70,8 @@ Die Asset-Detail-Ansicht hat drei Tabs:
 **Details:** Alle Attribute, Inline-Bearbeitung, SLA-Kette
 
 **Relations:** Visuelle Graph-Darstellung (React Flow) aller abhängigen/verknüpften Assets
+
+![CMDB Topologie-Graph](/screenshots/cmdb-topology.png)
 
 **Tickets:** Alle Tickets die auf dieses Asset verweisen
 
