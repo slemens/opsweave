@@ -143,6 +143,14 @@ async function bootstrap(): Promise<void> {
   // ── API routes ─────────────────────────────────────────────
   app.use('/api/v1', apiRouter);
 
+  // ── Standalone feedback page (no auth, always available) ───
+  app.get('/feedback', (_req, res) => {
+    // In dev: __dirname = src/, in prod: __dirname = dist/
+    // The HTML file is copied alongside the compiled JS
+    const htmlPath = path.resolve(__dirname, 'modules/feedback/feedback.html');
+    res.sendFile(htmlPath);
+  });
+
   // ── Static files (single-container mode) ───────────────────
   if (config.serveStatic) {
     const staticDir = path.resolve(__dirname, config.staticPath);
