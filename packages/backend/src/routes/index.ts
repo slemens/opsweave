@@ -17,6 +17,7 @@ import { kbRouter } from '../modules/knowledge-base/kb.routes.js';
 import { emailRouter } from '../modules/email-inbound/email.routes.js';
 import { portalRouter } from '../modules/portal/portal.routes.js';
 import { settingsRouter, licenseRouter } from '../modules/settings/settings.routes.js';
+import { slaRouter } from '../modules/sla/sla.routes.js';
 
 // ─── Central API Router ────────────────────────────────────
 const apiRouter = Router();
@@ -54,6 +55,7 @@ apiRouter.use('/portal', portalRouter);
 
 protectedRouter.use('/settings', settingsRouter);
 protectedRouter.use('/license', licenseRouter);
+protectedRouter.use('/sla', slaRouter);
 
 // TODO: mount remaining module routes as they are implemented
 // protectedRouter.use('/monitoring', monitoringRouter);

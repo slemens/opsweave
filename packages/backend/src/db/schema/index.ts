@@ -59,5 +59,8 @@ export { emailInboundConfigs, emailMessages } from './email.js';
 // Knowledge Base
 export { kbArticles, kbArticleLinks } from './knowledge-base.js';
 
+// SLA Definitions & Assignments
+export { slaDefinitions, slaAssignments } from './sla.js';
+
 // System (global, no tenant_id)
 export { systemSettings } from './system.js';
