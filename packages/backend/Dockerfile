@@ -81,6 +81,9 @@ COPY --from=backend-build /build/node_modules/ ./node_modules/
 # Copy i18n locales (loaded at runtime)
 COPY --from=backend-build /build/packages/backend/src/i18n/ ./packages/backend/src/i18n/
 
+# Copy non-TS assets that tsc doesn't emit (license public key)
+COPY --from=backend-build /build/packages/backend/src/lib/license-public-key.pem ./packages/backend/dist/lib/license-public-key.pem
+
 # Create data directory for SQLite (when used in single-container mode)
 RUN mkdir -p /data && chown node:node /data
 
