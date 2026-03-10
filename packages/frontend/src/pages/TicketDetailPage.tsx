@@ -91,7 +91,7 @@ import {
   useCompleteWorkflowStep,
   useCancelWorkflowInstance,
 } from '@/api/workflows';
-import { useAssets } from '@/api/assets';
+import { AssetPickerDialog } from '@/components/AssetPickerDialog';
 import type { WorkflowInstanceFull } from '@/api/workflows';
 import { useKbArticles, useLinkArticleToTicket, useUnlinkArticleFromTicket } from '@/api/kb';
 import type { KbArticle } from '@/api/kb';
@@ -545,7 +545,7 @@ export function TicketDetailPage() {
   const { data: usersData } = useUsers();
   const { data: customersData } = useCustomers();
   const { data: categoriesData } = useCategories();
-  const { data: assetsData } = useAssets({ limit: 100 });
+  const [assetPickerOpen, setAssetPickerOpen] = useState(false);
 
   const ticket = ticketData;
   const comments = commentsData ?? [];
@@ -558,7 +558,6 @@ export function TicketDetailPage() {
   const categories = (categoriesData?.data ?? []).filter(
     (c) => c.is_active && (c.applies_to === 'all' || c.applies_to === ticket?.ticket_type),
   );
-  const assets = (assetsData as { data?: { id: string; display_name: string; name: string }[] } | undefined)?.data ?? [];
 
   // ── Knowledge Base ─────────────────────────────────────────
   const [kbSearch, setKbSearch] = useState('');
@@ -741,12 +740,12 @@ export function TicketDetailPage() {
     }
   }, [id, newCatName, createCategory, updateTicket, ticket?.ticket_type, t]);
 
-  const handleAssetChange = useCallback(async (assetId: string) => {
+  const handleAssetChange = useCallback(async (assetId: string | null) => {
     if (!id) return;
     try {
       await updateTicket.mutateAsync({
         id,
-        asset_id: assetId === '__none__' ? null : assetId,
+        asset_id: assetId,
       });
       toast.success(t('update_success'));
     } catch {
@@ -1502,24 +1501,22 @@ export function TicketDetailPage() {
 
               {/* Asset */}
               <SidebarField label={t('detail_fields.asset')}>
-                <Select
-                  value={ticket.asset_id ?? '__none__'}
-                  onValueChange={handleAssetChange}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 w-full justify-start text-xs font-normal"
+                  onClick={() => setAssetPickerOpen(true)}
                 >
-                  <SelectTrigger className="h-8 text-xs">
-                    <SelectValue placeholder={t('detail_fields.no_asset')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">
-                      <span className="text-muted-foreground italic">{t('detail_fields.no_asset')}</span>
-                    </SelectItem>
-                    {assets.map((a) => (
-                      <SelectItem key={a.id} value={a.id}>
-                        {a.display_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  {ticket.asset?.display_name ?? (
+                    <span className="text-muted-foreground italic">{t('detail_fields.no_asset')}</span>
+                  )}
+                </Button>
+                <AssetPickerDialog
+                  open={assetPickerOpen}
+                  onOpenChange={setAssetPickerOpen}
+                  currentAssetId={ticket.asset_id}
+                  onSelect={handleAssetChange}
+                />
               </SidebarField>
 
               {/* Customer */}
