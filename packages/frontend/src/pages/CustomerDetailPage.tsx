@@ -286,7 +286,7 @@ export function CustomerDetailPage() {
                   <div
                     key={assignment.id}
                     className="flex items-center justify-between p-2 rounded-lg bg-muted/40 cursor-pointer transition-colors hover:bg-muted/70"
-                    onClick={() => navigate('/settings?tab=sla')}
+                    onClick={() => navigate('/settings/sla')}
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
