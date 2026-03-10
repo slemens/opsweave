@@ -1,0 +1,16 @@
+node_modules
+.git
+.github
+docs
+scripts
+infra
+*.md
+.env*
+.vscode
+.idea
+**/*.spec.ts
+**/*.test.ts
+**/e2e/
+**/playwright.config.ts
+**/playwright-report/
+**/test-results/
