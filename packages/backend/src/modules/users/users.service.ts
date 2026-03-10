@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import { eq, and, count, like, or, asc, desc } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
@@ -6,12 +7,16 @@ import { getDb, type TypedDb } from '../../config/database.js';
 import {
   users,
   tenantUserMemberships,
+  assigneeGroups,
+  userGroupMemberships,
 } from '../../db/schema/index.js';
 import {
   NotFoundError,
   ConflictError,
   ForbiddenError,
+  ValidationError,
 } from '../../lib/errors.js';
+import logger from '../../lib/logger.js';
 import type { PaginationParams } from '@opsweave/shared';
 
 // ─── DB Helper ────────────────────────────────────────────
@@ -369,4 +374,352 @@ export function assertCanEditUser(
   if (requestUserId !== targetUserId && requestUserRole !== 'admin') {
     throw new ForbiddenError('You can only edit your own profile');
   }
+}
+
+// ─── CSV Bulk Import ─────────────────────────────────────
+
+/** Result of a single row import attempt. */
+interface ImportRowError {
+  row: number;
+  email: string;
+  message: string;
+}
+
+/** Successfully imported user (with temporary password). */
+interface ImportedUser {
+  email: string;
+  display_name: string;
+  role: string;
+  temporaryPassword: string;
+}
+
+/** Overall result of a bulk import operation. */
+export interface BulkImportResult {
+  imported: number;
+  skipped: number;
+  errors: ImportRowError[];
+  users: ImportedUser[];
+}
+
+/** Validated CSV row. */
+interface ParsedCsvRow {
+  email: string;
+  display_name: string;
+  role: 'admin' | 'manager' | 'agent' | 'viewer';
+  group?: string;
+}
+
+/**
+ * Parse a CSV string into rows of field arrays.
+ * Handles basic quoting: fields wrapped in double quotes can contain commas.
+ * Double-double-quotes ("") inside quoted fields are unescaped to a single quote.
+ */
+function parseCsv(raw: string): string[][] {
+  const lines = raw
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .split('\n')
+    .filter((line) => line.trim().length > 0);
+
+  return lines.map((line) => {
+    const fields: string[] = [];
+    let current = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i]!;
+
+      if (inQuotes) {
+        if (ch === '"') {
+          // Check for escaped quote ("")
+          if (i + 1 < line.length && line[i + 1] === '"') {
+            current += '"';
+            i++; // skip next quote
+          } else {
+            inQuotes = false;
+          }
+        } else {
+          current += ch;
+        }
+      } else {
+        if (ch === '"') {
+          inQuotes = true;
+        } else if (ch === ',') {
+          fields.push(current.trim());
+          current = '';
+        } else {
+          current += ch;
+        }
+      }
+    }
+
+    fields.push(current.trim());
+    return fields;
+  });
+}
+
+const VALID_ROLES = new Set(['admin', 'manager', 'agent', 'viewer']);
+
+/**
+ * Validate a parsed CSV row.
+ * Returns the parsed row or a string error message.
+ */
+function validateRow(
+  fields: string[],
+  headerMap: Map<string, number>,
+): ParsedCsvRow | string {
+  const emailIdx = headerMap.get('email');
+  const nameIdx = headerMap.get('display_name');
+  const roleIdx = headerMap.get('role');
+  const groupIdx = headerMap.get('group');
+
+  if (emailIdx === undefined || nameIdx === undefined) {
+    return 'Missing required columns: email, display_name';
+  }
+
+  const email = fields[emailIdx]?.trim() ?? '';
+  const displayName = fields[nameIdx]?.trim() ?? '';
+  const roleRaw = (roleIdx !== undefined ? fields[roleIdx]?.trim() : '') ?? '';
+  const group = (groupIdx !== undefined ? fields[groupIdx]?.trim() : '') ?? '';
+
+  // Validate email (basic pattern)
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return `Invalid email: "${email}"`;
+  }
+
+  if (!displayName || displayName.length < 2) {
+    return `Display name must be at least 2 characters: "${displayName}"`;
+  }
+
+  const role = roleRaw || 'agent';
+  if (!VALID_ROLES.has(role)) {
+    return `Invalid role: "${role}" (must be admin, manager, agent, or viewer)`;
+  }
+
+  return {
+    email,
+    display_name: displayName,
+    role: role as ParsedCsvRow['role'],
+    group: group || undefined,
+  };
+}
+
+/**
+ * Generate a cryptographically random password.
+ */
+function generatePassword(length: number = 16): string {
+  return crypto.randomBytes(length).toString('base64url').slice(0, length);
+}
+
+/**
+ * Bulk-import users from a parsed CSV string.
+ *
+ * - Validates each row with Zod-like checks
+ * - Checks email uniqueness
+ * - Resolves group names to IDs (tenant-scoped)
+ * - Generates random passwords and hashes them
+ * - Aborts if more than 5 errors are encountered
+ * - All inserts happen in a single transaction
+ */
+export async function importUsers(
+  tenantId: string,
+  csvRaw: string,
+): Promise<BulkImportResult> {
+  const d = db();
+
+  // Parse CSV
+  const rows = parseCsv(csvRaw);
+
+  if (rows.length < 2) {
+    throw new ValidationError('CSV must contain a header row and at least one data row');
+  }
+
+  // Build header map from first row
+  const headerRow = rows[0]!;
+  const headerMap = new Map<string, number>();
+  for (let i = 0; i < headerRow.length; i++) {
+    const col = headerRow[i]!.toLowerCase().trim();
+    headerMap.set(col, i);
+  }
+
+  if (!headerMap.has('email') || !headerMap.has('display_name')) {
+    throw new ValidationError(
+      'CSV header must include at least "email" and "display_name" columns',
+    );
+  }
+
+  const dataRows = rows.slice(1);
+  const errors: ImportRowError[] = [];
+  const validRows: { row: number; data: ParsedCsvRow }[] = [];
+
+  // Validate all rows first
+  for (let i = 0; i < dataRows.length; i++) {
+    const fields = dataRows[i]!;
+    const result = validateRow(fields, headerMap);
+
+    if (typeof result === 'string') {
+      errors.push({ row: i + 2, email: fields[headerMap.get('email') ?? 0] ?? '', message: result });
+    } else {
+      validRows.push({ row: i + 2, data: result });
+    }
+
+    if (errors.length > 5) {
+      throw new ValidationError(
+        `Too many errors in CSV (${errors.length}), aborting import`,
+        { errors: errors as unknown as Record<string, unknown> },
+      );
+    }
+  }
+
+  if (errors.length > 5) {
+    throw new ValidationError(
+      `Too many errors in CSV (${errors.length}), aborting import`,
+      { errors: errors as unknown as Record<string, unknown> },
+    );
+  }
+
+  // Pre-fetch existing emails to check uniqueness
+  const existingEmails = new Set<string>();
+  const existingUsers = await d
+    .select({ email: users.email })
+    .from(users);
+  for (const row of existingUsers) {
+    existingEmails.add(row.email.toLowerCase());
+  }
+
+  // Pre-fetch groups in this tenant for name-based lookup
+  const tenantGroups = await d
+    .select({ id: assigneeGroups.id, name: assigneeGroups.name })
+    .from(assigneeGroups)
+    .where(eq(assigneeGroups.tenant_id, tenantId));
+
+  const groupNameMap = new Map<string, string>();
+  for (const g of tenantGroups) {
+    groupNameMap.set(g.name.toLowerCase(), g.id);
+  }
+
+  // Process valid rows — check uniqueness, resolve groups
+  const toInsert: {
+    row: number;
+    data: ParsedCsvRow;
+    password: string;
+    groupId: string | null;
+  }[] = [];
+
+  for (const { row, data } of validRows) {
+    if (existingEmails.has(data.email.toLowerCase())) {
+      errors.push({ row, email: data.email, message: 'Email already exists' });
+      if (errors.length > 5) {
+        throw new ValidationError(
+          `Too many errors in CSV (${errors.length}), aborting import`,
+          { errors: errors as unknown as Record<string, unknown> },
+        );
+      }
+      continue;
+    }
+
+    let groupId: string | null = null;
+    if (data.group) {
+      groupId = groupNameMap.get(data.group.toLowerCase()) ?? null;
+      if (!groupId) {
+        errors.push({
+          row,
+          email: data.email,
+          message: `Group not found: "${data.group}"`,
+        });
+        if (errors.length > 5) {
+          throw new ValidationError(
+            `Too many errors in CSV (${errors.length}), aborting import`,
+            { errors: errors as unknown as Record<string, unknown> },
+          );
+        }
+        continue;
+      }
+    }
+
+    // Mark email as taken (to catch duplicates within the CSV itself)
+    existingEmails.add(data.email.toLowerCase());
+
+    toInsert.push({
+      row,
+      data,
+      password: generatePassword(),
+      groupId,
+    });
+  }
+
+  if (errors.length > 5) {
+    throw new ValidationError(
+      `Too many errors in CSV (${errors.length}), aborting import`,
+      { errors: errors as unknown as Record<string, unknown> },
+    );
+  }
+
+  if (toInsert.length === 0) {
+    return { imported: 0, skipped: errors.length, errors, users: [] };
+  }
+
+  // Hash all passwords in parallel
+  const hashedPasswords = await Promise.all(
+    toInsert.map((item) => bcrypt.hash(item.password, BCRYPT_ROUNDS)),
+  );
+
+  const now = new Date().toISOString();
+  const importedUsers: ImportedUser[] = [];
+
+  // Insert all users in a transaction
+  await d.transaction(async (tx) => {
+    for (let i = 0; i < toInsert.length; i++) {
+      const item = toInsert[i]!;
+      const passwordHash = hashedPasswords[i]!;
+      const userId = uuidv4();
+
+      await tx.insert(users).values({
+        id: userId,
+        email: item.data.email,
+        display_name: item.data.display_name,
+        password_hash: passwordHash,
+        auth_provider: 'local',
+        language: 'de',
+        is_active: 1,
+        is_superadmin: 0,
+        created_at: now,
+      });
+
+      await tx.insert(tenantUserMemberships).values({
+        tenant_id: tenantId,
+        user_id: userId,
+        role: item.data.role,
+        is_default: 1,
+      });
+
+      if (item.groupId) {
+        await tx.insert(userGroupMemberships).values({
+          user_id: userId,
+          group_id: item.groupId,
+          tenant_id: tenantId,
+          role_in_group: 'member',
+        });
+      }
+
+      importedUsers.push({
+        email: item.data.email,
+        display_name: item.data.display_name,
+        role: item.data.role,
+        temporaryPassword: item.password,
+      });
+    }
+  });
+
+  logger.info(
+    { tenantId, imported: importedUsers.length, skipped: errors.length },
+    'Bulk user import completed',
+  );
+
+  return {
+    imported: importedUsers.length,
+    skipped: errors.length,
+    errors,
+    users: importedUsers,
+  };
 }

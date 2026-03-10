@@ -92,6 +92,23 @@
     "members": "Members",
     "save": "Save"
   },
+  "users": {
+    "import": {
+      "title": "Import Users",
+      "button": "CSV Import",
+      "dropzone": "Drag CSV file here or click to browse",
+      "dropzone_hint": "Format: email, display_name, role, group",
+      "preview": "Preview",
+      "template": "Download Template",
+      "importing": "Importing...",
+      "success": "{{count}} user(s) imported successfully",
+      "errors_title": "Errors",
+      "error_line": "Line {{line}} ({{email}}): {{reason}}",
+      "credentials_title": "Temporary Passwords",
+      "credentials_hint": "Please save — passwords are shown only once",
+      "aborted": "Import aborted due to too many errors"
+    }
+  },
   "groups": {
     "title": "Groups",
     "create": "Create Group",
