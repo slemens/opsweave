@@ -38,7 +38,8 @@ COPY packages/frontend/package.json ./packages/frontend/package.json
 RUN mkdir -p packages/backend && \
     echo '{"name":"@opsweave/backend","version":"0.1.0","private":true}' > packages/backend/package.json
 
-RUN npm ci --ignore-scripts
+# Use npm ci without --ignore-scripts so rollup native bindings are installed
+RUN npm ci
 
 # Copy tsconfig.base.json (extended by frontend tsconfigs)
 COPY tsconfig.base.json ./tsconfig.base.json
