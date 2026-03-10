@@ -1,7 +1,7 @@
 openapi: "3.0.3"
 info:
   title: OpsWeave API
-  version: "0.1.0"
+  version: "0.3.2"
   description: >-
     OpsWeave is a modular, asset-centric open-source IT Service Management system.
     It provides ITIL-conformant processes (Incident, Problem, Change), a CMDB,
@@ -28,6 +28,14 @@ tags:
   - name: Service Catalog
   - name: Compliance
   - name: Monitoring
+  - name: SLA
+  - name: Customers
+  - name: Knowledge Base
+  - name: Email
+  - name: Portal
+  - name: License
+  - name: Settings
+  - name: System
   - name: Email
   - name: Knowledge Base
   - name: Customer Portal

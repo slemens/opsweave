@@ -79,6 +79,30 @@ Alle Daten sind automatisch auf den Tenant des eingeloggten Users beschränkt.
 | `GET` | `/auth/me` | Eigenes Profil + Tenants |
 | `POST` | `/auth/switch-tenant` | Aktiven Tenant wechseln |
 
+### Users
+
+| Methode | Pfad | Beschreibung |
+|---------|------|--------------|
+| `GET` | `/users` | Benutzerliste |
+| `POST` | `/users` | Benutzer erstellen |
+| `GET` | `/users/:id` | Benutzer Detail |
+| `PUT` | `/users/:id` | Benutzer aktualisieren |
+| `DELETE` | `/users/:id` | Benutzer deaktivieren |
+| `POST` | `/users/import` | Benutzer aus CSV importieren |
+
+### Groups
+
+| Methode | Pfad | Beschreibung |
+|---------|------|--------------|
+| `GET` | `/groups` | Gruppenliste |
+| `POST` | `/groups` | Gruppe erstellen |
+| `GET` | `/groups/:id` | Gruppe Detail |
+| `PUT` | `/groups/:id` | Gruppe aktualisieren |
+| `DELETE` | `/groups/:id` | Gruppe löschen |
+| `GET` | `/groups/:id/members` | Mitglieder |
+| `POST` | `/groups/:id/members` | Mitglied hinzufügen |
+| `DELETE` | `/groups/:id/members/:uid` | Mitglied entfernen |
+
 ### Tickets
 
 | Methode | Pfad | Beschreibung |
@@ -92,8 +116,13 @@ Alle Daten sind automatisch auf den Tenant des eingeloggten Users beschränkt.
 | `GET` | `/tickets/:id/comments` | Kommentare |
 | `POST` | `/tickets/:id/comments` | Kommentar hinzufügen |
 | `GET` | `/tickets/:id/history` | Änderungsprotokoll |
+| `PATCH` | `/tickets/batch` | Batch-Update (max 100 Tickets) |
 | `GET` | `/tickets/stats` | Statistiken |
+| `GET` | `/tickets/stats/timeline` | Zeitverlauf-Statistiken |
+| `GET` | `/tickets/stats/by-customer` | Statistiken pro Kunde |
 | `GET` | `/tickets/board` | Kanban-Board-Daten |
+| `GET/POST` | `/tickets/categories` | Ticket-Kategorien |
+| `PUT/DELETE` | `/tickets/categories/:id` | Kategorie bearbeiten/löschen |
 
 ### Assets
 
@@ -174,6 +203,40 @@ Alle Daten sind automatisch auf den Tenant des eingeloggten Users beschränkt.
 | `POST` | `/portal/tickets/:id/comments` | Kommentar |
 | `GET` | `/portal/kb` | Öffentliche KB-Artikel |
 
+### SLA
+
+| Methode | Pfad | Beschreibung |
+|---------|------|--------------|
+| `GET` | `/sla/definitions` | Alle SLA-Definitionen |
+| `GET` | `/sla/definitions/:id` | SLA-Definition Detail |
+| `POST` | `/sla/definitions` | SLA-Definition erstellen |
+| `PUT` | `/sla/definitions/:id` | SLA-Definition aktualisieren |
+| `DELETE` | `/sla/definitions/:id` | SLA-Definition löschen |
+| `GET` | `/sla/assignments` | Alle SLA-Zuweisungen |
+| `POST` | `/sla/assignments` | SLA-Zuweisung erstellen |
+| `DELETE` | `/sla/assignments/:id` | SLA-Zuweisung entfernen |
+| `GET` | `/sla/resolve` | SLA für Asset/Kunde ermitteln |
+
+### Kunden
+
+| Methode | Pfad | Beschreibung |
+|---------|------|--------------|
+| `GET` | `/customers` | Kundenliste |
+| `POST` | `/customers` | Kunde erstellen |
+| `GET` | `/customers/:id` | Kunde Detail |
+| `PUT` | `/customers/:id` | Kunde aktualisieren |
+| `DELETE` | `/customers/:id` | Kunde deaktivieren |
+| `GET` | `/customers/:id/overview` | Kundenübersicht (Tickets, Assets, SLAs) |
+
+### Einstellungen
+
+| Methode | Pfad | Beschreibung |
+|---------|------|--------------|
+| `GET` | `/settings` | Alle Einstellungen |
+| `PUT` | `/settings/:key` | Einstellung ändern |
+| `DELETE` | `/settings/:key` | Einstellung löschen |
+| `GET` | `/settings/runtime` | Runtime-Konfiguration |
+
 ### System
 
 | Methode | Pfad | Beschreibung |
@@ -182,3 +245,4 @@ Alle Daten sind automatisch auf den Tenant des eingeloggten Users beschränkt.
 | `GET` | `/system/info` | App-Info (Version, DB) |
 | `GET` | `/license` | Lizenz-Status |
 | `POST` | `/license/activate` | Enterprise-Key aktivieren |
+| `DELETE` | `/license` | Lizenz deaktivieren |
