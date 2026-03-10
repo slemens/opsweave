@@ -119,16 +119,20 @@
   },
   "customer_detail": {
     "sla_breaches": "SLA Breaches",
+    "sla_agreements": "SLA Agreements",
     "portal_users": "Portal Users",
     "response_time": "Response Time",
     "resolution_time": "Resolution Time",
-    "no_sla": "No customer-specific SLA assigned — tenant default applies.",
+    "no_sla": "No SLA agreements assigned — tenant default applies.",
     "no_vertical_catalogs": "No vertical catalogs assigned.",
     "no_assets": "No assets assigned.",
     "no_tickets": "No tickets available.",
     "open": "open",
     "active": "Active",
     "inactive": "Inactive",
-    "load_error": "Failed to load data"
+    "load_error": "Failed to load data",
+    "scope_customer": "Customer-wide",
+    "scope_service": "Service",
+    "scope_asset": "Asset"
   }
 }

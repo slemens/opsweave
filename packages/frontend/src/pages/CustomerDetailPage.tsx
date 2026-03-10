@@ -7,7 +7,6 @@ import {
   Server,
   Ticket,
   AlertTriangle,
-  Clock,
   ShieldCheck,
   BookOpen,
   Users,
@@ -19,7 +18,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -50,6 +48,14 @@ const statusColors: Record<string, string> = {
   resolved: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
   closed: 'bg-slate-100 text-slate-600 dark:bg-slate-800/60 dark:text-slate-300',
   waiting: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
+};
+
+const slaTierColors: Record<string, string> = {
+  platinum: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300',
+  gold: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+  silver: 'bg-slate-100 text-slate-600 dark:bg-slate-800/60 dark:text-slate-300',
+  bronze: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300',
+  none: 'bg-gray-100 text-gray-500 dark:bg-gray-800/60 dark:text-gray-400',
 };
 
 function formatMinutes(minutes: number): string {
@@ -85,7 +91,7 @@ export function CustomerDetailPage() {
   if (isError || !overview) {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-3">
-        <p className="text-sm text-red-400">{t('common:load_error')}</p>
+        <p className="text-sm text-red-400">{t('common:customer_detail.load_error')}</p>
         <Button variant="outline" size="sm" onClick={() => navigate('/customers')}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           {t('common:actions.back')}
@@ -94,7 +100,7 @@ export function CustomerDetailPage() {
     );
   }
 
-  const { customer, stats, assets, recent_tickets, sla, vertical_catalogs } = overview;
+  const { customer, stats, assets, recent_tickets, sla_assignments, vertical_catalogs } = overview;
 
   return (
     <div className="space-y-6">
@@ -154,34 +160,42 @@ export function CustomerDetailPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* SLA */}
+        {/* SLA Assignments */}
         <Card>
           <CardHeader className="py-3">
             <CardTitle className="text-sm flex items-center gap-2">
               <ShieldCheck className="h-4 w-4" />
-              SLA
+              {t('common:customer_detail.sla_agreements')}
             </CardTitle>
           </CardHeader>
           <CardContent className="py-0 pb-4">
-            {sla.definition ? (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold">{sla.definition.name}</span>
-                  <Badge variant="outline" className="text-xs">{sla.definition.business_hours}</Badge>
-                </div>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p className="text-xs text-muted-foreground">{t('common:customer_detail.response_time')}</p>
-                    <p className="font-medium">{formatMinutes(sla.definition.response_time_minutes)}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">{t('common:customer_detail.resolution_time')}</p>
-                    <p className="font-medium">{formatMinutes(sla.definition.resolution_time_minutes)}</p>
-                  </div>
-                </div>
-              </div>
-            ) : (
+            {sla_assignments.length === 0 ? (
               <p className="text-sm text-muted-foreground py-2">{t('common:customer_detail.no_sla')}</p>
+            ) : (
+              <div className="space-y-2">
+                {sla_assignments.map((assignment) => (
+                  <div key={assignment.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/40">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">{assignment.definition.name}</span>
+                        <Badge variant="outline" className="text-xs shrink-0">
+                          {assignment.definition.business_hours}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {assignment.scope === 'customer' && t('common:customer_detail.scope_customer')}
+                        {assignment.scope === 'customer_service' && `${t('common:customer_detail.scope_service')}: ${assignment.scope_label}`}
+                        {assignment.scope === 'asset' && `${t('common:customer_detail.scope_asset')}: ${assignment.scope_label}`}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {t('common:customer_detail.response_time')}: {formatMinutes(assignment.definition.response_time_minutes)}
+                        {' / '}
+                        {t('common:customer_detail.resolution_time')}: {formatMinutes(assignment.definition.resolution_time_minutes)}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
           </CardContent>
         </Card>
@@ -239,7 +253,7 @@ export function CustomerDetailPage() {
                   <TableHead className="text-xs">{t('cmdb:fields.name')}</TableHead>
                   <TableHead className="text-xs">{t('cmdb:fields.type')}</TableHead>
                   <TableHead className="text-xs">{t('cmdb:fields.status')}</TableHead>
-                  <TableHead className="text-xs">SLA</TableHead>
+                  <TableHead className="text-xs">{t('cmdb:fields.sla_tier')}</TableHead>
                   <TableHead className="text-xs w-10" />
                 </TableRow>
               </TableHeader>
@@ -247,13 +261,17 @@ export function CustomerDetailPage() {
                 {assets.map((asset) => (
                   <TableRow key={asset.id} className="cursor-pointer hover:bg-muted/40" onClick={() => navigate(`/assets/${asset.id}`)}>
                     <TableCell className="text-sm font-medium">{asset.display_name}</TableCell>
-                    <TableCell className="text-xs">{asset.asset_type}</TableCell>
+                    <TableCell className="text-xs">{t(`cmdb:types.${asset.asset_type}`)}</TableCell>
                     <TableCell>
                       <Badge variant={asset.status === 'active' ? 'default' : 'secondary'} className="text-xs">
-                        {asset.status}
+                        {t(`cmdb:statuses.${asset.status}`)}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-xs">{asset.sla_tier}</TableCell>
+                    <TableCell>
+                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${slaTierColors[asset.sla_tier] ?? ''}`}>
+                        {t(`cmdb:sla_tiers.${asset.sla_tier}`)}
+                      </span>
+                    </TableCell>
                     <TableCell>
                       <ExternalLink className="h-3 w-3 text-muted-foreground" />
                     </TableCell>
@@ -287,7 +305,7 @@ export function CustomerDetailPage() {
                   <TableHead className="text-xs">{t('tickets:fields.status')}</TableHead>
                   <TableHead className="text-xs">{t('tickets:fields.priority')}</TableHead>
                   <TableHead className="text-xs">SLA</TableHead>
-                  <TableHead className="text-xs">{t('common:created_at')}</TableHead>
+                  <TableHead className="text-xs">{t('common:fields.created_at')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -297,12 +315,12 @@ export function CustomerDetailPage() {
                     <TableCell className="text-sm max-w-[200px] truncate">{ticket.title}</TableCell>
                     <TableCell>
                       <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusColors[ticket.status] ?? ''}`}>
-                        {ticket.status}
+                        {t(`tickets:statuses.${ticket.status}`)}
                       </span>
                     </TableCell>
                     <TableCell>
                       <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${priorityColors[ticket.priority] ?? ''}`}>
-                        {ticket.priority}
+                        {t(`tickets:priorities.${ticket.priority}`)}
                       </span>
                     </TableCell>
                     <TableCell>
