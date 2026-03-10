@@ -219,5 +219,45 @@
   "kedb_field_symptom": "Symptoms",
   "kedb_field_workaround": "Workaround",
   "kedb_field_root_cause": "Root Cause",
-  "kedb_field_status": "Status"
+  "kedb_field_status": "Status",
+  "rfc": {
+    "title": "RFC Details",
+    "justification": "Justification",
+    "justification_placeholder": "Why is this change necessary?",
+    "risk_level": "Risk Level",
+    "risk_likelihood": "Likelihood",
+    "risk_impact": "Impact",
+    "risk_matrix_title": "Risk Assessment",
+    "implementation": "Implementation Plan",
+    "implementation_placeholder": "Describe the planned implementation steps…",
+    "rollback_plan": "Rollback Plan",
+    "rollback_placeholder": "Describe the plan to reverse the change…",
+    "planned_start": "Planned Start",
+    "planned_end": "Planned End",
+    "actual_start": "Actual Start",
+    "actual_end": "Actual End",
+    "risk_levels": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "critical": "Critical"
+    },
+    "likelihoods": {
+      "unlikely": "Unlikely",
+      "possible": "Possible",
+      "likely": "Likely",
+      "certain": "Certain"
+    },
+    "impacts": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "critical": "Critical"
+    }
+  },
+  "major_incident": {
+    "banner": "MAJOR INCIDENT",
+    "commander": "Incident Commander",
+    "no_commander": "No Incident Commander"
+  }
 }

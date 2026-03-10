@@ -33,6 +33,9 @@ import {
   EMAIL_PROVIDERS,
   KB_VISIBILITIES,
   KB_ARTICLE_STATUSES,
+  CHANGE_RISK_LEVELS,
+  CHANGE_RISK_LIKELIHOODS,
+  CHANGE_RISK_IMPACTS,
 } from '../constants/index.js';
 
 // ---------------------------------------------------------------------------
@@ -218,6 +221,15 @@ export const createTicketSchema = z.object({
   parent_ticket_id: uuidSchema.nullable().default(null),
   source: z.enum(TICKET_SOURCES).default('manual'),
   root_cause: z.string().max(50000).nullable().default(null),
+  // Change-specific RFC fields
+  change_justification: z.string().max(50000).nullable().default(null),
+  change_risk_level: z.enum(CHANGE_RISK_LEVELS).nullable().default(null),
+  change_risk_likelihood: z.enum(CHANGE_RISK_LIKELIHOODS).nullable().default(null),
+  change_risk_impact: z.enum(CHANGE_RISK_IMPACTS).nullable().default(null),
+  change_implementation: z.string().max(50000).nullable().default(null),
+  change_rollback_plan: z.string().max(50000).nullable().default(null),
+  change_planned_start: z.string().nullable().default(null),
+  change_planned_end: z.string().nullable().default(null),
 });
 
 export type CreateTicketInput = z.infer<typeof createTicketSchema>;
@@ -239,6 +251,18 @@ export const updateTicketSchema = z.object({
   sla_tier: z.enum(SLA_TIERS).nullable().optional(),
   root_cause: z.string().max(50000).nullable().optional(),
   known_error_id: uuidSchema.nullable().optional(),
+  // Change-specific RFC fields
+  change_justification: z.string().max(50000).nullable().optional(),
+  change_risk_level: z.enum(CHANGE_RISK_LEVELS).nullable().optional(),
+  change_risk_likelihood: z.enum(CHANGE_RISK_LIKELIHOODS).nullable().optional(),
+  change_risk_impact: z.enum(CHANGE_RISK_IMPACTS).nullable().optional(),
+  change_implementation: z.string().max(50000).nullable().optional(),
+  change_rollback_plan: z.string().max(50000).nullable().optional(),
+  change_planned_start: z.string().nullable().optional(),
+  change_planned_end: z.string().nullable().optional(),
+  change_actual_start: z.string().nullable().optional(),
+  change_actual_end: z.string().nullable().optional(),
+  incident_commander_id: uuidSchema.nullable().optional(),
 });
 
 export type UpdateTicketInput = z.infer<typeof updateTicketSchema>;

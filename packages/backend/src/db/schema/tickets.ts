@@ -64,6 +64,18 @@ export const tickets = sqliteTable(
     sla_paused_total: integer('sla_paused_total').notNull().default(0), // cumulative pause seconds
     root_cause: text('root_cause'),               // only for ticket_type='problem'
     known_error_id: text('known_error_id'),        // FK → knownErrors, only for incidents
+    // Change-specific RFC fields (ticket_type='change' only)
+    change_justification: text('change_justification'),
+    change_risk_level: text('change_risk_level'),         // low, medium, high, critical
+    change_risk_likelihood: text('change_risk_likelihood'), // unlikely, possible, likely, certain
+    change_risk_impact: text('change_risk_impact'),       // low, medium, high, critical
+    change_implementation: text('change_implementation'),
+    change_rollback_plan: text('change_rollback_plan'),
+    change_planned_start: text('change_planned_start'),
+    change_planned_end: text('change_planned_end'),
+    change_actual_start: text('change_actual_start'),
+    change_actual_end: text('change_actual_end'),
+    incident_commander_id: text('incident_commander_id').references(() => users.id),
     parent_ticket_id: text('parent_ticket_id'),
     source: text('source').notNull().default('manual'),
     created_at: text('created_at').notNull(),

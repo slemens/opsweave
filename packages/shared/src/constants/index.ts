@@ -64,6 +64,31 @@ export const TICKET_SUBTYPES = [
 export type TicketSubtypeConst = (typeof TICKET_SUBTYPES)[number];
 
 // ---------------------------------------------------------------------------
+// Change Risk Assessment
+// ---------------------------------------------------------------------------
+
+export const CHANGE_RISK_LEVELS = ['low', 'medium', 'high', 'critical'] as const;
+export type ChangeRiskLevelConst = (typeof CHANGE_RISK_LEVELS)[number];
+
+export const CHANGE_RISK_LIKELIHOODS = ['unlikely', 'possible', 'likely', 'certain'] as const;
+export type ChangeRiskLikelihoodConst = (typeof CHANGE_RISK_LIKELIHOODS)[number];
+
+export const CHANGE_RISK_IMPACTS = ['low', 'medium', 'high', 'critical'] as const;
+export type ChangeRiskImpactConst = (typeof CHANGE_RISK_IMPACTS)[number];
+
+// Rows = Likelihood, Columns = Impact → Risk Level
+export const CHANGE_RISK_MATRIX: Record<string, Record<string, ChangeRiskLevelConst>> = {
+  unlikely: { low: 'low',    medium: 'low',    high: 'medium',   critical: 'medium' },
+  possible: { low: 'low',    medium: 'medium', high: 'high',     critical: 'high' },
+  likely:   { low: 'medium', medium: 'high',   high: 'high',     critical: 'critical' },
+  certain:  { low: 'medium', medium: 'high',   high: 'critical', critical: 'critical' },
+};
+
+export function calculateChangeRisk(likelihood: string, impact: string): ChangeRiskLevelConst {
+  return CHANGE_RISK_MATRIX[likelihood]?.[impact] ?? 'medium';
+}
+
+// ---------------------------------------------------------------------------
 // Asset Constants
 // ---------------------------------------------------------------------------
 
