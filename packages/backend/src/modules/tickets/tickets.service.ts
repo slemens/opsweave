@@ -18,7 +18,7 @@ import {
   knownErrors,
 } from '../../db/schema/index.js';
 import { NotFoundError, ValidationError, ConflictError } from '../../lib/errors.js';
-import { TICKET_NUMBER_PREFIXES, TICKET_STATUSES, calculatePriority } from '@opsweave/shared';
+import { TICKET_NUMBER_PREFIXES, TICKET_STATUSES, calculatePriority, calculateChangeRisk } from '@opsweave/shared';
 import type { TicketFilterParams, CreateTicketInput, UpdateTicketInput } from '@opsweave/shared';
 
 // ─── DB Helper ────────────────────────────────────────────
@@ -223,6 +223,17 @@ export async function listTickets(
       sla_paused_total: tickets.sla_paused_total,
       root_cause: tickets.root_cause,
       known_error_id: tickets.known_error_id,
+      change_justification: tickets.change_justification,
+      change_risk_level: tickets.change_risk_level,
+      change_risk_likelihood: tickets.change_risk_likelihood,
+      change_risk_impact: tickets.change_risk_impact,
+      change_implementation: tickets.change_implementation,
+      change_rollback_plan: tickets.change_rollback_plan,
+      change_planned_start: tickets.change_planned_start,
+      change_planned_end: tickets.change_planned_end,
+      change_actual_start: tickets.change_actual_start,
+      change_actual_end: tickets.change_actual_end,
+      incident_commander_id: tickets.incident_commander_id,
       parent_ticket_id: tickets.parent_ticket_id,
       source: tickets.source,
       created_at: tickets.created_at,
@@ -274,6 +285,17 @@ export async function listTickets(
     sla_paused_total: row.sla_paused_total,
     root_cause: row.root_cause,
     known_error_id: row.known_error_id,
+    change_justification: row.change_justification,
+    change_risk_level: row.change_risk_level,
+    change_risk_likelihood: row.change_risk_likelihood,
+    change_risk_impact: row.change_risk_impact,
+    change_implementation: row.change_implementation,
+    change_rollback_plan: row.change_rollback_plan,
+    change_planned_start: row.change_planned_start,
+    change_planned_end: row.change_planned_end,
+    change_actual_start: row.change_actual_start,
+    change_actual_end: row.change_actual_end,
+    incident_commander_id: row.incident_commander_id,
     parent_ticket_id: row.parent_ticket_id,
     source: row.source,
     created_at: row.created_at,
@@ -327,6 +349,17 @@ export async function getTicket(
       sla_paused_total: tickets.sla_paused_total,
       root_cause: tickets.root_cause,
       known_error_id: tickets.known_error_id,
+      change_justification: tickets.change_justification,
+      change_risk_level: tickets.change_risk_level,
+      change_risk_likelihood: tickets.change_risk_likelihood,
+      change_risk_impact: tickets.change_risk_impact,
+      change_implementation: tickets.change_implementation,
+      change_rollback_plan: tickets.change_rollback_plan,
+      change_planned_start: tickets.change_planned_start,
+      change_planned_end: tickets.change_planned_end,
+      change_actual_start: tickets.change_actual_start,
+      change_actual_end: tickets.change_actual_end,
+      incident_commander_id: tickets.incident_commander_id,
       parent_ticket_id: tickets.parent_ticket_id,
       source: tickets.source,
       created_at: tickets.created_at,
@@ -422,6 +455,17 @@ export async function getTicket(
     sla_paused_total: row.sla_paused_total,
     root_cause: row.root_cause,
     known_error_id: row.known_error_id,
+    change_justification: row.change_justification,
+    change_risk_level: row.change_risk_level,
+    change_risk_likelihood: row.change_risk_likelihood,
+    change_risk_impact: row.change_risk_impact,
+    change_implementation: row.change_implementation,
+    change_rollback_plan: row.change_rollback_plan,
+    change_planned_start: row.change_planned_start,
+    change_planned_end: row.change_planned_end,
+    change_actual_start: row.change_actual_start,
+    change_actual_end: row.change_actual_end,
+    incident_commander_id: row.incident_commander_id,
     parent_ticket_id: row.parent_ticket_id,
     source: row.source,
     created_at: row.created_at,
@@ -482,6 +526,19 @@ export async function createTicket(
   const priority = (impact && urgency)
     ? calculatePriority(impact, urgency)
     : (data.priority ?? 'medium');
+
+  // Auto-calculate change risk level
+  let changeRiskLevel = data.change_risk_level ?? null;
+  if (data.ticket_type === 'change' && data.change_risk_likelihood && data.change_risk_impact) {
+    changeRiskLevel = calculateChangeRisk(data.change_risk_likelihood, data.change_risk_impact);
+  }
+
+  // Validate change planned dates
+  if (data.change_planned_start && data.change_planned_end) {
+    if (new Date(data.change_planned_end) <= new Date(data.change_planned_start)) {
+      throw new ValidationError('change_planned_end must be after change_planned_start');
+    }
+  }
 
   // SLA-Vererbung: falls asset_id gesetzt → effektives SLA-Tier aus Asset-Hierarchie ableiten.
   // Das Ticket hat kein eigenes sla_tier-Eingabefeld; der Wert wird immer vom Asset geerbt.
@@ -545,6 +602,15 @@ export async function createTicket(
       category_id: data.category_id ?? null,
       parent_ticket_id: data.parent_ticket_id ?? null,
       root_cause: data.ticket_type === 'problem' ? (data.root_cause ?? null) : null,
+      // Change-specific RFC fields
+      change_justification: data.ticket_type === 'change' ? (data.change_justification ?? null) : null,
+      change_risk_level: data.ticket_type === 'change' ? (changeRiskLevel ?? null) : null,
+      change_risk_likelihood: data.ticket_type === 'change' ? (data.change_risk_likelihood ?? null) : null,
+      change_risk_impact: data.ticket_type === 'change' ? (data.change_risk_impact ?? null) : null,
+      change_implementation: data.ticket_type === 'change' ? (data.change_implementation ?? null) : null,
+      change_rollback_plan: data.ticket_type === 'change' ? (data.change_rollback_plan ?? null) : null,
+      change_planned_start: data.ticket_type === 'change' ? (data.change_planned_start ?? null) : null,
+      change_planned_end: data.ticket_type === 'change' ? (data.change_planned_end ?? null) : null,
       sla_tier: effectiveSlaTier ?? null,
       sla_response_due: slaResponseDue,
       sla_resolve_due: slaResolveDue,
@@ -621,6 +687,17 @@ export async function updateTicket(
     { key: 'sla_tier', dbKey: 'sla_tier' },
     { key: 'root_cause', dbKey: 'root_cause' },
     { key: 'known_error_id', dbKey: 'known_error_id' },
+    { key: 'change_justification', dbKey: 'change_justification' },
+    { key: 'change_risk_level', dbKey: 'change_risk_level' },
+    { key: 'change_risk_likelihood', dbKey: 'change_risk_likelihood' },
+    { key: 'change_risk_impact', dbKey: 'change_risk_impact' },
+    { key: 'change_implementation', dbKey: 'change_implementation' },
+    { key: 'change_rollback_plan', dbKey: 'change_rollback_plan' },
+    { key: 'change_planned_start', dbKey: 'change_planned_start' },
+    { key: 'change_planned_end', dbKey: 'change_planned_end' },
+    { key: 'change_actual_start', dbKey: 'change_actual_start' },
+    { key: 'change_actual_end', dbKey: 'change_actual_end' },
+    { key: 'incident_commander_id', dbKey: 'incident_commander_id' },
   ];
 
   const historyPromises: Promise<void>[] = [];
@@ -666,6 +743,31 @@ export async function updateTicket(
           ),
         );
       }
+    }
+  }
+
+  // Auto-calculate change risk level from Likelihood × Impact
+  if (data.change_risk_likelihood !== undefined || data.change_risk_impact !== undefined) {
+    const newLikelihood = (data.change_risk_likelihood !== undefined ? data.change_risk_likelihood : existing.change_risk_likelihood) as string | null;
+    const newImpact = (data.change_risk_impact !== undefined ? data.change_risk_impact : existing.change_risk_impact) as string | null;
+    if (newLikelihood && newImpact) {
+      const calculatedRisk = calculateChangeRisk(newLikelihood, newImpact);
+      const oldRisk = updateSet['change_risk_level'] ?? existing.change_risk_level;
+      if (String(oldRisk ?? '') !== calculatedRisk) {
+        updateSet['change_risk_level'] = calculatedRisk;
+        historyPromises.push(
+          recordHistory(tenantId, ticketId, 'change_risk_level', oldRisk != null ? String(oldRisk) : null, calculatedRisk, userId),
+        );
+      }
+    }
+  }
+
+  // Validate change planned dates
+  if (data.change_planned_start || data.change_planned_end) {
+    const startStr = (data.change_planned_start ?? existing.change_planned_start) as string | null;
+    const endStr = (data.change_planned_end ?? existing.change_planned_end) as string | null;
+    if (startStr && endStr && new Date(endStr) <= new Date(startStr)) {
+      throw new ValidationError('change_planned_end must be after change_planned_start');
     }
   }
 

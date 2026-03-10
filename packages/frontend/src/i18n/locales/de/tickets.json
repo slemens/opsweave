@@ -219,5 +219,45 @@
   "kedb_field_symptom": "Symptome",
   "kedb_field_workaround": "Workaround",
   "kedb_field_root_cause": "Ursache",
-  "kedb_field_status": "Status"
+  "kedb_field_status": "Status",
+  "rfc": {
+    "title": "RFC-Details",
+    "justification": "Begründung",
+    "justification_placeholder": "Warum ist diese Änderung notwendig?",
+    "risk_level": "Risikostufe",
+    "risk_likelihood": "Eintrittswahrscheinlichkeit",
+    "risk_impact": "Auswirkung",
+    "risk_matrix_title": "Risikobewertung",
+    "implementation": "Implementierungsplan",
+    "implementation_placeholder": "Beschreiben Sie die geplanten Implementierungsschritte…",
+    "rollback_plan": "Rollback-Plan",
+    "rollback_placeholder": "Beschreiben Sie den Plan zur Rücknahme der Änderung…",
+    "planned_start": "Geplanter Start",
+    "planned_end": "Geplantes Ende",
+    "actual_start": "Tatsächlicher Start",
+    "actual_end": "Tatsächliches Ende",
+    "risk_levels": {
+      "low": "Niedrig",
+      "medium": "Mittel",
+      "high": "Hoch",
+      "critical": "Kritisch"
+    },
+    "likelihoods": {
+      "unlikely": "Unwahrscheinlich",
+      "possible": "Möglich",
+      "likely": "Wahrscheinlich",
+      "certain": "Sicher"
+    },
+    "impacts": {
+      "low": "Niedrig",
+      "medium": "Mittel",
+      "high": "Hoch",
+      "critical": "Kritisch"
+    }
+  },
+  "major_incident": {
+    "banner": "MAJOR INCIDENT",
+    "commander": "Incident Commander",
+    "no_commander": "Kein Incident Commander"
+  }
 }

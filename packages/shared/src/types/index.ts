@@ -208,6 +208,19 @@ export interface Ticket {
   sla_paused_total: number; // cumulative pause seconds
   root_cause: string | null; // only for problem tickets
   known_error_id: string | null; // FK → knownErrors, only for incidents
+  // Change-specific RFC fields
+  change_justification: string | null;
+  change_risk_level: string | null;
+  change_risk_likelihood: string | null;
+  change_risk_impact: string | null;
+  change_implementation: string | null;
+  change_rollback_plan: string | null;
+  change_planned_start: string | null;
+  change_planned_end: string | null;
+  change_actual_start: string | null;
+  change_actual_end: string | null;
+  // Major Incident
+  incident_commander_id: string | null;
   source: TicketSource;
   created_at: string;
   updated_at: string;

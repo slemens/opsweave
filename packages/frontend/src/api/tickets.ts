@@ -125,6 +125,14 @@ export interface CreateTicketPayload {
   category_id?: string | null;
   parent_ticket_id?: string | null;
   source?: string;
+  // Change-specific RFC fields
+  change_justification?: string | null;
+  change_risk_likelihood?: string | null;
+  change_risk_impact?: string | null;
+  change_implementation?: string | null;
+  change_rollback_plan?: string | null;
+  change_planned_start?: string | null;
+  change_planned_end?: string | null;
 }
 
 export interface UpdateTicketPayload {

@@ -85,7 +85,7 @@ import { useUsers } from '@/api/users';
 import { useCustomers } from '@/api/customers';
 import type { TicketCommentWithAuthor, HistoryWithUser, ChildTicketSummary } from '@/api/tickets';
 import type { TicketStatus, TicketPriority } from '@opsweave/shared';
-import { TICKET_STATUSES, TICKET_PRIORITIES, TICKET_IMPACTS, TICKET_URGENCIES } from '@opsweave/shared';
+import { TICKET_STATUSES, TICKET_PRIORITIES, TICKET_IMPACTS, TICKET_URGENCIES, CHANGE_RISK_LIKELIHOODS, CHANGE_RISK_IMPACTS, CHANGE_RISK_MATRIX } from '@opsweave/shared';
 import {
   useTicketWorkflow,
   useWorkflowTemplates,
@@ -125,6 +125,20 @@ const priorityDotColors: Record<TicketPriority, string> = {
   high: 'bg-orange-500',
   medium: 'bg-blue-500',
   low: 'bg-slate-400',
+};
+
+const riskLevelColors: Record<string, string> = {
+  low: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
+  medium: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+  high: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300',
+  critical: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
+};
+
+const riskLevelDotColors: Record<string, string> = {
+  low: 'bg-emerald-500',
+  medium: 'bg-amber-500',
+  high: 'bg-orange-500',
+  critical: 'bg-red-500',
 };
 
 const ticketTypeBadgeColors: Record<string, string> = {
@@ -606,6 +620,17 @@ export function TicketDetailPage() {
     }
   }, [id, unlinkArticleMutation, tKb]);
 
+  // ── Change RFC field handlers ───────────────────────────────
+  const handleChangeFieldUpdate = useCallback(async (field: string, value: string | null) => {
+    if (!id) return;
+    try {
+      await updateTicket.mutateAsync({ id, [field]: value });
+      toast.success(t('update_success'));
+    } catch {
+      toast.error(t('update_error'));
+    }
+  }, [id, updateTicket, t]);
+
   // ── Known Error (Incidents) ─────────────────────────────────
   const [keSearch, setKeSearch] = useState('');
   const [keDebouncedSearch, setKeDebouncedSearch] = useState('');
@@ -969,6 +994,220 @@ export function TicketDetailPage() {
                     {t('root_cause_empty')}
                   </p>
                 )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* RFC Details (Change tickets only) */}
+          {ticket.ticket_type === 'change' && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">{t('rfc.title')}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                {/* Risk Assessment Matrix */}
+                <div>
+                  <h4 className="text-sm font-medium mb-3">{t('rfc.risk_matrix_title')}</h4>
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs text-muted-foreground">{t('rfc.risk_likelihood')}</Label>
+                        <Select
+                          value={ticket.change_risk_likelihood ?? '__none__'}
+                          onValueChange={(v) => void handleChangeFieldUpdate('change_risk_likelihood', v === '__none__' ? null : v)}
+                        >
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue placeholder="-" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__none__"><span className="text-muted-foreground">-</span></SelectItem>
+                            {CHANGE_RISK_LIKELIHOODS.map((l) => (
+                              <SelectItem key={l} value={l}>{t(`rfc.likelihoods.${l}`)}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs text-muted-foreground">{t('rfc.risk_impact')}</Label>
+                        <Select
+                          value={ticket.change_risk_impact ?? '__none__'}
+                          onValueChange={(v) => void handleChangeFieldUpdate('change_risk_impact', v === '__none__' ? null : v)}
+                        >
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue placeholder="-" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__none__"><span className="text-muted-foreground">-</span></SelectItem>
+                            {CHANGE_RISK_IMPACTS.map((i) => (
+                              <SelectItem key={i} value={i}>{t(`rfc.impacts.${i}`)}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    {/* 4×4 Risk Matrix Grid */}
+                    <div className="rounded-lg border overflow-hidden">
+                      <div className="grid grid-cols-5 text-[10px] font-medium">
+                        <div className="p-1.5 bg-muted/50" />
+                        {CHANGE_RISK_IMPACTS.map((imp) => (
+                          <div key={imp} className="p-1.5 bg-muted/50 text-center text-muted-foreground">
+                            {t(`rfc.impacts.${imp}`)}
+                          </div>
+                        ))}
+                        {CHANGE_RISK_LIKELIHOODS.map((lik) => (
+                          <>
+                            <div key={`label-${lik}`} className="p-1.5 bg-muted/50 text-muted-foreground flex items-center">
+                              {t(`rfc.likelihoods.${lik}`)}
+                            </div>
+                            {CHANGE_RISK_IMPACTS.map((imp) => {
+                              const cellRisk = CHANGE_RISK_MATRIX[lik]?.[imp] ?? 'medium';
+                              const isActive = ticket.change_risk_likelihood === lik && ticket.change_risk_impact === imp;
+                              return (
+                                <button
+                                  key={`${lik}-${imp}`}
+                                  type="button"
+                                  className={cn(
+                                    'p-1.5 text-center text-[10px] font-medium transition-all border-r border-b last:border-r-0',
+                                    riskLevelColors[cellRisk],
+                                    isActive && 'ring-2 ring-primary ring-inset font-bold',
+                                    !isActive && 'opacity-60 hover:opacity-100',
+                                  )}
+                                  onClick={() => {
+                                    void handleChangeFieldUpdate('change_risk_likelihood', lik);
+                                    void handleChangeFieldUpdate('change_risk_impact', imp);
+                                  }}
+                                >
+                                  {t(`rfc.risk_levels.${cellRisk}`)}
+                                </button>
+                              );
+                            })}
+                          </>
+                        ))}
+                      </div>
+                    </div>
+                    {ticket.change_risk_level && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">{t('rfc.risk_level')}:</span>
+                        <Badge variant="outline" className={cn('text-xs', riskLevelColors[ticket.change_risk_level])}>
+                          <span className={cn('mr-1.5 h-2 w-2 rounded-full', riskLevelDotColors[ticket.change_risk_level])} />
+                          {t(`rfc.risk_levels.${ticket.change_risk_level}`)}
+                        </Badge>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Justification */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">{t('rfc.justification')}</Label>
+                  <Textarea
+                    value={ticket.change_justification ?? ''}
+                    placeholder={t('rfc.justification_placeholder')}
+                    rows={3}
+                    className="resize-none text-sm"
+                    onBlur={(e) => {
+                      const val = e.target.value.trim() || null;
+                      if (val !== (ticket.change_justification ?? null)) {
+                        void handleChangeFieldUpdate('change_justification', val);
+                      }
+                    }}
+                    defaultValue={ticket.change_justification ?? ''}
+                  />
+                </div>
+
+                {/* Implementation Plan */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">{t('rfc.implementation')}</Label>
+                  <Textarea
+                    placeholder={t('rfc.implementation_placeholder')}
+                    rows={3}
+                    className="resize-none text-sm"
+                    defaultValue={ticket.change_implementation ?? ''}
+                    onBlur={(e) => {
+                      const val = e.target.value.trim() || null;
+                      if (val !== (ticket.change_implementation ?? null)) {
+                        void handleChangeFieldUpdate('change_implementation', val);
+                      }
+                    }}
+                  />
+                </div>
+
+                {/* Rollback Plan */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">{t('rfc.rollback_plan')}</Label>
+                  <Textarea
+                    placeholder={t('rfc.rollback_placeholder')}
+                    rows={3}
+                    className="resize-none text-sm"
+                    defaultValue={ticket.change_rollback_plan ?? ''}
+                    onBlur={(e) => {
+                      const val = e.target.value.trim() || null;
+                      if (val !== (ticket.change_rollback_plan ?? null)) {
+                        void handleChangeFieldUpdate('change_rollback_plan', val);
+                      }
+                    }}
+                  />
+                </div>
+
+                <Separator />
+
+                {/* Planned Dates */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">{t('rfc.planned_start')}</Label>
+                    <Input
+                      type="datetime-local"
+                      className="h-8 text-xs"
+                      defaultValue={ticket.change_planned_start ? ticket.change_planned_start.slice(0, 16) : ''}
+                      onBlur={(e) => {
+                        const val = e.target.value ? new Date(e.target.value).toISOString() : null;
+                        void handleChangeFieldUpdate('change_planned_start', val);
+                      }}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">{t('rfc.planned_end')}</Label>
+                    <Input
+                      type="datetime-local"
+                      className="h-8 text-xs"
+                      defaultValue={ticket.change_planned_end ? ticket.change_planned_end.slice(0, 16) : ''}
+                      onBlur={(e) => {
+                        const val = e.target.value ? new Date(e.target.value).toISOString() : null;
+                        void handleChangeFieldUpdate('change_planned_end', val);
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Actual Dates */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">{t('rfc.actual_start')}</Label>
+                    <Input
+                      type="datetime-local"
+                      className="h-8 text-xs"
+                      defaultValue={ticket.change_actual_start ? ticket.change_actual_start.slice(0, 16) : ''}
+                      onBlur={(e) => {
+                        const val = e.target.value ? new Date(e.target.value).toISOString() : null;
+                        void handleChangeFieldUpdate('change_actual_start', val);
+                      }}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">{t('rfc.actual_end')}</Label>
+                    <Input
+                      type="datetime-local"
+                      className="h-8 text-xs"
+                      defaultValue={ticket.change_actual_end ? ticket.change_actual_end.slice(0, 16) : ''}
+                      onBlur={(e) => {
+                        const val = e.target.value ? new Date(e.target.value).toISOString() : null;
+                        void handleChangeFieldUpdate('change_actual_end', val);
+                      }}
+                    />
+                  </div>
+                </div>
               </CardContent>
             </Card>
           )}

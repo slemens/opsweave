@@ -56,6 +56,7 @@ import {
 } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
+import { Textarea } from '@/components/ui/textarea';
 import { cn, formatDate, formatRelativeTime } from '@/lib/utils';
 import {
   useBoardData,
@@ -70,7 +71,7 @@ import { useUsers } from '@/api/users';
 import { useCustomers } from '@/api/customers';
 import type { TicketWithRelations, CreateTicketPayload, TicketListParams } from '@/api/tickets';
 import type { TicketType, TicketPriority, TicketStatus } from '@opsweave/shared';
-import { TICKET_TYPES, TICKET_PRIORITIES, TICKET_STATUSES, TICKET_IMPACTS, TICKET_URGENCIES, calculatePriority } from '@opsweave/shared';
+import { TICKET_TYPES, TICKET_PRIORITIES, TICKET_STATUSES, TICKET_IMPACTS, TICKET_URGENCIES, CHANGE_RISK_LIKELIHOODS, CHANGE_RISK_IMPACTS, CHANGE_RISK_MATRIX, calculatePriority } from '@opsweave/shared';
 import { useAuthStore } from '@/stores/auth-store';
 
 // ---------------------------------------------------------------------------
@@ -101,6 +102,13 @@ const ticketTypeBadgeColors: Record<TicketType, string> = {
   incident: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800',
   problem: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800',
   change: 'bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-800',
+};
+
+const riskBadgeColors: Record<string, string> = {
+  low: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300',
+  medium: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300',
+  high: 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300',
+  critical: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300',
 };
 
 const statusDotColors: Record<TicketStatus, string> = {
@@ -216,12 +224,22 @@ function TicketCard({ ticket, locale }: TicketCardProps) {
 
         {/* Bottom row: Priority + Assignee + Date */}
         <div className="flex items-center justify-between gap-2 pt-0.5">
-          <Badge
-            variant="outline"
-            className={cn('text-[11px] px-1.5 py-0 font-medium', priorityBadgeVariants[ticket.priority].className)}
-          >
-            {t(`priorities.${ticket.priority}`)}
-          </Badge>
+          <div className="flex items-center gap-1.5">
+            <Badge
+              variant="outline"
+              className={cn('text-[11px] px-1.5 py-0 font-medium', priorityBadgeVariants[ticket.priority].className)}
+            >
+              {t(`priorities.${ticket.priority}`)}
+            </Badge>
+            {ticket.ticket_type === 'change' && ticket.change_risk_level && (
+              <Badge
+                variant="outline"
+                className={cn('text-[10px] px-1 py-0', riskBadgeColors[ticket.change_risk_level])}
+              >
+                {t(`rfc.risk_levels.${ticket.change_risk_level}`)}
+              </Badge>
+            )}
+          </div>
 
           <div className="flex items-center gap-2">
             {ticket.assignee ? (
@@ -915,6 +933,15 @@ function CreateTicketDialog({ open, onOpenChange, parentTicketId, parentTicketTy
   const [customerId, setCustomerId] = useState<string>('');
   const [categoryId, setCategoryId] = useState<string>('');
   const [titleError, setTitleError] = useState('');
+  // Change-specific RFC fields
+  const [changeJustification, setChangeJustification] = useState('');
+  const [changeRollback, setChangeRollback] = useState('');
+  const [changeRiskLikelihood, setChangeRiskLikelihood] = useState<string>('');
+  const [changeRiskImpact, setChangeRiskImpact] = useState<string>('');
+
+  const autoRisk = (changeRiskLikelihood && changeRiskImpact)
+    ? CHANGE_RISK_MATRIX[changeRiskLikelihood]?.[changeRiskImpact] ?? null
+    : null;
 
   const groups = groupsData?.data ?? [];
   const customers = (customersData?.data ?? []).filter((c) => c.is_active);
@@ -937,6 +964,10 @@ function CreateTicketDialog({ open, onOpenChange, parentTicketId, parentTicketTy
     setCustomerId('');
     setCategoryId('');
     setTitleError('');
+    setChangeJustification('');
+    setChangeRollback('');
+    setChangeRiskLikelihood('');
+    setChangeRiskImpact('');
   }, [parentTicketType]);
 
   const handleSubmit = useCallback(async () => {
@@ -960,6 +991,13 @@ function CreateTicketDialog({ open, onOpenChange, parentTicketId, parentTicketTy
     if (groupId) payload.assignee_group_id = groupId;
     if (customerId) payload.customer_id = customerId;
     if (categoryId) payload.category_id = categoryId;
+    // Change-specific RFC fields
+    if (ticketType === 'change') {
+      if (changeJustification.trim()) payload.change_justification = changeJustification.trim();
+      if (changeRollback.trim()) payload.change_rollback_plan = changeRollback.trim();
+      if (changeRiskLikelihood) payload.change_risk_likelihood = changeRiskLikelihood;
+      if (changeRiskImpact) payload.change_risk_impact = changeRiskImpact;
+    }
 
     try {
       await createTicket.mutateAsync(payload);
@@ -969,7 +1007,7 @@ function CreateTicketDialog({ open, onOpenChange, parentTicketId, parentTicketTy
     } catch {
       toast.error(t('create_error'));
     }
-  }, [ticketType, title, description, effectivePriority, impact, urgency, groupId, customerId, categoryId, parentTicketId, createTicket, t, resetForm, onOpenChange]);
+  }, [ticketType, title, description, effectivePriority, impact, urgency, groupId, customerId, categoryId, parentTicketId, changeJustification, changeRollback, changeRiskLikelihood, changeRiskImpact, createTicket, t, resetForm, onOpenChange]);
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => {
@@ -1181,6 +1219,70 @@ function CreateTicketDialog({ open, onOpenChange, parentTicketId, parentTicketTy
               </Select>
             )}
           </div>
+
+          {/* Change-specific RFC fields */}
+          {ticketType === 'change' && (
+            <>
+              <Separator />
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('rfc.title')}</p>
+
+              <div className="space-y-2">
+                <Label>{t('rfc.justification')}</Label>
+                <Textarea
+                  value={changeJustification}
+                  onChange={(e) => setChangeJustification(e.target.value)}
+                  placeholder={t('rfc.justification_placeholder')}
+                  rows={2}
+                  className="resize-none"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>{t('rfc.rollback_plan')}</Label>
+                <Textarea
+                  value={changeRollback}
+                  onChange={(e) => setChangeRollback(e.target.value)}
+                  placeholder={t('rfc.rollback_placeholder')}
+                  rows={2}
+                  className="resize-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>{t('rfc.risk_likelihood')}</Label>
+                  <Select value={changeRiskLikelihood} onValueChange={setChangeRiskLikelihood}>
+                    <SelectTrigger><SelectValue placeholder="-" /></SelectTrigger>
+                    <SelectContent>
+                      {CHANGE_RISK_LIKELIHOODS.map((l) => (
+                        <SelectItem key={l} value={l}>{t(`rfc.likelihoods.${l}`)}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>{t('rfc.risk_impact')}</Label>
+                  <Select value={changeRiskImpact} onValueChange={setChangeRiskImpact}>
+                    <SelectTrigger><SelectValue placeholder="-" /></SelectTrigger>
+                    <SelectContent>
+                      {CHANGE_RISK_IMPACTS.map((i) => (
+                        <SelectItem key={i} value={i}>{t(`rfc.impacts.${i}`)}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {autoRisk && (
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-muted-foreground">{t('rfc.risk_level')}:</span>
+                  <Badge variant="outline" className={cn('text-xs', riskBadgeColors[autoRisk])}>
+                    {t(`rfc.risk_levels.${autoRisk}`)}
+                  </Badge>
+                </div>
+              )}
+            </>
+          )}
         </div>
 
         <DialogFooter>
