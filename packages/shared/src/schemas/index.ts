@@ -617,6 +617,7 @@ export const createPortalTicketSchema = z.object({
   description: z.string().max(50000).default(''),
   ticket_type: z.enum(TICKET_TYPES).default('incident'),
   priority: z.enum(['critical', 'high', 'medium', 'low'] as const).default('medium'),
+  service_description_id: z.string().uuid().optional(),
 });
 export type CreatePortalTicketInput = z.infer<typeof createPortalTicketSchema>;
 

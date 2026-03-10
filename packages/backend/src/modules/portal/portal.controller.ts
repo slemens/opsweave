@@ -119,3 +119,15 @@ export async function listKb(req: Request, res: Response): Promise<void> {
   const articles = await portalService.listPublicKb(tenantId, q);
   sendSuccess(res, articles);
 }
+
+// ─── Service Catalog ──────────────────────────────────────────
+
+/**
+ * GET /api/v1/portal/services
+ * List published service descriptions available for ordering.
+ */
+export async function listServices(req: Request, res: Response): Promise<void> {
+  const { tenantId } = (req as PortalRequest).portalUser;
+  const services = await portalService.listPortalServices(tenantId);
+  sendSuccess(res, services);
+}

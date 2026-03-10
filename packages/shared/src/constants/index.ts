@@ -8,7 +8,7 @@
 // Ticket Constants
 // ---------------------------------------------------------------------------
 
-export const TICKET_TYPES = ['incident', 'problem', 'change'] as const;
+export const TICKET_TYPES = ['incident', 'problem', 'change', 'request'] as const;
 export type TicketTypeConst = (typeof TICKET_TYPES)[number];
 
 export const TICKET_STATUSES = [
@@ -344,4 +344,5 @@ export const TICKET_NUMBER_PREFIXES: Record<string, string> = {
   incident: 'INC',
   problem: 'PRB',
   change: 'CHG',
+  request: 'REQ',
 } as const;

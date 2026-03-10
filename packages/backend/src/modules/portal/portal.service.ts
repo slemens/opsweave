@@ -12,8 +12,10 @@ import {
   ticketComments,
   kbArticles,
   tenants,
+  serviceDescriptions,
 } from '../../db/schema/index.js';
 import { UnauthorizedError, NotFoundError } from '../../lib/errors.js';
+import { TICKET_NUMBER_PREFIXES } from '@opsweave/shared';
 import type {
   CreatePortalTicketInput,
   CreatePortalCommentInput,
@@ -303,9 +305,26 @@ export async function createPortalTicket(
   const ticketId = uuidv4();
 
   const type = data.ticket_type ?? 'incident';
-  const prefix =
-    type === 'incident' ? 'INC' : type === 'change' ? 'CHG' : 'PRB';
+  const prefix = TICKET_NUMBER_PREFIXES[type] ?? 'TKT';
   const year = new Date().getFullYear();
+
+  // If a service description is selected, enrich description
+  let description = data.description ?? '';
+  if (data.service_description_id) {
+    const [svc] = await d
+      .select({ code: serviceDescriptions.code, title: serviceDescriptions.title })
+      .from(serviceDescriptions)
+      .where(
+        and(
+          eq(serviceDescriptions.id, data.service_description_id),
+          eq(serviceDescriptions.tenant_id, tenantId),
+          eq(serviceDescriptions.status, 'published'),
+        ),
+      );
+    if (svc) {
+      description = `[Service: ${svc.code} — ${svc.title}]\n\n${description}`;
+    }
+  }
 
   const [existingCount] = await d
     .select({ count: count() })
@@ -329,7 +348,7 @@ export async function createPortalTicket(
       ticket_type: type,
       subtype: null,
       title: data.title,
-      description: data.description ?? '',
+      description,
       status: 'open',
       priority: data.priority ?? 'medium',
       impact: null,
@@ -355,6 +374,11 @@ export async function createPortalTicket(
       created_by: portalUserId,
     })
     .returning();
+
+  // Auto-trigger fulfillment workflows for service requests
+  void import('../workflows/workflows.service.js').then(({ triggerWorkflowsForTicket }) =>
+    triggerWorkflowsForTicket(tenantId, ticketId, 'ticket_created', type, portalUserId),
+  ).catch(() => { /* non-fatal */ });
 
   return created!;
 }
@@ -454,4 +478,31 @@ export async function listPublicKb(
       }
     })(),
   }));
+}
+
+// ─── Service Catalog ──────────────────────────────────────────
+
+/**
+ * List published service descriptions available for portal ordering.
+ */
+export async function listPortalServices(tenantId: string) {
+  const d = db();
+
+  const rows = await d
+    .select({
+      id: serviceDescriptions.id,
+      code: serviceDescriptions.code,
+      title: serviceDescriptions.title,
+      description: serviceDescriptions.description,
+    })
+    .from(serviceDescriptions)
+    .where(
+      and(
+        eq(serviceDescriptions.tenant_id, tenantId),
+        eq(serviceDescriptions.status, 'published'),
+      ),
+    )
+    .orderBy(serviceDescriptions.code);
+
+  return rows;
 }

@@ -67,6 +67,10 @@
     "field_priority": "Priorität",
     "type_incident": "Störung / Incident",
     "type_change": "Änderungsanfrage",
+    "type_request": "Service-Anfrage",
+    "field_service": "Service auswählen",
+    "field_service_placeholder": "Optionaler Service aus dem Katalog…",
+    "field_service_none": "— Kein Service —",
     "submit": "Ticket erstellen",
     "submitting": "Wird erstellt…",
     "error": "Ticket konnte nicht erstellt werden."
@@ -87,7 +91,8 @@
   "ticket_type": {
     "incident": "Störung",
     "change": "Änderungsanfrage",
-    "problem": "Problem"
+    "problem": "Problem",
+    "request": "Service-Anfrage"
   },
   "kb": {
     "title": "Wissensdatenbank",

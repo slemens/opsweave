@@ -40,7 +40,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { portalApi } from '@/api/portal';
-import type { PortalTicket, CreatePortalTicketPayload } from '@/api/portal';
+import type { PortalTicket, PortalService, CreatePortalTicketPayload } from '@/api/portal';
 import { formatDate, formatRelativeTime } from '@/lib/utils';
 
 // ---------------------------------------------------------------------------
@@ -95,10 +95,21 @@ function CreateTicketDialog({ open, onOpenChange, onCreated }: CreateTicketDialo
   const { t } = useTranslation('portal');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [ticketType, setTicketType] = useState<'incident' | 'change'>('incident');
+  const [ticketType, setTicketType] = useState<'incident' | 'change' | 'request'>('incident');
   const [priority, setPriority] = useState<TicketPriority>('medium');
+  const [selectedServiceId, setSelectedServiceId] = useState<string>('');
+  const [services, setServices] = useState<PortalService[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Load available services when dialog opens
+  useEffect(() => {
+    if (open) {
+      portalApi.listServices().then(setServices).catch(() => {
+        // Non-fatal — service catalog may not be configured
+      });
+    }
+  }, [open]);
 
   // Reset form state when dialog closes
   const handleOpenChange = (next: boolean) => {
@@ -107,9 +118,24 @@ function CreateTicketDialog({ open, onOpenChange, onCreated }: CreateTicketDialo
       setDescription('');
       setTicketType('incident');
       setPriority('medium');
+      setSelectedServiceId('');
       setError(null);
     }
     onOpenChange(next);
+  };
+
+  // When user selects a service, auto-set type to request and pre-fill title
+  const handleServiceSelect = (serviceId: string) => {
+    setSelectedServiceId(serviceId);
+    if (serviceId) {
+      const svc = services.find((s) => s.id === serviceId);
+      if (svc) {
+        setTicketType('request');
+        if (!title.trim()) {
+          setTitle(svc.title);
+        }
+      }
+    }
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -125,6 +151,7 @@ function CreateTicketDialog({ open, onOpenChange, onCreated }: CreateTicketDialo
         description: description.trim(),
         ticketType,
         priority,
+        ...(selectedServiceId ? { serviceDescriptionId: selectedServiceId } : {}),
       };
       const ticket = await portalApi.createTicket(payload);
       onCreated(ticket);
@@ -148,6 +175,30 @@ function CreateTicketDialog({ open, onOpenChange, onCreated }: CreateTicketDialo
           {error && (
             <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
               {error}
+            </div>
+          )}
+
+          {/* Service Catalog (optional) */}
+          {services.length > 0 && (
+            <div className="space-y-2">
+              <Label htmlFor="ct-service">{t('create.field_service')}</Label>
+              <Select
+                value={selectedServiceId}
+                onValueChange={handleServiceSelect}
+                disabled={isSubmitting}
+              >
+                <SelectTrigger id="ct-service">
+                  <SelectValue placeholder={t('create.field_service_placeholder')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">{t('create.field_service_none')}</SelectItem>
+                  {services.map((svc) => (
+                    <SelectItem key={svc.id} value={svc.id}>
+                      {svc.code} — {svc.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           )}
 
@@ -187,7 +238,7 @@ function CreateTicketDialog({ open, onOpenChange, onCreated }: CreateTicketDialo
               <Label htmlFor="ct-type">{t('create.field_type')}</Label>
               <Select
                 value={ticketType}
-                onValueChange={(v) => setTicketType(v as 'incident' | 'change')}
+                onValueChange={(v) => setTicketType(v as 'incident' | 'change' | 'request')}
                 disabled={isSubmitting}
               >
                 <SelectTrigger id="ct-type">
@@ -196,6 +247,7 @@ function CreateTicketDialog({ open, onOpenChange, onCreated }: CreateTicketDialo
                 <SelectContent>
                   <SelectItem value="incident">{t('create.type_incident')}</SelectItem>
                   <SelectItem value="change">{t('create.type_change')}</SelectItem>
+                  <SelectItem value="request">{t('create.type_request')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
