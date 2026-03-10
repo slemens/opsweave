@@ -34,6 +34,9 @@
   "engines": {
     "node": ">=20.0.0"
   },
+  "overrides": {
+    "tinyexec": "0.3.2"
+  },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "eslint": "^10.0.3",
