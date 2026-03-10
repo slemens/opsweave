@@ -45,8 +45,6 @@ WORKDIR /app
 # like better-sqlite3), then prune dev dependencies
 COPY --from=build /build/node_modules ./node_modules
 COPY --from=build /build/package.json ./
-COPY --from=build /build/packages/shared/node_modules ./packages/shared/node_modules
-COPY --from=build /build/packages/backend/node_modules ./packages/backend/node_modules
 
 # Prune dev dependencies
 RUN npm prune --omit=dev --no-audit --no-fund 2>/dev/null || true
