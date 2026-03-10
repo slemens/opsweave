@@ -603,7 +603,7 @@ export async function createTicket(
   let slaResolveDue: string | null = null;
 
   try {
-    const slaDef = resolveEffectiveSla(tenantId, {
+    const slaDef = await resolveEffectiveSla(tenantId, {
       asset_id: data.asset_id ?? null,
       customer_id: data.customer_id ?? null,
     });
@@ -1974,11 +1974,11 @@ export async function setCabDecision(
   const d = db();
   const now = new Date().toISOString();
 
-  const existing = d
+  const [existing] = await d
     .select({ id: tickets.id, cab_required: tickets.cab_required, cab_decision: tickets.cab_decision })
     .from(tickets)
     .where(and(eq(tickets.id, ticketId), eq(tickets.tenant_id, tenantId)))
-    .get();
+    .limit(1);
 
   if (!existing) throw new NotFoundError('Ticket not found');
   if (existing.cab_required !== 1) throw new ValidationError('This change does not require CAB approval');

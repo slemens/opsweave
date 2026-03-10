@@ -51,9 +51,15 @@ import { DEMO_LICENSE_KEY } from './demo-license.js';
 const now = new Date().toISOString();
 const BCRYPT_ROUNDS = 12;
 
-async function seed() {
-  logger.info('Starting seed');
-  await initDatabase();
+/**
+ * Core seeding logic. Exported for use by server auto-setup.
+ * Assumes DB is already initialized via initDatabase().
+ */
+export async function runSeed(): Promise<void> {
+  await doSeed();
+}
+
+async function doSeed(): Promise<void> {
   const db = getDb() as TypedDb;
 
   // ─── Tenant ─────────────────────────────────────────────
@@ -2025,11 +2031,18 @@ async function seed() {
   logger.info('   Viewer:  viewer@opsweave.local / password123');
   logger.info('\n🌐 Customer Portal credentials:');
   logger.info('   Acme Portal User: portal@acme.example.com / changeme');
-
-  process.exit(0);
 }
 
-seed().catch((err) => {
-  logger.fatal({ err }, 'Seed failed');
-  process.exit(1);
-});
+// CLI entry point: only runs when executed directly (not when imported)
+const isDirectExecution = process.argv[1]?.includes('seed');
+if (isDirectExecution) {
+  (async () => {
+    logger.info('Starting seed');
+    await initDatabase();
+    await doSeed();
+    process.exit(0);
+  })().catch((err) => {
+    logger.fatal({ err }, 'Seed failed');
+    process.exit(1);
+  });
+}

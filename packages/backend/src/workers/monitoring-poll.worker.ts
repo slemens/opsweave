@@ -49,11 +49,10 @@ export function stopMonitoringPollWorker(): void {
 async function runPollCycle(): Promise<void> {
   try {
     // Get all active sources that have an adapter (not webhook-only)
-    const sources = db()
+    const sources = await db()
       .select()
       .from(monitoringSources)
-      .where(eq(monitoringSources.is_active, 1))
-      .all();
+      .where(eq(monitoringSources.is_active, 1));
 
     for (const source of sources) {
       const adapter = getAdapter(source.type);
@@ -68,7 +67,7 @@ async function runPollCycle(): Promise<void> {
         let skipped = 0;
 
         for (const event of events) {
-          const result = ingestWebhookEvent(source.tenant_id, source.id, {
+          const result = await ingestWebhookEvent(source.tenant_id, source.id, {
             hostname: event.hostname,
             service_name: event.service_name ?? undefined,
             state: event.state,

@@ -42,8 +42,8 @@ import {
 import logger from './lib/logger.js';
 // AUDIT-FIX: H-02 — Warn if default admin password unchanged in production
 import bcrypt from 'bcryptjs';
-import { eq } from 'drizzle-orm';
-import { users } from './db/schema/index.js';
+import { eq, sql } from 'drizzle-orm';
+import { users, tenants } from './db/schema/index.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -69,12 +69,52 @@ async function checkDefaultAdminPassword(): Promise<void> {
   }
 }
 
+// ─── Auto-Setup: create tables + seed on first start if DB is empty ────
+
+async function autoSetupIfNeeded(): Promise<void> {
+  const db = getDb() as TypedDb;
+  try {
+    // Check if the tenants table exists (core table)
+    await db.select({ id: tenants.id }).from(tenants).limit(1);
+    logger.debug('Database tables exist, skipping auto-setup');
+  } catch {
+    // Tables don't exist — run setup and seed
+    logger.info('Database is empty — running auto-setup (creating tables + seeding demo data)...');
+
+    // Import and run setup inline (setup.ts uses TABLES_SQL string)
+    const { TABLES_SQL } = await import('./db/setup.js');
+    const statements = TABLES_SQL
+      .split(';')
+      .map((s: string) => s.trim())
+      .filter((s: string) => s.length > 0);
+
+    for (const stmt of statements) {
+      if (config.dbDriver === 'sqlite') {
+        const dbRecord = db as unknown as Record<string, unknown>;
+        (dbRecord.run as (query: ReturnType<typeof sql.raw>) => void)(sql.raw(stmt));
+      } else {
+        const dbRecord = db as unknown as Record<string, unknown>;
+        await (dbRecord.execute as (query: ReturnType<typeof sql.raw>) => Promise<unknown>)(sql.raw(stmt));
+      }
+    }
+    logger.info({ count: statements.length }, 'Auto-setup: tables created');
+
+    // Run seed
+    const { runSeed } = await import('./db/seed/index.js');
+    await runSeed();
+    logger.info('Auto-setup: demo data seeded');
+  }
+}
+
 // ─── Bootstrap ─────────────────────────────────────────────
 
 async function bootstrap(): Promise<void> {
   // 1. Initialise subsystems
   await initI18n();
   await initDatabase();
+
+  // 1b. Auto-create tables + seed on first start if DB is empty
+  await autoSetupIfNeeded();
 
   // 2. Create Express app
   const app = express();
@@ -100,6 +140,11 @@ async function bootstrap(): Promise<void> {
   });
 
   // ── Global middleware (order matters) ──────────────────────
+
+  // Trust proxy when running behind nginx/reverse proxy (docker-compose, k8s)
+  if (config.nodeEnv === 'production') {
+    app.set('trust proxy', 1);
+  }
 
   // Security headers
   app.use(helmet({

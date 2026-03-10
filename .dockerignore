@@ -2,8 +2,6 @@ node_modules
 .git
 .github
 docs
-scripts
-infra
 *.md
 .env*
 .vscode
@@ -14,3 +12,10 @@ infra
 **/playwright.config.ts
 **/playwright-report/
 **/test-results/
+
+# Keep scripts/docker-entrypoint.sh and infra/ (needed by Docker builds)
+scripts/take-screenshots.*
+scripts/check-i18n-completeness.ts
+scripts/generate-api-docs.ts
+scripts/generate-license.ts
+scripts/deploy.sh

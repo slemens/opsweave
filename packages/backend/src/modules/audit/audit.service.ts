@@ -44,7 +44,7 @@ export interface AuditLogParams {
  * Write an audit log entry.
  * Fire-and-forget — errors are logged but never thrown.
  */
-export function writeAuditLog(
+export async function writeAuditLog(
   tenantId: string,
   actorId: string,
   actorEmail: string,
@@ -54,12 +54,12 @@ export function writeAuditLog(
   details: Record<string, unknown>,
   ipAddress?: string | null,
   userAgent?: string | null,
-): void {
+): Promise<void> {
   try {
     const d = db();
     const now = new Date().toISOString();
 
-    d.insert(auditLogs).values({
+    await d.insert(auditLogs).values({
       id: uuidv4(),
       tenant_id: tenantId,
       actor_id: actorId,
@@ -71,7 +71,7 @@ export function writeAuditLog(
       ip_address: ipAddress ?? null,
       user_agent: userAgent ?? null,
       created_at: now,
-    }).run();
+    });
   } catch (err) {
     logger.error({ err, tenantId, eventType, resourceType }, 'Failed to write audit log');
   }
@@ -177,17 +177,16 @@ function parseJson(value: string): Record<string, unknown> {
  * Resolve actor email from user ID.
  * Falls back to "system" for automated actions.
  */
-export function resolveActorEmail(actorId: string): string {
+export async function resolveActorEmail(actorId: string): Promise<string> {
   if (actorId === '00000000-0000-0000-0000-000000000000') return 'system';
 
   try {
     const d = db();
-    const row = d
+    const [row] = await d
       .select({ email: users.email })
       .from(users)
       .where(eq(users.id, actorId))
-      .limit(1)
-      .get();
+      .limit(1);
 
     return row?.email ?? 'unknown';
   } catch {

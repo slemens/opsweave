@@ -1,4 +1,4 @@
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 
 import { getDb, type TypedDb } from '../../config/database.js';
 import { emailInboundConfigs } from '../../db/schema/email.js';
@@ -63,14 +63,20 @@ export function stopEmailPollingWorker(): void {
 
 // ─── DB readiness check ──────────────────────────────────
 
+// Cross-DB health check: try loading email configs (proves tables exist + DB connection works)
+async function checkDbReady(): Promise<void> {
+  const db = getDb() as TypedDb;
+  // Drizzle query builder is awaitable for both SQLite and PostgreSQL
+  await db.select({ id: emailInboundConfigs.id }).from(emailInboundConfigs).limit(1);
+}
+
 // AUDIT-FIX: M-06 — Exponential backoff for DB readiness
 async function waitForDb(): Promise<boolean> {
   let delay = BACKOFF_INITIAL_MS;
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      const db = getDb() as TypedDb;
-      await db.run(sql`SELECT 1`);
+      await checkDbReady();
       logger.info(`[email-poll] DB ready (attempt ${attempt}/${MAX_RETRIES})`);
       return true;
     } catch (err) {
@@ -91,8 +97,7 @@ function scheduleBackgroundRetry(): void {
   const handle = setInterval(() => {
     void (async () => {
       try {
-        const db = getDb() as TypedDb;
-        await db.run(sql`SELECT 1`);
+        await checkDbReady();
         logger.info('[email-poll] DB became available — starting polling');
         clearInterval(handle);
         await loadAndStartPolling();

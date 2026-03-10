@@ -32,32 +32,29 @@ export interface UpdateSourceInput {
   is_active?: boolean;
 }
 
-export function listSources(tenantId: string) {
-  return db()
+export async function listSources(tenantId: string) {
+  return await db()
     .select()
     .from(monitoringSources)
     .where(eq(monitoringSources.tenant_id, tenantId))
-    .orderBy(desc(monitoringSources.created_at))
-    .all();
+    .orderBy(desc(monitoringSources.created_at));
 }
 
-export function getSource(tenantId: string, id: string) {
-  const row = db()
+export async function getSource(tenantId: string, id: string) {
+  const [row] = await db()
     .select()
     .from(monitoringSources)
     .where(and(eq(monitoringSources.id, id), eq(monitoringSources.tenant_id, tenantId)))
-    .get();
+    .limit(1);
   if (!row) throw new NotFoundError('Monitoring source not found');
   return row;
 }
 
-export function createSource(tenantId: string, input: CreateSourceInput) {
-  // Check community license limit
-  const [countRow] = db()
+export async function createSource(tenantId: string, input: CreateSourceInput) {
+  const [countRow] = await db()
     .select({ total: drizzleCount() })
     .from(monitoringSources)
-    .where(and(eq(monitoringSources.tenant_id, tenantId), eq(monitoringSources.is_active, 1)))
-    .all();
+    .where(and(eq(monitoringSources.tenant_id, tenantId), eq(monitoringSources.is_active, 1)));
   const activeCount = countRow?.total ?? 0;
   if (activeCount >= COMMUNITY_LIMITS.maxMonitoringSources) {
     // TODO: check enterprise license for higher limits
@@ -70,7 +67,7 @@ export function createSource(tenantId: string, input: CreateSourceInput) {
   const now = new Date().toISOString();
   const webhookSecret = input.webhook_secret ?? crypto.randomBytes(32).toString('hex');
 
-  db()
+  await db()
     .insert(monitoringSources)
     .values({
       id,
@@ -81,14 +78,13 @@ export function createSource(tenantId: string, input: CreateSourceInput) {
       webhook_secret: webhookSecret,
       is_active: input.is_active === false ? 0 : 1,
       created_at: now,
-    })
-    .run();
+    });
 
   return getSource(tenantId, id);
 }
 
-export function updateSource(tenantId: string, id: string, input: UpdateSourceInput) {
-  const existing = getSource(tenantId, id);
+export async function updateSource(tenantId: string, id: string, input: UpdateSourceInput) {
+  const existing = await getSource(tenantId, id);
 
   const updates: Record<string, unknown> = {};
   if (input.name !== undefined) updates.name = input.name;
@@ -98,24 +94,22 @@ export function updateSource(tenantId: string, id: string, input: UpdateSourceIn
   if (input.is_active !== undefined) updates.is_active = input.is_active ? 1 : 0;
 
   if (Object.keys(updates).length > 0) {
-    db()
+    await db()
       .update(monitoringSources)
       .set(updates)
-      .where(and(eq(monitoringSources.id, existing.id), eq(monitoringSources.tenant_id, tenantId)))
-      .run();
+      .where(and(eq(monitoringSources.id, existing.id), eq(monitoringSources.tenant_id, tenantId)));
   }
 
   return getSource(tenantId, id);
 }
 
-export function deleteSource(tenantId: string, id: string) {
-  const existing = getSource(tenantId, id);
+export async function deleteSource(tenantId: string, id: string) {
+  const existing = await getSource(tenantId, id);
   // Soft-delete: deactivate instead of removing
-  db()
+  await db()
     .update(monitoringSources)
     .set({ is_active: 0 })
-    .where(and(eq(monitoringSources.id, existing.id), eq(monitoringSources.tenant_id, tenantId)))
-    .run();
+    .where(and(eq(monitoringSources.id, existing.id), eq(monitoringSources.tenant_id, tenantId)));
 }
 
 // =============================================================================
@@ -134,7 +128,7 @@ export interface EventFilters {
   limit?: number;
 }
 
-export function listEvents(tenantId: string, filters: EventFilters) {
+export async function listEvents(tenantId: string, filters: EventFilters) {
   const page = filters.page ?? 1;
   const limit = Math.min(filters.limit ?? 25, 500);
   const offset = (page - 1) * limit;
@@ -158,43 +152,40 @@ export function listEvents(tenantId: string, filters: EventFilters) {
 
   const where = and(...conditions);
 
-  const [countRow2] = db()
+  const [countRow2] = await db()
     .select({ total: drizzleCount() })
     .from(monitoringEvents)
-    .where(where!)
-    .all();
+    .where(where!);
   const total = countRow2?.total ?? 0;
 
-  const rows = db()
+  const rows = await db()
     .select()
     .from(monitoringEvents)
     .where(where!)
     .orderBy(desc(monitoringEvents.received_at))
     .limit(limit)
-    .offset(offset)
-    .all();
+    .offset(offset);
 
   return { data: rows, meta: { total, page, limit } };
 }
 
-export function getEvent(tenantId: string, id: string) {
-  const row = db()
+export async function getEvent(tenantId: string, id: string) {
+  const [row] = await db()
     .select()
     .from(monitoringEvents)
     .where(and(eq(monitoringEvents.id, id), eq(monitoringEvents.tenant_id, tenantId)))
-    .get();
+    .limit(1);
   if (!row) throw new NotFoundError('Monitoring event not found');
   return row;
 }
 
-export function acknowledgeEvent(tenantId: string, id: string) {
-  const existing = getEvent(tenantId, id);
+export async function acknowledgeEvent(tenantId: string, id: string) {
+  const existing = await getEvent(tenantId, id);
   const now = new Date().toISOString();
-  db()
+  await db()
     .update(monitoringEvents)
     .set({ processed: 1, processed_at: now })
-    .where(and(eq(monitoringEvents.id, existing.id), eq(monitoringEvents.tenant_id, tenantId)))
-    .run();
+    .where(and(eq(monitoringEvents.id, existing.id), eq(monitoringEvents.tenant_id, tenantId)));
   return getEvent(tenantId, id);
 }
 
@@ -210,12 +201,12 @@ export interface WebhookPayload {
   external_id?: string;
 }
 
-export function validateWebhookSecret(sourceId: string, secret: string): { tenantId: string; source: typeof monitoringSources.$inferSelect } {
-  const source = db()
+export async function validateWebhookSecret(sourceId: string, secret: string): Promise<{ tenantId: string; source: typeof monitoringSources.$inferSelect }> {
+  const [source] = await db()
     .select()
     .from(monitoringSources)
     .where(eq(monitoringSources.id, sourceId))
-    .get();
+    .limit(1);
 
   if (!source) throw new NotFoundError('Monitoring source not found');
   if (!source.is_active) throw new ForbiddenError('Monitoring source is inactive');
@@ -231,12 +222,12 @@ export function validateWebhookSecret(sourceId: string, secret: string): { tenan
   return { tenantId: source.tenant_id, source };
 }
 
-export function ingestWebhookEvent(tenantId: string, sourceId: string, payload: WebhookPayload) {
+export async function ingestWebhookEvent(tenantId: string, sourceId: string, payload: WebhookPayload) {
   const id = uuidv4();
   const now = new Date().toISOString();
 
   // Deduplicate: skip if same hostname+service+state already exists within last 5 minutes
-  const dedup = db()
+  const [dedup] = await db()
     .select({ id: monitoringEvents.id })
     .from(monitoringEvents)
     .where(
@@ -251,14 +242,14 @@ export function ingestWebhookEvent(tenantId: string, sourceId: string, payload: 
         sql`${monitoringEvents.received_at} >= datetime('now', '-5 minutes')`,
       ),
     )
-    .get();
+    .limit(1);
 
   if (dedup) {
     logger.debug({ hostname: payload.hostname, state: payload.state }, '[monitoring] Deduplicated event');
     return { deduplicated: true, event_id: dedup.id };
   }
 
-  db()
+  await db()
     .insert(monitoringEvents)
     .values({
       id,
@@ -271,8 +262,7 @@ export function ingestWebhookEvent(tenantId: string, sourceId: string, payload: 
       output: payload.output ?? null,
       processed: 0,
       received_at: now,
-    })
-    .run();
+    });
 
   return { deduplicated: false, event_id: id };
 }
@@ -281,8 +271,8 @@ export function ingestWebhookEvent(tenantId: string, sourceId: string, payload: 
 // Event Statistics (for dashboard)
 // =============================================================================
 
-export function getEventStats(tenantId: string) {
-  const rows = db()
+export async function getEventStats(tenantId: string) {
+  const rows = await db()
     .select({
       state: monitoringEvents.state,
       count: drizzleCount(),
@@ -295,8 +285,7 @@ export function getEventStats(tenantId: string) {
         sql`${monitoringEvents.received_at} >= datetime('now', '-24 hours')`,
       ),
     )
-    .groupBy(monitoringEvents.state)
-    .all();
+    .groupBy(monitoringEvents.state);
 
   const stats: Record<string, number> = { ok: 0, warning: 0, critical: 0, unknown: 0 };
   for (const row of rows) {

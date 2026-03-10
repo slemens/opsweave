@@ -119,8 +119,8 @@ export function generateToken(payload: JwtPayload): string {
 /**
  * Get all tenant memberships for a user, with tenant details.
  */
-function getUserTenants(userId: string): TenantInfo[] {
-  const rows = db()
+async function getUserTenants(userId: string): Promise<TenantInfo[]> {
+  const rows = await db()
     .select({
       tenantId: tenants.id,
       tenantName: tenants.name,
@@ -135,8 +135,7 @@ function getUserTenants(userId: string): TenantInfo[] {
         eq(tenantUserMemberships.user_id, userId),
         eq(tenants.is_active, 1),
       ),
-    )
-    .all();
+    );
 
   return rows.map((r) => ({
     id: r.tenantId,
@@ -178,12 +177,11 @@ export async function login(
   password: string,
 ): Promise<LoginResult> {
   // Find user by email
-  const user = db()
+  const [user] = await db()
     .select()
     .from(users)
     .where(eq(users.email, email.toLowerCase()))
-    .limit(1)
-    .get();
+    .limit(1);
 
   if (!user) {
     throw new UnauthorizedError('Invalid email or password');
@@ -211,7 +209,7 @@ export async function login(
   }
 
   // Get tenant memberships
-  const tenantList = getUserTenants(user.id);
+  const tenantList = await getUserTenants(user.id);
   const defaultTenant = resolveDefaultTenant(tenantList);
 
   if (!defaultTenant) {
@@ -221,12 +219,11 @@ export async function login(
   }
 
   // Check password expiry against tenant's policy
-  const tenantRow = db()
+  const [tenantRow] = await db()
     .select({ settings: tenants.settings })
     .from(tenants)
     .where(eq(tenants.id, defaultTenant.tenantId))
-    .limit(1)
-    .get();
+    .limit(1);
 
   let passwordExpired = false;
   if (tenantRow) {
@@ -238,11 +235,10 @@ export async function login(
 
   // Update last_login timestamp
   const now = new Date().toISOString();
-  db()
+  await db()
     .update(users)
     .set({ last_login: now })
-    .where(eq(users.id, user.id))
-    .run();
+    .where(eq(users.id, user.id));
 
   // Generate JWT
   const token = generateToken({
@@ -274,18 +270,17 @@ export async function login(
  * Get the current authenticated user with their tenant list.
  */
 export async function getMe(userId: string): Promise<GetMeResult> {
-  const user = db()
+  const [user] = await db()
     .select()
     .from(users)
     .where(eq(users.id, userId))
-    .limit(1)
-    .get();
+    .limit(1);
 
   if (!user) {
     throw new NotFoundError('User not found');
   }
 
-  const tenantList = getUserTenants(user.id);
+  const tenantList = await getUserTenants(user.id);
   const defaultTenant = resolveDefaultTenant(tenantList);
 
   return {
@@ -312,19 +307,18 @@ export async function switchTenant(
   targetTenantId: string,
 ): Promise<SwitchTenantResult> {
   // Verify user exists
-  const user = db()
+  const [user] = await db()
     .select()
     .from(users)
     .where(eq(users.id, userId))
-    .limit(1)
-    .get();
+    .limit(1);
 
   if (!user) {
     throw new NotFoundError('User not found');
   }
 
   // Verify membership in target tenant
-  const membership = db()
+  const [membership] = await db()
     .select()
     .from(tenantUserMemberships)
     .where(
@@ -333,15 +327,14 @@ export async function switchTenant(
         eq(tenantUserMemberships.tenant_id, targetTenantId),
       ),
     )
-    .limit(1)
-    .get();
+    .limit(1);
 
   if (!membership) {
     throw new ForbiddenError('User is not a member of the target tenant');
   }
 
   // Verify the tenant is active
-  const tenant = db()
+  const [tenant] = await db()
     .select()
     .from(tenants)
     .where(
@@ -350,8 +343,7 @@ export async function switchTenant(
         eq(tenants.is_active, 1),
       ),
     )
-    .limit(1)
-    .get();
+    .limit(1);
 
   if (!tenant) {
     throw new NotFoundError('Tenant not found or inactive');
@@ -387,12 +379,11 @@ export async function changePassword(
   currentPassword: string,
   newPassword: string,
 ): Promise<void> {
-  const user = db()
+  const [user] = await db()
     .select()
     .from(users)
     .where(eq(users.id, userId))
-    .limit(1)
-    .get();
+    .limit(1);
 
   if (!user) {
     throw new NotFoundError('User not found');
@@ -409,12 +400,11 @@ export async function changePassword(
   }
 
   // Load tenant's password policy
-  const tenantRow = db()
+  const [tenantRow] = await db()
     .select({ settings: tenants.settings })
     .from(tenants)
     .where(eq(tenants.id, tenantId))
-    .limit(1)
-    .get();
+    .limit(1);
 
   let tenantSettings: Record<string, unknown> = {};
   if (tenantRow) {
@@ -464,27 +454,25 @@ export async function changePassword(
     historyHashes = [];
   }
 
-  db()
+  await db()
     .update(users)
     .set({
       password_hash: newHash,
       password_changed_at: now,
       password_history: JSON.stringify(historyHashes),
     })
-    .where(eq(users.id, userId))
-    .run();
+    .where(eq(users.id, userId));
 }
 
 /**
  * Get the password policy for a tenant (parsed from settings).
  */
-export function getPasswordPolicy(tenantId: string) {
-  const tenantRow = db()
+export async function getPasswordPolicy(tenantId: string) {
+  const [tenantRow] = await db()
     .select({ settings: tenants.settings })
     .from(tenants)
     .where(eq(tenants.id, tenantId))
-    .limit(1)
-    .get();
+    .limit(1);
 
   let tenantSettings: Record<string, unknown> = {};
   if (tenantRow) {

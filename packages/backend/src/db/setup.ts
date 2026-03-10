@@ -13,7 +13,7 @@ import { initDatabase, getDb, type TypedDb } from '../config/database.js';
 // AUDIT-FIX: H-11 — Structured logging
 import logger from '../lib/logger.js';
 
-const TABLES_SQL = `
+export const TABLES_SQL = `
 -- tenants
 CREATE TABLE IF NOT EXISTS tenants (
   id TEXT PRIMARY KEY,
@@ -617,31 +617,33 @@ CREATE INDEX IF NOT EXISTS idx_feedback_type ON feedback_entries(entry_type);
 CREATE INDEX IF NOT EXISTS idx_feedback_created ON feedback_entries(created_at);
 `;
 
-async function setup() {
-  logger.info('Initializing database');
-  await initDatabase();
-  const db = getDb() as TypedDb;
+// CLI entry point: only runs when executed directly (not when imported)
+const isDirectExecution = process.argv[1]?.includes('setup');
+if (isDirectExecution) {
+  (async () => {
+    logger.info('Initializing database');
+    await initDatabase();
+    const db = getDb() as TypedDb;
 
-  logger.info('Creating tables');
-  const statements = TABLES_SQL
-    .split(';')
-    .map(s => s.trim())
-    .filter(s => s.length > 0);
+    logger.info('Creating tables');
+    const statements = TABLES_SQL
+      .split(';')
+      .map(s => s.trim())
+      .filter(s => s.length > 0);
 
-  for (const stmt of statements) {
-    // db.run() is SQLite-only; db.execute() works for both PG and SQLite
-    if (typeof (db as any).run === 'function') {
-      (db as any).run(sql.raw(stmt));
-    } else {
-      await (db as any).execute(sql.raw(stmt));
+    for (const stmt of statements) {
+      const dbRecord = db as unknown as Record<string, unknown>;
+      if (typeof dbRecord.run === 'function') {
+        (dbRecord.run as (query: ReturnType<typeof sql.raw>) => void)(sql.raw(stmt));
+      } else {
+        await (dbRecord.execute as (query: ReturnType<typeof sql.raw>) => Promise<unknown>)(sql.raw(stmt));
+      }
     }
-  }
 
-  logger.info({ count: statements.length }, 'Created objects (tables + indexes)');
-  process.exit(0);
+    logger.info({ count: statements.length }, 'Created objects (tables + indexes)');
+    process.exit(0);
+  })().catch(err => {
+    logger.fatal({ err }, 'Setup failed');
+    process.exit(1);
+  });
 }
-
-setup().catch(err => {
-  logger.fatal({ err }, 'Setup failed');
-  process.exit(1);
-});

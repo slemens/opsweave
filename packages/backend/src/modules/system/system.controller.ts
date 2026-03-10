@@ -6,6 +6,7 @@ import { sql } from 'drizzle-orm';
 
 import { config } from '../../config/index.js';
 import { getDb, type TypedDb } from '../../config/database.js';
+import { tenants } from '../../db/schema/index.js';
 import { sendSuccess } from '../../lib/response.js';
 import { COMMUNITY_LIMITS, validateLicenseKey } from '../../middleware/license.js';
 import { getTenantLicenseKey } from '../tenants/tenants.service.js';
@@ -40,16 +41,13 @@ async function checkDbConnection(): Promise<{ status: 'connected' | 'degraded'; 
     const db = getDb() as TypedDb;
 
     // Race the SELECT 1 against a 3-second timeout
-    const result = await Promise.race([
-      // Drizzle run() executes raw SQL; SELECT 1 works on both PG and SQLite
-      db.run(sql`SELECT 1`),
+    // Use select() which works on both PostgreSQL and SQLite drivers
+    await Promise.race([
+      db.select({ one: sql`1` }).from(tenants).limit(1),
       new Promise<never>((_resolve, reject) =>
         setTimeout(() => reject(new Error('DB health check timed out after 3s')), 3000),
       ),
     ]);
-
-    // If we get here, the query succeeded
-    void result;
     return { status: 'connected' };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown DB error';
