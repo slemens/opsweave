@@ -41,6 +41,7 @@
     "other": "Sonstige"
   },
   "type_categories": {
+    "all": "Alle Assets",
     "compute": "Compute",
     "network": "Netzwerk",
     "storage": "Speicher",
@@ -113,6 +114,10 @@
     "showing": "{{count}} Assets",
     "page_info": "Seite {{page}} von {{pages}}"
   },
+  "view_table": "Tabelle",
+  "view_topology": "Topologie",
+  "topology_loading": "Lade Topologie…",
+  "topology_empty": "Keine Assets vorhanden",
   "filter_all_types": "Alle Typen",
   "filter_all_statuses": "Alle Status",
   "filter_all_sla": "Alle SLA",
