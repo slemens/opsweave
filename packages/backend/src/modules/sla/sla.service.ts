@@ -55,21 +55,20 @@ export interface SlaAssignmentRow {
 
 // ─── SLA Definitions CRUD ─────────────────────────────────
 
-export function listSlaDefinitions(tenantId: string): SlaDefinitionRow[] {
-  return db()
+export async function listSlaDefinitions(tenantId: string): Promise<SlaDefinitionRow[]> {
+  return await db()
     .select()
     .from(slaDefinitions)
     .where(eq(slaDefinitions.tenant_id, tenantId))
-    .orderBy(desc(slaDefinitions.is_default), slaDefinitions.name)
-    .all();
+    .orderBy(desc(slaDefinitions.is_default), slaDefinitions.name);
 }
 
-export function getSlaDefinition(tenantId: string, id: string): SlaDefinitionRow {
-  const row = db()
+export async function getSlaDefinition(tenantId: string, id: string): Promise<SlaDefinitionRow> {
+  const [row] = await db()
     .select()
     .from(slaDefinitions)
     .where(and(eq(slaDefinitions.id, id), eq(slaDefinitions.tenant_id, tenantId)))
-    .get();
+    .limit(1);
   if (!row) throw new NotFoundError('SLA definition not found');
   return row;
 }
@@ -87,23 +86,22 @@ export interface CreateSlaDefinitionInput {
   is_default?: boolean;
 }
 
-export function createSlaDefinition(
+export async function createSlaDefinition(
   tenantId: string,
   data: CreateSlaDefinitionInput,
-): SlaDefinitionRow {
+): Promise<SlaDefinitionRow> {
   const id = uuidv4();
   const now = new Date().toISOString();
 
   // If marking as default, clear existing default
   if (data.is_default) {
-    db()
+    await db()
       .update(slaDefinitions)
       .set({ is_default: 0, updated_at: now })
-      .where(and(eq(slaDefinitions.tenant_id, tenantId), eq(slaDefinitions.is_default, 1)))
-      .run();
+      .where(and(eq(slaDefinitions.tenant_id, tenantId), eq(slaDefinitions.is_default, 1)));
   }
 
-  db()
+  await db()
     .insert(slaDefinitions)
     .values({
       id,
@@ -121,8 +119,7 @@ export function createSlaDefinition(
       is_active: 1,
       created_at: now,
       updated_at: now,
-    })
-    .run();
+    });
 
   return getSlaDefinition(tenantId, id);
 }
@@ -141,21 +138,20 @@ export interface UpdateSlaDefinitionInput {
   is_active?: boolean;
 }
 
-export function updateSlaDefinition(
+export async function updateSlaDefinition(
   tenantId: string,
   id: string,
   data: UpdateSlaDefinitionInput,
-): SlaDefinitionRow {
-  const existing = getSlaDefinition(tenantId, id);
+): Promise<SlaDefinitionRow> {
+  const existing = await getSlaDefinition(tenantId, id);
   const now = new Date().toISOString();
 
   // If marking as default, clear existing default
   if (data.is_default && !existing.is_default) {
-    db()
+    await db()
       .update(slaDefinitions)
       .set({ is_default: 0, updated_at: now })
-      .where(and(eq(slaDefinitions.tenant_id, tenantId), eq(slaDefinitions.is_default, 1)))
-      .run();
+      .where(and(eq(slaDefinitions.tenant_id, tenantId), eq(slaDefinitions.is_default, 1)));
   }
 
   const updateData: Record<string, unknown> = { updated_at: now };
@@ -171,39 +167,37 @@ export function updateSlaDefinition(
   if (data.is_default !== undefined) updateData.is_default = data.is_default ? 1 : 0;
   if (data.is_active !== undefined) updateData.is_active = data.is_active ? 1 : 0;
 
-  db()
+  await db()
     .update(slaDefinitions)
     .set(updateData)
-    .where(and(eq(slaDefinitions.id, id), eq(slaDefinitions.tenant_id, tenantId)))
-    .run();
+    .where(and(eq(slaDefinitions.id, id), eq(slaDefinitions.tenant_id, tenantId)));
 
   return getSlaDefinition(tenantId, id);
 }
 
-export function deleteSlaDefinition(tenantId: string, id: string): void {
-  getSlaDefinition(tenantId, id); // throws if not found
+export async function deleteSlaDefinition(tenantId: string, id: string): Promise<void> {
+  await getSlaDefinition(tenantId, id); // throws if not found
 
   // Check for assignments
-  const assignmentCount = db()
+  const [assignmentCount] = await db()
     .select({ cnt: count() })
     .from(slaAssignments)
     .where(and(eq(slaAssignments.sla_definition_id, id), eq(slaAssignments.tenant_id, tenantId)))
-    .get();
+    .limit(1);
 
   if (assignmentCount && assignmentCount.cnt > 0) {
     throw new ValidationError('Cannot delete SLA definition with active assignments. Remove assignments first.');
   }
 
-  db()
+  await db()
     .delete(slaDefinitions)
-    .where(and(eq(slaDefinitions.id, id), eq(slaDefinitions.tenant_id, tenantId)))
-    .run();
+    .where(and(eq(slaDefinitions.id, id), eq(slaDefinitions.tenant_id, tenantId)));
 }
 
 // ─── SLA Assignments CRUD ─────────────────────────────────
 
-export function listSlaAssignments(tenantId: string): SlaAssignmentRow[] {
-  const rows = db()
+export async function listSlaAssignments(tenantId: string): Promise<SlaAssignmentRow[]> {
+  const rows = await db()
     .select({
       id: slaAssignments.id,
       tenant_id: slaAssignments.tenant_id,
@@ -221,11 +215,11 @@ export function listSlaAssignments(tenantId: string): SlaAssignmentRow[] {
     .from(slaAssignments)
     .leftJoin(slaDefinitions, eq(slaAssignments.sla_definition_id, slaDefinitions.id))
     .where(eq(slaAssignments.tenant_id, tenantId))
-    .orderBy(desc(slaAssignments.priority))
-    .all();
+    .orderBy(desc(slaAssignments.priority));
 
   // Enrich with names (service, customer, asset)
-  return rows.map((row) => {
+  const results: SlaAssignmentRow[] = [];
+  for (const row of rows) {
     const result: SlaAssignmentRow = {
       id: row.id,
       tenant_id: row.tenant_id,
@@ -238,20 +232,21 @@ export function listSlaAssignments(tenantId: string): SlaAssignmentRow[] {
     };
 
     if (row.service_id) {
-      const svc = db().select({ title: serviceDescriptions.title }).from(serviceDescriptions).where(eq(serviceDescriptions.id, row.service_id)).get();
+      const [svc] = await db().select({ title: serviceDescriptions.title }).from(serviceDescriptions).where(eq(serviceDescriptions.id, row.service_id)).limit(1);
       result.service_name = svc?.title ?? null;
     }
     if (row.customer_id) {
-      const cust = db().select({ name: customers.name }).from(customers).where(eq(customers.id, row.customer_id)).get();
+      const [cust] = await db().select({ name: customers.name }).from(customers).where(eq(customers.id, row.customer_id)).limit(1);
       result.customer_name = cust?.name ?? null;
     }
     if (row.asset_id) {
-      const asset = db().select({ display_name: assets.display_name }).from(assets).where(eq(assets.id, row.asset_id)).get();
+      const [asset] = await db().select({ display_name: assets.display_name }).from(assets).where(eq(assets.id, row.asset_id)).limit(1);
       result.asset_name = asset?.display_name ?? null;
     }
 
-    return result;
-  });
+    results.push(result);
+  }
+  return results;
 }
 
 export interface CreateSlaAssignmentInput {
@@ -261,12 +256,12 @@ export interface CreateSlaAssignmentInput {
   asset_id?: string | null;
 }
 
-export function createSlaAssignment(
+export async function createSlaAssignment(
   tenantId: string,
   data: CreateSlaAssignmentInput,
-): SlaAssignmentRow {
+): Promise<SlaAssignmentRow> {
   // Validate definition exists
-  getSlaDefinition(tenantId, data.sla_definition_id);
+  await getSlaDefinition(tenantId, data.sla_definition_id);
 
   // At least one scope must be set
   if (!data.service_id && !data.customer_id && !data.asset_id) {
@@ -283,7 +278,7 @@ export function createSlaAssignment(
   const id = uuidv4();
   const now = new Date().toISOString();
 
-  db()
+  await db()
     .insert(slaAssignments)
     .values({
       id,
@@ -294,25 +289,24 @@ export function createSlaAssignment(
       asset_id: data.asset_id ?? null,
       priority,
       created_at: now,
-    })
-    .run();
+    });
 
-  return listSlaAssignments(tenantId).find((a) => a.id === id)!;
+  const allAssignments = await listSlaAssignments(tenantId);
+  return allAssignments.find((a) => a.id === id)!;
 }
 
-export function deleteSlaAssignment(tenantId: string, id: string): void {
-  const existing = db()
+export async function deleteSlaAssignment(tenantId: string, id: string): Promise<void> {
+  const [existing] = await db()
     .select()
     .from(slaAssignments)
     .where(and(eq(slaAssignments.id, id), eq(slaAssignments.tenant_id, tenantId)))
-    .get();
+    .limit(1);
 
   if (!existing) throw new NotFoundError('SLA assignment not found');
 
-  db()
+  await db()
     .delete(slaAssignments)
-    .where(and(eq(slaAssignments.id, id), eq(slaAssignments.tenant_id, tenantId)))
-    .run();
+    .where(and(eq(slaAssignments.id, id), eq(slaAssignments.tenant_id, tenantId)));
 }
 
 // ─── SLA Resolution (for ticket creation) ─────────────────
@@ -321,15 +315,15 @@ export function deleteSlaAssignment(tenantId: string, id: string): void {
  * Resolve the effective SLA definition for a ticket context.
  * Priority order: asset > customer+service > customer > service > tenant default
  */
-export function resolveEffectiveSla(
+export async function resolveEffectiveSla(
   tenantId: string,
   context: { asset_id?: string | null; customer_id?: string | null; service_id?: string | null },
-): SlaDefinitionRow | null {
+): Promise<SlaDefinitionRow | null> {
   const d = db();
 
   // 1. Asset-specific
   if (context.asset_id) {
-    const assetSla = d
+    const [assetSla] = await d
       .select({ def_id: slaAssignments.sla_definition_id })
       .from(slaAssignments)
       .where(and(
@@ -337,16 +331,16 @@ export function resolveEffectiveSla(
         eq(slaAssignments.asset_id, context.asset_id),
       ))
       .orderBy(desc(slaAssignments.priority))
-      .get();
+      .limit(1);
     if (assetSla) {
-      const def = d.select().from(slaDefinitions).where(and(eq(slaDefinitions.id, assetSla.def_id), eq(slaDefinitions.is_active, 1))).get();
+      const [def] = await d.select().from(slaDefinitions).where(and(eq(slaDefinitions.id, assetSla.def_id), eq(slaDefinitions.is_active, 1))).limit(1);
       if (def) return def;
     }
   }
 
   // 2. Customer + Service
   if (context.customer_id && context.service_id) {
-    const combo = d
+    const [combo] = await d
       .select({ def_id: slaAssignments.sla_definition_id })
       .from(slaAssignments)
       .where(and(
@@ -354,16 +348,16 @@ export function resolveEffectiveSla(
         eq(slaAssignments.customer_id, context.customer_id),
         eq(slaAssignments.service_id, context.service_id),
       ))
-      .get();
+      .limit(1);
     if (combo) {
-      const def = d.select().from(slaDefinitions).where(and(eq(slaDefinitions.id, combo.def_id), eq(slaDefinitions.is_active, 1))).get();
+      const [def] = await d.select().from(slaDefinitions).where(and(eq(slaDefinitions.id, combo.def_id), eq(slaDefinitions.is_active, 1))).limit(1);
       if (def) return def;
     }
   }
 
   // 3. Customer-wide
   if (context.customer_id) {
-    const custSla = d
+    const [custSla] = await d
       .select({ def_id: slaAssignments.sla_definition_id })
       .from(slaAssignments)
       .where(and(
@@ -372,16 +366,16 @@ export function resolveEffectiveSla(
         isNull(slaAssignments.service_id),
         isNull(slaAssignments.asset_id),
       ))
-      .get();
+      .limit(1);
     if (custSla) {
-      const def = d.select().from(slaDefinitions).where(and(eq(slaDefinitions.id, custSla.def_id), eq(slaDefinitions.is_active, 1))).get();
+      const [def] = await d.select().from(slaDefinitions).where(and(eq(slaDefinitions.id, custSla.def_id), eq(slaDefinitions.is_active, 1))).limit(1);
       if (def) return def;
     }
   }
 
   // 4. Service-wide
   if (context.service_id) {
-    const svcSla = d
+    const [svcSla] = await d
       .select({ def_id: slaAssignments.sla_definition_id })
       .from(slaAssignments)
       .where(and(
@@ -390,15 +384,15 @@ export function resolveEffectiveSla(
         isNull(slaAssignments.customer_id),
         isNull(slaAssignments.asset_id),
       ))
-      .get();
+      .limit(1);
     if (svcSla) {
-      const def = d.select().from(slaDefinitions).where(and(eq(slaDefinitions.id, svcSla.def_id), eq(slaDefinitions.is_active, 1))).get();
+      const [def] = await d.select().from(slaDefinitions).where(and(eq(slaDefinitions.id, svcSla.def_id), eq(slaDefinitions.is_active, 1))).limit(1);
       if (def) return def;
     }
   }
 
   // 5. Tenant default
-  const defaultSla = d
+  const [defaultSla] = await d
     .select()
     .from(slaDefinitions)
     .where(and(
@@ -406,7 +400,7 @@ export function resolveEffectiveSla(
       eq(slaDefinitions.is_default, 1),
       eq(slaDefinitions.is_active, 1),
     ))
-    .get();
+    .limit(1);
 
   return defaultSla ?? null;
 }
@@ -447,17 +441,17 @@ export interface SlaPerformanceReport {
  * Generate SLA performance report for a tenant.
  * @param days Number of days to look back (default 30)
  */
-export function getSlaPerformanceReport(
+export async function getSlaPerformanceReport(
   tenantId: string,
   days = 30,
-): SlaPerformanceReport {
+): Promise<SlaPerformanceReport> {
   const d = db();
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - days);
   const cutoffStr = cutoff.toISOString();
 
   // All tickets in time window
-  const allTickets = d
+  const allTickets = await d
     .select({
       id: tickets.id,
       priority: tickets.priority,
@@ -475,8 +469,7 @@ export function getSlaPerformanceReport(
         eq(tickets.tenant_id, tenantId),
         sql`${tickets.created_at} >= ${cutoffStr}`,
       ),
-    )
-    .all();
+    );
 
   // Summary
   const totalTickets = allTickets.length;

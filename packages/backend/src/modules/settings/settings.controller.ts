@@ -111,20 +111,20 @@ export function getLicenseUsageHandler(
  * POST /api/v1/license/activate
  * Validate and store a license key for the current tenant (admin only).
  */
-export function activateLicenseHandler(
+export async function activateLicenseHandler(
   req: Request,
   res: Response,
-): void {
+): Promise<void> {
   const tenantId = requireTenantId(req);
   const userId = requireUserId(req);
   const { license_key } = req.body as { license_key: string };
 
-  const info = settingsService.activateLicense(tenantId, license_key);
+  const info = await settingsService.activateLicense(tenantId, license_key);
 
   writeAuditLog(
     tenantId,
     userId,
-    resolveActorEmail(userId),
+    await resolveActorEmail(userId),
     'license.activated',
     'tenant',
     tenantId,
@@ -140,18 +140,18 @@ export function activateLicenseHandler(
  * DELETE /api/v1/license
  * Remove the license key, reverting to community edition (admin only).
  */
-export function deactivateLicenseHandler(
+export async function deactivateLicenseHandler(
   req: Request,
   res: Response,
-): void {
+): Promise<void> {
   const tenantId = requireTenantId(req);
   const userId = requireUserId(req);
-  settingsService.deactivateLicense(tenantId);
+  await settingsService.deactivateLicense(tenantId);
 
   writeAuditLog(
     tenantId,
     userId,
-    resolveActorEmail(userId),
+    await resolveActorEmail(userId),
     'license.deactivated',
     'tenant',
     tenantId,
@@ -182,10 +182,10 @@ export function getPasswordPolicy(
  * PUT /api/v1/settings/password-policy
  * Update the password policy for the current tenant (admin only).
  */
-export function updatePasswordPolicy(
+export async function updatePasswordPolicy(
   req: Request,
   res: Response,
-): void {
+): Promise<void> {
   const tenantId = requireTenantId(req);
   const userId = requireUserId(req);
   const data = req.body as Partial<PasswordPolicy>;
@@ -194,7 +194,7 @@ export function updatePasswordPolicy(
   writeAuditLog(
     tenantId,
     userId,
-    resolveActorEmail(userId),
+    await resolveActorEmail(userId),
     'settings.password_policy_updated',
     'tenant',
     tenantId,

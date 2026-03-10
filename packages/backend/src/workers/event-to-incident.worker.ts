@@ -1,4 +1,4 @@
-import { eq, and, isNull, ne, like, or, sql } from 'drizzle-orm';
+import { eq, and, isNull, ne, like, or, sql, gt } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 
 import { getDb, type TypedDb } from '../config/database.js';
@@ -57,20 +57,20 @@ export function stopEventToIncidentWorker(): void {
 async function runCycle(): Promise<void> {
   try {
     // 1. Process unprocessed critical events → create or append to incidents
-    processNewCriticalEvents();
+    await processNewCriticalEvents();
 
     // 2. Auto-resolve incidents whose events are now OK
-    autoResolveIncidents();
+    await autoResolveIncidents();
   } catch (err) {
     logger.error({ err }, '[event-to-incident] Error in cycle');
   }
 }
 
-function processNewCriticalEvents(): void {
+async function processNewCriticalEvents(): Promise<void> {
   const d = db();
 
   // Get unprocessed critical events
-  const criticalEvents = d
+  const criticalEvents = await d
     .select()
     .from(monitoringEvents)
     .where(
@@ -79,35 +79,33 @@ function processNewCriticalEvents(): void {
         eq(monitoringEvents.processed, 0),
         isNull(monitoringEvents.ticket_id),
       ),
-    )
-    .all();
+    );
 
   if (criticalEvents.length === 0) return;
 
   for (const event of criticalEvents) {
     try {
       // Load source config for auto_create_incidents setting
-      const source = d
+      const [source] = await d
         .select()
         .from(monitoringSources)
         .where(eq(monitoringSources.id, event.source_id))
-        .get();
+        .limit(1);
 
       if (!source) continue;
 
       const sourceConfig = JSON.parse(source.config || '{}') as Record<string, unknown>;
       if (sourceConfig.auto_create_incidents === false) {
         // Mark as processed but don't create ticket
-        d.update(monitoringEvents)
+        await d.update(monitoringEvents)
           .set({ processed: 1, processed_at: new Date().toISOString() })
-          .where(eq(monitoringEvents.id, event.id))
-          .run();
+          .where(eq(monitoringEvents.id, event.id));
         continue;
       }
 
       // Asset matching: hostname → CMDB
       let matchedAssetId: string | null = null;
-      const asset = d
+      const [asset] = await d
         .select({ id: assets.id, customer_id: assets.customer_id })
         .from(assets)
         .where(
@@ -119,19 +117,18 @@ function processNewCriticalEvents(): void {
             ),
           ),
         )
-        .get();
+        .limit(1);
 
       if (asset) {
         matchedAssetId = asset.id;
         // Update event with matched asset
-        d.update(monitoringEvents)
+        await d.update(monitoringEvents)
           .set({ matched_asset_id: matchedAssetId })
-          .where(eq(monitoringEvents.id, event.id))
-          .run();
+          .where(eq(monitoringEvents.id, event.id));
       }
 
       // Dedup: Check for existing open incident for same hostname + service
-      const existingTicket = d
+      const [existingTicket] = await d
         .select({ id: tickets.id, ticket_number: tickets.ticket_number })
         .from(tickets)
         .where(
@@ -144,13 +141,13 @@ function processNewCriticalEvents(): void {
             like(tickets.title, `%${event.hostname}%`),
           ),
         )
-        .get();
+        .limit(1);
 
       const now = new Date().toISOString();
 
       if (existingTicket) {
         // Append comment to existing ticket
-        d.insert(ticketComments)
+        await d.insert(ticketComments)
           .values({
             id: uuidv4(),
             tenant_id: event.tenant_id,
@@ -160,14 +157,12 @@ function processNewCriticalEvents(): void {
             is_internal: 1,
             source: 'system',
             created_at: now,
-          })
-          .run();
+          });
 
         // Link event to existing ticket
-        d.update(monitoringEvents)
+        await d.update(monitoringEvents)
           .set({ ticket_id: existingTicket.id, processed: 1, processed_at: now })
-          .where(eq(monitoringEvents.id, event.id))
-          .run();
+          .where(eq(monitoringEvents.id, event.id));
 
         logger.info(
           { ticket: existingTicket.ticket_number, hostname: event.hostname },
@@ -176,7 +171,7 @@ function processNewCriticalEvents(): void {
       } else {
         // Create new incident ticket
         const year = new Date().getFullYear();
-        const lastTicket = d
+        const [lastTicket] = await d
           .select({ ticket_number: tickets.ticket_number })
           .from(tickets)
           .where(
@@ -187,8 +182,7 @@ function processNewCriticalEvents(): void {
             ),
           )
           .orderBy(sql`${tickets.ticket_number} DESC`)
-          .limit(1)
-          .get();
+          .limit(1);
 
         let seq = 1;
         if (lastTicket) {
@@ -200,7 +194,7 @@ function processNewCriticalEvents(): void {
         const ticketId = uuidv4();
         const title = `[MON] ${event.hostname}: ${event.service_name ?? 'Host'} is ${event.state.toUpperCase()}`;
 
-        d.insert(tickets)
+        await d.insert(tickets)
           .values({
             id: ticketId,
             tenant_id: event.tenant_id,
@@ -218,14 +212,12 @@ function processNewCriticalEvents(): void {
             created_by: SYSTEM_USER_ID,
             created_at: now,
             updated_at: now,
-          })
-          .run();
+          });
 
         // Link event to new ticket
-        d.update(monitoringEvents)
+        await d.update(monitoringEvents)
           .set({ ticket_id: ticketId, processed: 1, processed_at: now })
-          .where(eq(monitoringEvents.id, event.id))
-          .run();
+          .where(eq(monitoringEvents.id, event.id));
 
         logger.info(
           { ticket: ticketNumber, hostname: event.hostname },
@@ -250,20 +242,19 @@ function processNewCriticalEvents(): void {
         '[event-to-incident] Error processing event',
       );
       // Mark as processed to prevent infinite retry loops
-      db()
+      await db()
         .update(monitoringEvents)
         .set({ processed: 1, processed_at: new Date().toISOString() })
-        .where(eq(monitoringEvents.id, event.id))
-        .run();
+        .where(eq(monitoringEvents.id, event.id));
     }
   }
 }
 
-function autoResolveIncidents(): void {
+async function autoResolveIncidents(): Promise<void> {
   const d = db();
 
   // Find open monitoring incidents
-  const openMonitoringTickets = d
+  const openMonitoringTickets = await d
     .select({
       id: tickets.id,
       tenant_id: tickets.tenant_id,
@@ -278,16 +269,14 @@ function autoResolveIncidents(): void {
         ne(tickets.status, 'closed'),
         ne(tickets.status, 'resolved'),
       ),
-    )
-    .all();
+    );
 
   for (const ticket of openMonitoringTickets) {
     // Check if all linked events are now OK
-    const linkedEvents = d
+    const linkedEvents = await d
       .select({ state: monitoringEvents.state })
       .from(monitoringEvents)
-      .where(eq(monitoringEvents.ticket_id, ticket.id))
-      .all();
+      .where(eq(monitoringEvents.ticket_id, ticket.id));
 
     if (linkedEvents.length === 0) continue;
 
@@ -296,7 +285,9 @@ function autoResolveIncidents(): void {
     if (!hostnameMatch?.[1]) continue;
     const hostname = hostnameMatch[1].trim();
 
-    const recentOkEvent = d
+    // Use ISO timestamp comparison that works on both SQLite and PostgreSQL
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    const [recentOkEvent] = await d
       .select({ id: monitoringEvents.id })
       .from(monitoringEvents)
       .where(
@@ -304,22 +295,21 @@ function autoResolveIncidents(): void {
           eq(monitoringEvents.tenant_id, ticket.tenant_id),
           eq(monitoringEvents.hostname, hostname),
           eq(monitoringEvents.state, 'ok'),
-          sql`${monitoringEvents.received_at} >= datetime('now', '-5 minutes')`,
+          gt(monitoringEvents.received_at, fiveMinutesAgo),
         ),
       )
-      .get();
+      .limit(1);
 
     if (recentOkEvent) {
       const now = new Date().toISOString();
 
       // Auto-resolve the incident
-      d.update(tickets)
+      await d.update(tickets)
         .set({ status: 'resolved', resolved_at: now, updated_at: now })
-        .where(eq(tickets.id, ticket.id))
-        .run();
+        .where(eq(tickets.id, ticket.id));
 
       // System comment
-      d.insert(ticketComments)
+      await d.insert(ticketComments)
         .values({
           id: uuidv4(),
           tenant_id: ticket.tenant_id,
@@ -329,11 +319,10 @@ function autoResolveIncidents(): void {
           is_internal: 1,
           source: 'system',
           created_at: now,
-        })
-        .run();
+        });
 
       // History entry
-      d.insert(ticketHistory)
+      await d.insert(ticketHistory)
         .values({
           id: uuidv4(),
           tenant_id: ticket.tenant_id,
@@ -343,8 +332,7 @@ function autoResolveIncidents(): void {
           new_value: 'resolved',
           changed_by: SYSTEM_USER_ID,
           changed_at: now,
-        })
-        .run();
+        });
 
       logger.info(
         { ticket: ticket.ticket_number },

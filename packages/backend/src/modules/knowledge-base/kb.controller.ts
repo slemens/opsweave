@@ -113,16 +113,16 @@ export async function linkToTicket(
  * GET /api/v1/kb/articles/search
  * Full-text search across published KB articles with relevance scoring.
  */
-export function searchArticles(
+export async function searchArticles(
   req: Request,
   res: Response,
-): void {
+): Promise<void> {
   const tenantId = requireTenantId(req);
   const q = typeof req.query['q'] === 'string' ? req.query['q'] : '';
   const visibility = typeof req.query['visibility'] === 'string' ? req.query['visibility'] : undefined;
   const limit = parseInt(req.query['limit'] as string, 10) || 20;
 
-  const results = kbService.searchKbArticles(tenantId, q, { visibility, limit });
+  const results = await kbService.searchKbArticles(tenantId, q, { visibility, limit });
   sendSuccess(res, results);
 }
 

@@ -74,21 +74,20 @@ function mapTenantRow(row: typeof tenants.$inferSelect): Tenant {
 /**
  * List all tenants. Only accessible by super-admins.
  */
-export function listTenants(): Tenant[] {
-  const rows = db().select().from(tenants).all();
+export async function listTenants(): Promise<Tenant[]> {
+  const rows = await db().select().from(tenants);
   return rows.map(mapTenantRow);
 }
 
 /**
  * Get a single tenant by ID.
  */
-export function getTenant(id: string): Tenant {
-  const tenant = db()
+export async function getTenant(id: string): Promise<Tenant> {
+  const [tenant] = await db()
     .select()
     .from(tenants)
     .where(eq(tenants.id, id))
-    .limit(1)
-    .get();
+    .limit(1);
 
   if (!tenant) {
     throw new NotFoundError('Tenant not found');
@@ -101,22 +100,21 @@ export function getTenant(id: string): Tenant {
  * Create a new tenant.
  * Generates slug from name if not explicitly provided.
  */
-export function createTenant(data: {
+export async function createTenant(data: {
   name: string;
   slug?: string;
   settings?: Record<string, unknown>;
-}): Tenant {
+}): Promise<Tenant> {
   const id = uuidv4();
   const now = new Date().toISOString();
   const slug = data.slug ?? slugify(data.name);
 
   // Check slug uniqueness
-  const existing = db()
+  const [existing] = await db()
     .select({ id: tenants.id })
     .from(tenants)
     .where(eq(tenants.slug, slug))
-    .limit(1)
-    .get();
+    .limit(1);
 
   if (existing) {
     throw new ConflictError('A tenant with this slug already exists', {
@@ -126,7 +124,7 @@ export function createTenant(data: {
 
   const settingsJson = JSON.stringify(data.settings ?? {});
 
-  const result = db()
+  const [result] = await db()
     .insert(tenants)
     .values({
       id,
@@ -137,8 +135,7 @@ export function createTenant(data: {
       created_at: now,
       updated_at: now,
     })
-    .returning()
-    .get();
+    .returning();
 
   if (!result) {
     throw new Error('Failed to create tenant');
@@ -150,7 +147,7 @@ export function createTenant(data: {
 /**
  * Update a tenant.
  */
-export function updateTenant(
+export async function updateTenant(
   id: string,
   data: {
     name?: string;
@@ -158,14 +155,13 @@ export function updateTenant(
     settings?: Record<string, unknown>;
     is_active?: boolean;
   },
-): Tenant {
+): Promise<Tenant> {
   // Verify tenant exists
-  const existing = db()
+  const [existing] = await db()
     .select()
     .from(tenants)
     .where(eq(tenants.id, id))
-    .limit(1)
-    .get();
+    .limit(1);
 
   if (!existing) {
     throw new NotFoundError('Tenant not found');
@@ -173,12 +169,11 @@ export function updateTenant(
 
   // If slug is changing, check uniqueness
   if (data.slug) {
-    const slugConflict = db()
+    const [slugConflict] = await db()
       .select({ id: tenants.id })
       .from(tenants)
       .where(eq(tenants.slug, data.slug))
-      .limit(1)
-      .get();
+      .limit(1);
 
     if (slugConflict && slugConflict.id !== id) {
       throw new ConflictError('A tenant with this slug already exists', {
@@ -206,12 +201,11 @@ export function updateTenant(
     updateData['is_active'] = data.is_active ? 1 : 0;
   }
 
-  const result = db()
+  const [result] = await db()
     .update(tenants)
     .set(updateData)
     .where(eq(tenants.id, id))
-    .returning()
-    .get();
+    .returning();
 
   if (!result) {
     throw new Error('Failed to update tenant');
@@ -223,22 +217,21 @@ export function updateTenant(
 /**
  * List all members of a tenant with their user details and roles.
  */
-export function listTenantMembers(
+export async function listTenantMembers(
   tenantId: string,
-): TenantMemberInfo[] {
+): Promise<TenantMemberInfo[]> {
   // Verify tenant exists
-  const tenant = db()
+  const [tenant] = await db()
     .select({ id: tenants.id })
     .from(tenants)
     .where(eq(tenants.id, tenantId))
-    .limit(1)
-    .get();
+    .limit(1);
 
   if (!tenant) {
     throw new NotFoundError('Tenant not found');
   }
 
-  const rows = db()
+  const rows = await db()
     .select({
       userId: users.id,
       email: users.email,
@@ -248,8 +241,7 @@ export function listTenantMembers(
     })
     .from(tenantUserMemberships)
     .innerJoin(users, eq(tenantUserMemberships.user_id, users.id))
-    .where(eq(tenantUserMemberships.tenant_id, tenantId))
-    .all();
+    .where(eq(tenantUserMemberships.tenant_id, tenantId));
 
   return rows.map((r) => ({
     userId: r.userId,
@@ -263,37 +255,35 @@ export function listTenantMembers(
 /**
  * Add a user to a tenant with a specific role.
  */
-export function addTenantMember(
+export async function addTenantMember(
   tenantId: string,
   userId: string,
   role: TenantRole,
-): void {
+): Promise<void> {
   // Verify tenant exists
-  const tenant = db()
+  const [tenant] = await db()
     .select({ id: tenants.id })
     .from(tenants)
     .where(eq(tenants.id, tenantId))
-    .limit(1)
-    .get();
+    .limit(1);
 
   if (!tenant) {
     throw new NotFoundError('Tenant not found');
   }
 
   // Verify user exists
-  const user = db()
+  const [user] = await db()
     .select({ id: users.id })
     .from(users)
     .where(eq(users.id, userId))
-    .limit(1)
-    .get();
+    .limit(1);
 
   if (!user) {
     throw new NotFoundError('User not found');
   }
 
   // Check if already a member
-  const existingMembership = db()
+  const [existingMembership] = await db()
     .select()
     .from(tenantUserMemberships)
     .where(
@@ -302,32 +292,29 @@ export function addTenantMember(
         eq(tenantUserMemberships.user_id, userId),
       ),
     )
-    .limit(1)
-    .get();
+    .limit(1);
 
   if (existingMembership) {
     throw new ConflictError('User is already a member of this tenant');
   }
 
   // Check if this is the user's first tenant membership — make it default
-  const anyExisting = db()
+  const [anyExisting] = await db()
     .select()
     .from(tenantUserMemberships)
     .where(eq(tenantUserMemberships.user_id, userId))
-    .limit(1)
-    .get();
+    .limit(1);
 
   const isDefault = anyExisting ? 0 : 1;
 
-  db()
+  await db()
     .insert(tenantUserMemberships)
     .values({
       tenant_id: tenantId,
       user_id: userId,
       role,
       is_default: isDefault,
-    })
-    .run();
+    });
 }
 
 /**
@@ -336,12 +323,11 @@ export function addTenantMember(
  * Used by the license middleware via licenseKeyFn callbacks.
  */
 export async function getTenantLicenseKey(tenantId: string): Promise<string | null> {
-  const row = db()
+  const [row] = await db()
     .select({ license_key: tenants.license_key })
     .from(tenants)
     .where(eq(tenants.id, tenantId))
-    .limit(1)
-    .get();
+    .limit(1);
 
   return row?.license_key ?? null;
 }
@@ -349,12 +335,12 @@ export async function getTenantLicenseKey(tenantId: string): Promise<string | nu
 /**
  * Remove a user from a tenant.
  */
-export function removeTenantMember(
+export async function removeTenantMember(
   tenantId: string,
   userId: string,
-): void {
+): Promise<void> {
   // Verify the membership exists
-  const membership = db()
+  const [membership] = await db()
     .select()
     .from(tenantUserMemberships)
     .where(
@@ -363,8 +349,7 @@ export function removeTenantMember(
         eq(tenantUserMemberships.user_id, userId),
       ),
     )
-    .limit(1)
-    .get();
+    .limit(1);
 
   if (!membership) {
     throw new NotFoundError(
@@ -375,27 +360,25 @@ export function removeTenantMember(
   const wasDefault = membership.is_default === 1;
 
   // Delete the membership
-  db()
+  await db()
     .delete(tenantUserMemberships)
     .where(
       and(
         eq(tenantUserMemberships.tenant_id, tenantId),
         eq(tenantUserMemberships.user_id, userId),
       ),
-    )
-    .run();
+    );
 
   // If the removed membership was the default, promote another one
   if (wasDefault) {
-    const remaining = db()
+    const [remaining] = await db()
       .select()
       .from(tenantUserMemberships)
       .where(eq(tenantUserMemberships.user_id, userId))
-      .limit(1)
-      .get();
+      .limit(1);
 
     if (remaining) {
-      db()
+      await db()
         .update(tenantUserMemberships)
         .set({ is_default: 1 })
         .where(
@@ -403,8 +386,7 @@ export function removeTenantMember(
             eq(tenantUserMemberships.tenant_id, remaining.tenant_id),
             eq(tenantUserMemberships.user_id, userId),
           ),
-        )
-        .run();
+        );
     }
   }
 }

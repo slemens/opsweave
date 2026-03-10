@@ -115,11 +115,11 @@ export async function changePassword(
 /**
  * Get the password policy for the current tenant.
  */
-export function getPasswordPolicy(
+export async function getPasswordPolicy(
   req: Request,
   res: Response,
-): void {
+): Promise<void> {
   const tenantId = requireTenantId(req);
-  const policy = authService.getPasswordPolicy(tenantId);
+  const policy = await authService.getPasswordPolicy(tenantId);
   sendSuccess(res, policy);
 }

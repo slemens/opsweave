@@ -585,11 +585,11 @@ export interface KbSearchResult {
  * Title matches score higher than content matches.
  * Returns highlighted snippets with context around matches.
  */
-export function searchKbArticles(
+export async function searchKbArticles(
   tenantId: string,
   query: string,
   options: { visibility?: string; limit?: number } = {},
-): KbSearchResult[] {
+): Promise<KbSearchResult[]> {
   const d = db();
   const maxResults = options.limit ?? 20;
   const searchTerm = query.trim().toLowerCase();
@@ -610,7 +610,7 @@ export function searchKbArticles(
     )!,
   );
 
-  const rows = d
+  const rows = await d
     .select({
       id: kbArticles.id,
       title: kbArticles.title,
@@ -623,8 +623,7 @@ export function searchKbArticles(
     })
     .from(kbArticles)
     .where(and(...conditions))
-    .limit(maxResults * 2) // Over-fetch for scoring
-    .all();
+    .limit(maxResults * 2);
 
   // Score and rank results
   const scored = rows.map((row) => {

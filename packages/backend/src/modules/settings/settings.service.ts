@@ -34,8 +34,8 @@ export interface SettingEntry {
 /**
  * Get all system settings.
  */
-export function getAllSettings(): SettingEntry[] {
-  const rows = db().select().from(systemSettings).all();
+export async function getAllSettings(): Promise<SettingEntry[]> {
+  const rows = await db().select().from(systemSettings);
   return rows.map((r) => ({
     key: r.key,
     value: parseJson(r.value),
@@ -47,13 +47,12 @@ export function getAllSettings(): SettingEntry[] {
 /**
  * Get a single setting by key.
  */
-export function getSetting(key: string): SettingEntry {
-  const row = db()
+export async function getSetting(key: string): Promise<SettingEntry> {
+  const [row] = await db()
     .select()
     .from(systemSettings)
     .where(eq(systemSettings.key, key))
-    .limit(1)
-    .get();
+    .limit(1);
 
   if (!row) {
     throw new NotFoundError(`Setting '${key}' not found`);
@@ -70,32 +69,29 @@ export function getSetting(key: string): SettingEntry {
 /**
  * Upsert a setting (insert or update).
  */
-export function upsertSetting(
+export async function upsertSetting(
   key: string,
   value: unknown,
   userId: string,
-): SettingEntry {
+): Promise<SettingEntry> {
   const now = new Date().toISOString();
   const jsonValue = JSON.stringify(value);
 
-  const existing = db()
+  const [existing] = await db()
     .select()
     .from(systemSettings)
     .where(eq(systemSettings.key, key))
-    .limit(1)
-    .get();
+    .limit(1);
 
   if (existing) {
-    db()
+    await db()
       .update(systemSettings)
       .set({ value: jsonValue, updated_at: now, updated_by: userId })
-      .where(eq(systemSettings.key, key))
-      .run();
+      .where(eq(systemSettings.key, key));
   } else {
-    db()
+    await db()
       .insert(systemSettings)
-      .values({ key, value: jsonValue, updated_at: now, updated_by: userId })
-      .run();
+      .values({ key, value: jsonValue, updated_at: now, updated_by: userId });
   }
 
   return { key, value, updated_at: now, updated_by: userId };
@@ -104,19 +100,18 @@ export function upsertSetting(
 /**
  * Delete a setting by key.
  */
-export function deleteSetting(key: string): void {
-  const existing = db()
+export async function deleteSetting(key: string): Promise<void> {
+  const [existing] = await db()
     .select()
     .from(systemSettings)
     .where(eq(systemSettings.key, key))
-    .limit(1)
-    .get();
+    .limit(1);
 
   if (!existing) {
     throw new NotFoundError(`Setting '${key}' not found`);
   }
 
-  db().delete(systemSettings).where(eq(systemSettings.key, key)).run();
+  await db().delete(systemSettings).where(eq(systemSettings.key, key));
 }
 
 // ─── Runtime Config (read-only, non-secret .env values) ──
@@ -179,13 +174,12 @@ export interface LicenseInfo {
 /**
  * Get the license info for a tenant.
  */
-export function getLicenseInfo(tenantId: string): LicenseInfo {
-  const row = db()
+export async function getLicenseInfo(tenantId: string): Promise<LicenseInfo> {
+  const [row] = await db()
     .select({ license_key: tenants.license_key })
     .from(tenants)
     .where(eq(tenants.id, tenantId))
-    .limit(1)
-    .get();
+    .limit(1);
 
   if (!row?.license_key) {
     return communityLicense();
@@ -210,16 +204,16 @@ export function getLicenseInfo(tenantId: string): LicenseInfo {
 /**
  * Get usage counts for the tenant to compare against license limits.
  */
-export function getLicenseUsage(
+export async function getLicenseUsage(
   tenantId: string,
-): Record<string, { current: number; max: number }> {
-  const info = getLicenseInfo(tenantId);
+): Promise<Record<string, { current: number; max: number }>> {
+  const info = await getLicenseInfo(tenantId);
 
-  const assetCount = countAssets(tenantId);
-  const userCount = countMemberships(tenantId);
-  const workflowCount = countWorkflows(tenantId);
-  const frameworkCount = countFrameworks(tenantId);
-  const monitoringCount = countMonitoringSources(tenantId);
+  const assetCount = await countAssets(tenantId);
+  const userCount = await countMemberships(tenantId);
+  const workflowCount = await countWorkflows(tenantId);
+  const frameworkCount = await countFrameworks(tenantId);
+  const monitoringCount = await countMonitoringSources(tenantId);
 
   return {
     assets: { current: assetCount, max: info.limits.maxAssets },
@@ -233,21 +227,20 @@ export function getLicenseUsage(
 /**
  * Activate a license key for the current tenant.
  */
-export function activateLicense(
+export async function activateLicense(
   tenantId: string,
   licenseKey: string,
-): LicenseInfo {
+): Promise<LicenseInfo> {
   const payload = validateLicenseKey(licenseKey);
   if (!payload) {
     throw new ValidationError('Invalid or expired license key');
   }
 
   const now = new Date().toISOString();
-  db()
+  await db()
     .update(tenants)
     .set({ license_key: licenseKey, updated_at: now })
-    .where(eq(tenants.id, tenantId))
-    .run();
+    .where(eq(tenants.id, tenantId));
 
   return {
     edition: 'enterprise',
@@ -263,13 +256,12 @@ export function activateLicense(
 /**
  * Remove/deactivate the license for a tenant (revert to community).
  */
-export function deactivateLicense(tenantId: string): void {
+export async function deactivateLicense(tenantId: string): Promise<void> {
   const now = new Date().toISOString();
-  db()
+  await db()
     .update(tenants)
     .set({ license_key: null, updated_at: now })
-    .where(eq(tenants.id, tenantId))
-    .run();
+    .where(eq(tenants.id, tenantId));
 }
 
 // ─── Private Helpers ─────────────────────────────────────
@@ -293,48 +285,43 @@ function communityLicense(): LicenseInfo {
   };
 }
 
-function countAssets(tenantId: string): number {
-  const [row] = db()
+async function countAssets(tenantId: string): Promise<number> {
+  const [row] = await db()
     .select({ cnt: count() })
     .from(assets)
-    .where(eq(assets.tenant_id, tenantId))
-    .all();
+    .where(eq(assets.tenant_id, tenantId));
   return row?.cnt ?? 0;
 }
 
-function countMemberships(tenantId: string): number {
-  const [row] = db()
+async function countMemberships(tenantId: string): Promise<number> {
+  const [row] = await db()
     .select({ cnt: count() })
     .from(tenantUserMemberships)
-    .where(eq(tenantUserMemberships.tenant_id, tenantId))
-    .all();
+    .where(eq(tenantUserMemberships.tenant_id, tenantId));
   return row?.cnt ?? 0;
 }
 
-function countWorkflows(tenantId: string): number {
-  const [row] = db()
+async function countWorkflows(tenantId: string): Promise<number> {
+  const [row] = await db()
     .select({ cnt: count() })
     .from(workflowTemplates)
-    .where(eq(workflowTemplates.tenant_id, tenantId))
-    .all();
+    .where(eq(workflowTemplates.tenant_id, tenantId));
   return row?.cnt ?? 0;
 }
 
-function countFrameworks(tenantId: string): number {
-  const [row] = db()
+async function countFrameworks(tenantId: string): Promise<number> {
+  const [row] = await db()
     .select({ cnt: count() })
     .from(regulatoryFrameworks)
-    .where(eq(regulatoryFrameworks.tenant_id, tenantId))
-    .all();
+    .where(eq(regulatoryFrameworks.tenant_id, tenantId));
   return row?.cnt ?? 0;
 }
 
-function countMonitoringSources(tenantId: string): number {
-  const [row] = db()
+async function countMonitoringSources(tenantId: string): Promise<number> {
+  const [row] = await db()
     .select({ cnt: count() })
     .from(monitoringSources)
-    .where(eq(monitoringSources.tenant_id, tenantId))
-    .all();
+    .where(eq(monitoringSources.tenant_id, tenantId));
   return row?.cnt ?? 0;
 }
 
@@ -351,13 +338,12 @@ function parseJson(value: string): unknown {
 /**
  * Get the password policy for a tenant.
  */
-export function getPasswordPolicy(tenantId: string): PasswordPolicy {
-  const row = db()
+export async function getPasswordPolicy(tenantId: string): Promise<PasswordPolicy> {
+  const [row] = await db()
     .select({ settings: tenants.settings })
     .from(tenants)
     .where(eq(tenants.id, tenantId))
-    .limit(1)
-    .get();
+    .limit(1);
 
   if (!row) return { ...DEFAULT_PASSWORD_POLICY };
 
@@ -371,16 +357,15 @@ export function getPasswordPolicy(tenantId: string): PasswordPolicy {
  * Update the password policy for a tenant.
  * Merges the new policy into the existing tenant settings JSON.
  */
-export function updatePasswordPolicy(
+export async function updatePasswordPolicy(
   tenantId: string,
   policy: Partial<PasswordPolicy>,
-): PasswordPolicy {
-  const row = db()
+): Promise<PasswordPolicy> {
+  const [row] = await db()
     .select({ settings: tenants.settings })
     .from(tenants)
     .where(eq(tenants.id, tenantId))
-    .limit(1)
-    .get();
+    .limit(1);
 
   if (!row) throw new NotFoundError('Tenant not found');
 
@@ -405,11 +390,10 @@ export function updatePasswordPolicy(
   settings['password_policy'] = validated;
 
   const now = new Date().toISOString();
-  db()
+  await db()
     .update(tenants)
     .set({ settings: JSON.stringify(settings), updated_at: now })
-    .where(eq(tenants.id, tenantId))
-    .run();
+    .where(eq(tenants.id, tenantId));
 
   return validated;
 }
