@@ -493,3 +493,58 @@ export function useUpdateCategory() {
     },
   });
 }
+
+// =============================================================================
+// CAB (Change Advisory Board) Hooks
+// =============================================================================
+
+export interface CabItem {
+  id: string;
+  ticket_number: string;
+  title: string;
+  status: string;
+  priority: string;
+  change_risk_level: string | null;
+  change_planned_start: string | null;
+  change_planned_end: string | null;
+  cab_required: number;
+  cab_decision: string | null;
+  cab_decision_at: string | null;
+  cab_notes: string | null;
+  created_at: string;
+  reporter_name: string | null;
+}
+
+const cabKeys = {
+  all: ['cab'] as const,
+  pending: () => [...cabKeys.all, 'pending'] as const,
+  list: () => [...cabKeys.all, 'list'] as const,
+};
+
+export function useCabPending() {
+  return useQuery({
+    queryKey: cabKeys.pending(),
+    queryFn: () => apiClient.get<CabItem[]>('/tickets/cab/pending'),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useCabAll() {
+  return useQuery({
+    queryKey: cabKeys.list(),
+    queryFn: () => apiClient.get<CabItem[]>('/tickets/cab/all'),
+  });
+}
+
+export function useCabDecision() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ ticketId, decision, notes }: { ticketId: string; decision: string; notes?: string }) => {
+      return apiClient.post(`/tickets/${ticketId}/cab/decision`, { decision, notes });
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: cabKeys.all });
+      void queryClient.invalidateQueries({ queryKey: ticketKeys.all });
+    },
+  });
+}

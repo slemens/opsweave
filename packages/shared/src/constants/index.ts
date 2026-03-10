@@ -89,6 +89,13 @@ export function calculateChangeRisk(likelihood: string, impact: string): ChangeR
 }
 
 // ---------------------------------------------------------------------------
+// CAB (Change Advisory Board) Constants
+// ---------------------------------------------------------------------------
+
+export const CAB_DECISIONS = ['approved', 'rejected', 'deferred'] as const;
+export type CabDecisionConst = (typeof CAB_DECISIONS)[number];
+
+// ---------------------------------------------------------------------------
 // Asset Constants
 // ---------------------------------------------------------------------------
 

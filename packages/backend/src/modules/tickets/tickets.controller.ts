@@ -386,3 +386,28 @@ export async function archiveTicketCtrl(
   const ticket = await ticketsService.archiveTicket(tenantId, id, userId);
   sendSuccess(res, ticket);
 }
+
+// =============================================================================
+// CAB (Change Advisory Board)
+// =============================================================================
+
+export async function listCabPending(req: Request, res: Response): Promise<void> {
+  const tenantId = requireTenantId(req);
+  const items = await ticketsService.listCabPending(tenantId);
+  sendSuccess(res, items);
+}
+
+export async function listCabAll(req: Request, res: Response): Promise<void> {
+  const tenantId = requireTenantId(req);
+  const items = await ticketsService.listCabAll(tenantId);
+  sendSuccess(res, items);
+}
+
+export async function setCabDecision(req: Request, res: Response): Promise<void> {
+  const tenantId = requireTenantId(req);
+  const userId = requireUserId(req);
+  const { id } = req.params as { id: string };
+  const { decision, notes } = req.body as { decision: string; notes?: string };
+  const ticket = await ticketsService.setCabDecision(tenantId, id, decision, notes ?? null, userId);
+  sendSuccess(res, ticket);
+}

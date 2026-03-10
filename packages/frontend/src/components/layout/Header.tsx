@@ -47,6 +47,7 @@ function getPageTitle(pathname: string, t: (key: string) => string): string {
     '/knowledge-base': t('nav.knowledge_base'),
     '/monitoring': t('nav.monitoring'),
     '/reports/sla': t('nav.sla_reports'),
+    '/cab': t('nav.cab'),
     '/settings': t('nav.settings'),
   };
 
