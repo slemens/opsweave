@@ -48,6 +48,7 @@ import {
   useUpdateWorkflowTemplate,
   useDeleteWorkflowTemplate,
 } from '@/api/workflows';
+import { useLicenseInfo } from '@/api/settings';
 import type { WorkflowListParams, WorkflowTemplateWithSteps } from '@/api/workflows';
 import { WORKFLOW_TRIGGER_TYPES, TICKET_TYPES } from '@opsweave/shared';
 
@@ -69,6 +70,8 @@ export function WorkflowsPage() {
   const { t } = useTranslation('workflows');
   const { t: tCommon } = useTranslation('common');
   const navigate = useNavigate();
+  const { data: licenseInfo } = useLicenseInfo();
+  const isEnterprise = licenseInfo?.edition === 'enterprise';
 
   // ── Filter state ──────────────────────────────────────────
   const [triggerFilter, setTriggerFilter] = useState<string>('all');
@@ -103,7 +106,7 @@ export function WorkflowsPage() {
   const meta = data?.meta;
   const totalPages = meta?.pages ?? 1;
   const totalCount = meta?.total ?? 0;
-  const atCommunityLimit = totalCount >= 3;
+  const atCommunityLimit = !isEnterprise && totalCount >= 3;
 
   // ── Handlers ──────────────────────────────────────────────
 

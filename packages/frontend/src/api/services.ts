@@ -41,6 +41,46 @@ export interface CatalogItem {
   compliance_tags: string[];
 }
 
+export interface VerticalCatalog {
+  id: string;
+  tenant_id: string;
+  name: string;
+  base_catalog_id: string;
+  base_catalog_name: string | null;
+  customer_id: string | null;
+  customer_name: string | null;
+  industry: string | null;
+  description: string | null;
+  status: 'active' | 'inactive' | 'draft';
+  created_at: string;
+  override_count: number;
+  overrides?: VerticalOverride[];
+  effective_services?: EffectiveService[];
+}
+
+export interface VerticalOverride {
+  id: string;
+  vertical_id: string;
+  original_desc_id: string;
+  override_desc_id: string;
+  override_type: string;
+  reason: string | null;
+  original_code: string;
+  original_title: string;
+  override_code: string;
+  override_title: string;
+}
+
+export interface EffectiveService {
+  service_desc_id: string;
+  code: string;
+  title: string;
+  status: string;
+  is_override: boolean;
+  override_type: string | null;
+  original_code: string | null;
+}
+
 // =============================================================================
 // Query Keys
 // =============================================================================
@@ -53,6 +93,8 @@ const serviceKeys = {
     [...serviceKeys.descriptions(), 'list', params] as const,
   catalogs: () => [...serviceKeys.all, 'catalogs', 'horizontal'] as const,
   catalog: (id: string) => [...serviceKeys.catalogs(), id] as const,
+  verticalCatalogs: () => [...serviceKeys.all, 'catalogs', 'vertical'] as const,
+  verticalCatalog: (id: string) => [...serviceKeys.verticalCatalogs(), id] as const,
 };
 
 // =============================================================================
@@ -238,6 +280,87 @@ export function useRemoveCatalogItem() {
     onSuccess: (_result, vars) => {
       void queryClient.invalidateQueries({ queryKey: serviceKeys.catalog(vars.catalogId) });
       void queryClient.invalidateQueries({ queryKey: serviceKeys.catalogs() });
+    },
+  });
+}
+
+// =============================================================================
+// Query Hooks — Vertical Catalogs
+// =============================================================================
+
+export function useVerticalCatalogs() {
+  return useQuery({
+    queryKey: serviceKeys.verticalCatalogs(),
+    queryFn: async () => apiClient.get<VerticalCatalog[]>('/services/catalogs/vertical'),
+  });
+}
+
+export function useVerticalCatalog(id: string | undefined) {
+  return useQuery({
+    queryKey: serviceKeys.verticalCatalog(id ?? ''),
+    queryFn: async () => apiClient.get<VerticalCatalog>(`/services/catalogs/vertical/${id!}`),
+    enabled: !!id,
+  });
+}
+
+// =============================================================================
+// Mutation Hooks — Vertical Catalogs
+// =============================================================================
+
+export function useCreateVerticalCatalog() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: Record<string, unknown>) =>
+      apiClient.post<VerticalCatalog>('/services/catalogs/vertical', data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: serviceKeys.verticalCatalogs() });
+    },
+  });
+}
+
+export function useUpdateVerticalCatalog() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Record<string, unknown> }) =>
+      apiClient.put<VerticalCatalog>(`/services/catalogs/vertical/${id}`, data),
+    onSuccess: (_result, vars) => {
+      void queryClient.invalidateQueries({ queryKey: serviceKeys.verticalCatalogs() });
+      void queryClient.invalidateQueries({ queryKey: serviceKeys.verticalCatalog(vars.id) });
+    },
+  });
+}
+
+export function useDeleteVerticalCatalog() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) =>
+      apiClient.delete<void>(`/services/catalogs/vertical/${id}`),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: serviceKeys.verticalCatalogs() });
+    },
+  });
+}
+
+export function useAddVerticalOverride() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ verticalId, data }: { verticalId: string; data: Record<string, unknown> }) =>
+      apiClient.post<VerticalCatalog>(`/services/catalogs/vertical/${verticalId}/overrides`, data),
+    onSuccess: (_result, vars) => {
+      void queryClient.invalidateQueries({ queryKey: serviceKeys.verticalCatalog(vars.verticalId) });
+      void queryClient.invalidateQueries({ queryKey: serviceKeys.verticalCatalogs() });
+    },
+  });
+}
+
+export function useRemoveVerticalOverride() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ verticalId, overrideId }: { verticalId: string; overrideId: string }) =>
+      apiClient.delete<void>(`/services/catalogs/vertical/${verticalId}/overrides/${overrideId}`),
+    onSuccess: (_result, vars) => {
+      void queryClient.invalidateQueries({ queryKey: serviceKeys.verticalCatalog(vars.verticalId) });
+      void queryClient.invalidateQueries({ queryKey: serviceKeys.verticalCatalogs() });
     },
   });
 }

@@ -66,6 +66,7 @@ import type {
   UpsertMappingPayload,
 } from '@/api/compliance';
 import { useServiceDescriptions } from '@/api/services';
+import { useLicenseInfo } from '@/api/settings';
 
 // =============================================================================
 // Constants
@@ -657,8 +658,10 @@ function FrameworksTab({
   const { data, isLoading, isError, refetch } = useFrameworks({ limit: 100 });
   const deleteMutation = useDeleteFramework();
 
+  const { data: licenseInfo } = useLicenseInfo();
+  const isEnterprise = licenseInfo?.edition === 'enterprise';
   const frameworks = data?.data ?? [];
-  const atCommunityLimit = frameworks.length >= COMMUNITY_FRAMEWORK_LIMIT;
+  const atCommunityLimit = !isEnterprise && frameworks.length >= COMMUNITY_FRAMEWORK_LIMIT;
 
   async function handleDelete() {
     if (!deleteTarget) return;

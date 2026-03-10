@@ -117,7 +117,7 @@ async function bootstrap(): Promise<void> {
   httpServer.listen(config.port, () => {
     console.log(`
 ╔══════════════════════════════════════════════════╗
-║           OpsWeave Backend v0.2.6                ║
+║           OpsWeave Backend v0.2.7                ║
 ║──────────────────────────────────────────────────║
 ║  Port:     ${String(config.port).padEnd(37)}║
 ║  DB:       ${config.dbDriver.padEnd(37)}║

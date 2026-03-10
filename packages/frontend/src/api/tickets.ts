@@ -214,6 +214,7 @@ export const userKeys = {
 export const customerKeys = {
   all: ['customers'] as const,
   list: () => [...customerKeys.all, 'list'] as const,
+  overview: (id: string) => [...customerKeys.all, 'overview', id] as const,
 };
 
 export const categoryKeys = {
@@ -324,6 +325,59 @@ export function useCustomers() {
     queryFn: async () => {
       return apiClient.get<CustomersResponse>('/customers', { params: { limit: 100 } });
     },
+  });
+}
+
+export interface CustomerOverview {
+  customer: CustomerSummary & { industry: string | null; created_at: string };
+  stats: {
+    total_assets: number;
+    total_tickets: number;
+    open_tickets: number;
+    sla_breached_tickets: number;
+    portal_users: number;
+  };
+  assets: Array<{
+    id: string;
+    display_name: string;
+    asset_type: string;
+    status: string;
+    sla_tier: string;
+  }>;
+  recent_tickets: Array<{
+    id: string;
+    ticket_number: string;
+    title: string;
+    status: string;
+    priority: string;
+    sla_breached: number;
+    created_at: string;
+  }>;
+  sla: {
+    definition: {
+      id: string;
+      name: string;
+      response_time_minutes: number;
+      resolution_time_minutes: number;
+      business_hours: string;
+    } | null;
+    assignment_id: string | null;
+  };
+  vertical_catalogs: Array<{
+    id: string;
+    name: string;
+    base_catalog_name: string | null;
+    industry: string | null;
+    status: string;
+    override_count: number;
+  }>;
+}
+
+export function useCustomerOverview(id: string | undefined) {
+  return useQuery({
+    queryKey: customerKeys.overview(id ?? ''),
+    queryFn: async () => apiClient.get<CustomerOverview>(`/customers/${id!}/overview`),
+    enabled: !!id,
   });
 }
 
