@@ -656,6 +656,7 @@ export async function createTicket(
       change_rollback_plan: data.ticket_type === 'change' ? (data.change_rollback_plan ?? null) : null,
       change_planned_start: data.ticket_type === 'change' ? (data.change_planned_start ?? null) : null,
       change_planned_end: data.ticket_type === 'change' ? (data.change_planned_end ?? null) : null,
+      cab_required: data.ticket_type === 'change' && data.cab_required ? 1 : 0,
       sla_tier: effectiveSlaTier ?? null,
       sla_response_due: slaResponseDue,
       sla_resolve_due: slaResolveDue,
@@ -768,6 +769,11 @@ export async function updateTicket(
         );
       }
     }
+  }
+
+  // Convert booleans to integers for SQLite compatibility
+  if (updateSet['cab_required'] !== undefined) {
+    updateSet['cab_required'] = updateSet['cab_required'] ? 1 : 0;
   }
 
   // Auto-calculate priority from Impact × Urgency matrix (ITIL)

@@ -230,6 +230,7 @@ export const createTicketSchema = z.object({
   change_rollback_plan: z.string().max(50000).nullable().default(null),
   change_planned_start: z.string().nullable().default(null),
   change_planned_end: z.string().nullable().default(null),
+  cab_required: z.boolean().optional(),
 });
 
 export type CreateTicketInput = z.infer<typeof createTicketSchema>;

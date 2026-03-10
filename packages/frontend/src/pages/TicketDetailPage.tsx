@@ -1278,7 +1278,7 @@ export function TicketDetailPage() {
                     variant="outline"
                     size="sm"
                     className="h-7 text-xs"
-                    onClick={() => navigate(`/tickets?parent=${id}&type=${ticket.ticket_type}`)}
+                    onClick={() => navigate(`/tickets/new?parent=${id}&type=${ticket.ticket_type}`)}
                   >
                     <Plus className="mr-1.5 h-3 w-3" />
                     {t('parent_child.create_child')}
@@ -1327,7 +1327,7 @@ export function TicketDetailPage() {
               variant="outline"
               size="sm"
               className="w-full"
-              onClick={() => navigate(`/tickets?parent=${id}&type=${ticket.ticket_type}`)}
+              onClick={() => navigate(`/tickets/new?parent=${id}&type=${ticket.ticket_type}`)}
             >
               <GitBranch className="mr-2 h-3.5 w-3.5" />
               {t('parent_child.create_child')}

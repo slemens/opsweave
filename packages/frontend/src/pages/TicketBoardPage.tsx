@@ -27,7 +27,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -60,7 +59,6 @@ import { cn, formatDate, formatRelativeTime } from '@/lib/utils';
 import {
   useBoardData,
   useTickets,
-  useCreateTicket,
   useCategories,
   useBatchUpdateTickets,
 } from '@/api/tickets';
@@ -68,9 +66,9 @@ import {
 import { useGroups } from '@/api/groups';
 import { useUsers } from '@/api/users';
 import { useCustomers } from '@/api/customers';
-import type { TicketWithRelations, CreateTicketPayload, TicketListParams } from '@/api/tickets';
+import type { TicketWithRelations, TicketListParams } from '@/api/tickets';
 import type { TicketType, TicketPriority, TicketStatus } from '@opsweave/shared';
-import { TICKET_TYPES, TICKET_PRIORITIES, TICKET_STATUSES, TICKET_IMPACTS, TICKET_URGENCIES, CHANGE_RISK_LIKELIHOODS, CHANGE_RISK_IMPACTS, CHANGE_RISK_MATRIX, calculatePriority } from '@opsweave/shared';
+import { TICKET_TYPES, TICKET_PRIORITIES, TICKET_STATUSES } from '@opsweave/shared';
 import { useAuthStore } from '@/stores/auth-store';
 
 // ---------------------------------------------------------------------------
@@ -902,419 +900,12 @@ function TicketListView({
   );
 }
 
-// ---------------------------------------------------------------------------
-// Create Ticket Dialog
-// ---------------------------------------------------------------------------
-
-interface CreateTicketDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  parentTicketId?: string | null;
-  parentTicketType?: TicketType | null;
-}
-
-function CreateTicketDialog({ open, onOpenChange, parentTicketId, parentTicketType }: CreateTicketDialogProps) {
-  const { t } = useTranslation('tickets');
-  const { t: tCommon } = useTranslation();
-  const createTicket = useCreateTicket();
-  // AUDIT-FIX: M-10 — Track loading states for Select skeleton loaders
-  const { data: groupsData, isLoading: groupsLoading } = useGroups();
-  const { data: customersData, isLoading: customersLoading } = useCustomers();
-  const { data: categoriesData, isLoading: categoriesLoading } = useCategories();
-
-  const [ticketType, setTicketType] = useState<TicketType>(parentTicketType ?? 'incident');
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [priority, setPriority] = useState<TicketPriority>('medium');
-  const [impact, setImpact] = useState<string>('');
-  const [urgency, setUrgency] = useState<string>('');
-  const [groupId, setGroupId] = useState<string>('');
-  const [customerId, setCustomerId] = useState<string>('');
-  const [categoryId, setCategoryId] = useState<string>('');
-  const [titleError, setTitleError] = useState('');
-  // Change-specific RFC fields
-  const [changeJustification, setChangeJustification] = useState('');
-  const [changeRollback, setChangeRollback] = useState('');
-  const [changeRiskLikelihood, setChangeRiskLikelihood] = useState<string>('');
-  const [changeRiskImpact, setChangeRiskImpact] = useState<string>('');
-
-  const autoRisk = (changeRiskLikelihood && changeRiskImpact)
-    ? CHANGE_RISK_MATRIX[changeRiskLikelihood]?.[changeRiskImpact] ?? null
-    : null;
-
-  const groups = groupsData?.data ?? [];
-  const customers = (customersData?.data ?? []).filter((c) => c.is_active);
-  const categories = (categoriesData?.data ?? []).filter(
-    (c) => c.is_active && (c.applies_to === 'all' || c.applies_to === ticketType),
-  );
-
-  // Auto-calculate priority from ITIL matrix
-  const autoPriority = (impact && urgency) ? calculatePriority(impact, urgency) : null;
-  const effectivePriority = autoPriority ?? priority;
-
-  const resetForm = useCallback(() => {
-    setTicketType(parentTicketType ?? 'incident');
-    setTitle('');
-    setDescription('');
-    setPriority('medium');
-    setImpact('');
-    setUrgency('');
-    setGroupId('');
-    setCustomerId('');
-    setCategoryId('');
-    setTitleError('');
-    setChangeJustification('');
-    setChangeRollback('');
-    setChangeRiskLikelihood('');
-    setChangeRiskImpact('');
-  }, [parentTicketType]);
-
-  const handleSubmit = useCallback(async () => {
-    if (title.trim().length < 3) {
-      setTitleError(t('validation.title_min_length'));
-      return;
-    }
-    setTitleError('');
-
-    const payload: CreateTicketPayload = {
-      ticket_type: ticketType,
-      title: title.trim(),
-      description: description.trim() || title.trim(),
-      priority: effectivePriority,
-      source: 'manual',
-    };
-
-    if (impact) payload.impact = impact;
-    if (urgency) payload.urgency = urgency;
-    if (parentTicketId) payload.parent_ticket_id = parentTicketId;
-    if (groupId) payload.assignee_group_id = groupId;
-    if (customerId) payload.customer_id = customerId;
-    if (categoryId) payload.category_id = categoryId;
-    // Change-specific RFC fields
-    if (ticketType === 'change') {
-      if (changeJustification.trim()) payload.change_justification = changeJustification.trim();
-      if (changeRollback.trim()) payload.change_rollback_plan = changeRollback.trim();
-      if (changeRiskLikelihood) payload.change_risk_likelihood = changeRiskLikelihood;
-      if (changeRiskImpact) payload.change_risk_impact = changeRiskImpact;
-    }
-
-    try {
-      await createTicket.mutateAsync(payload);
-      toast.success(t('create_success'));
-      resetForm();
-      onOpenChange(false);
-    } catch {
-      toast.error(t('create_error'));
-    }
-  }, [ticketType, title, description, effectivePriority, impact, urgency, groupId, customerId, categoryId, parentTicketId, changeJustification, changeRollback, changeRiskLikelihood, changeRiskImpact, createTicket, t, resetForm, onOpenChange]);
-
-  return (
-    <Dialog open={open} onOpenChange={(isOpen) => {
-      if (!isOpen) resetForm();
-      onOpenChange(isOpen);
-    }}>
-      <DialogContent className="sm:max-w-[520px]">
-        <DialogHeader>
-          <DialogTitle>{parentTicketId ? t('parent_child.create_child') : t('create')}</DialogTitle>
-          <DialogDescription>{t('create_description')}</DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-4 py-2">
-          {/* Parent ticket info */}
-          {parentTicketId && (
-            <div className="rounded-lg bg-muted/50 border px-3 py-2 text-sm text-muted-foreground">
-              {t('parent_child.linked_to_parent')} <span className="font-mono font-medium text-foreground">{parentTicketId.slice(0, 8)}…</span>
-            </div>
-          )}
-
-          {/* Ticket Type */}
-          <div className="space-y-2">
-            <Label htmlFor="ticket-type">{t('fields.type')}</Label>
-            <Select
-              value={ticketType}
-              onValueChange={(v) => setTicketType(v as TicketType)}
-              disabled={!!parentTicketType}
-            >
-              <SelectTrigger id="ticket-type">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {TICKET_TYPES.map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {t(`types.${type}`)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {parentTicketType && (
-              <p className="text-xs text-muted-foreground">{t('parent_child.type_mismatch')}</p>
-            )}
-          </div>
-
-          {/* Title */}
-          <div className="space-y-2">
-            <Label htmlFor="ticket-title">{t('fields.title')}</Label>
-            <Input
-              id="ticket-title"
-              value={title}
-              onChange={(e) => {
-                setTitle(e.target.value);
-                if (e.target.value.trim().length >= 3) setTitleError('');
-              }}
-              placeholder={t('placeholder_title')}
-              className={cn(titleError && 'border-destructive focus-visible:ring-destructive')}
-            />
-            {titleError && (
-              <p className="text-xs text-destructive">{titleError}</p>
-            )}
-          </div>
-
-          {/* Description */}
-          <div className="space-y-2">
-            <Label htmlFor="ticket-desc">{t('fields.description')}</Label>
-            <Textarea
-              id="ticket-desc"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder={t('placeholder_description')}
-              rows={4}
-              className="resize-none"
-            />
-          </div>
-
-          {/* Impact & Urgency row */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label htmlFor="ticket-impact">{t('fields.impact')}</Label>
-              <Select value={impact} onValueChange={setImpact}>
-                <SelectTrigger id="ticket-impact">
-                  <SelectValue placeholder="-" />
-                </SelectTrigger>
-                <SelectContent>
-                  {TICKET_IMPACTS.map((v) => (
-                    <SelectItem key={v} value={v}>
-                      {t(`impacts.${v}`)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="ticket-urgency">{t('fields.urgency')}</Label>
-              <Select value={urgency} onValueChange={setUrgency}>
-                <SelectTrigger id="ticket-urgency">
-                  <SelectValue placeholder="-" />
-                </SelectTrigger>
-                <SelectContent>
-                  {TICKET_URGENCIES.map((v) => (
-                    <SelectItem key={v} value={v}>
-                      {t(`urgencies.${v}`)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Priority — auto or manual */}
-          <div className="space-y-2">
-            <Label htmlFor="ticket-priority">{t('fields.priority')}</Label>
-            {autoPriority ? (
-              <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
-                <span className={cn(
-                  'h-2 w-2 rounded-full',
-                  autoPriority === 'critical' && 'bg-red-500',
-                  autoPriority === 'high' && 'bg-orange-500',
-                  autoPriority === 'medium' && 'bg-blue-500',
-                  autoPriority === 'low' && 'bg-slate-400',
-                )} />
-                {t(`priorities.${autoPriority}`)}
-                <span className="ml-auto text-[10px] text-muted-foreground">{t('priority_auto_calculated')}</span>
-              </div>
-            ) : (
-              <Select value={priority} onValueChange={(v) => setPriority(v as TicketPriority)}>
-                <SelectTrigger id="ticket-priority">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {TICKET_PRIORITIES.map((p) => (
-                    <SelectItem key={p} value={p}>
-                      <span className="flex items-center gap-2">
-                        <span className={cn(
-                          'h-2 w-2 rounded-full',
-                          p === 'critical' && 'bg-red-500',
-                          p === 'high' && 'bg-orange-500',
-                          p === 'medium' && 'bg-blue-500',
-                          p === 'low' && 'bg-slate-400',
-                        )} />
-                        {t(`priorities.${p}`)}
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          </div>
-
-          {/* Group — AUDIT-FIX: M-10 — Skeleton while loading */}
-          <div className="space-y-2">
-            <Label htmlFor="ticket-group">{t('fields.group')}</Label>
-            {groupsLoading ? (
-              <Skeleton className="h-9 w-full rounded-md" />
-            ) : (
-              <Select value={groupId} onValueChange={setGroupId}>
-                <SelectTrigger id="ticket-group">
-                  <SelectValue placeholder={t('select_group')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {groups.map((group) => (
-                    <SelectItem key={group.id} value={group.id}>
-                      {group.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          </div>
-
-          {/* Customer — AUDIT-FIX: M-10 — Skeleton while loading */}
-          <div className="space-y-2">
-            <Label htmlFor="ticket-customer">{t('fields.customer')}</Label>
-            {customersLoading ? (
-              <Skeleton className="h-9 w-full rounded-md" />
-            ) : (
-              <Select value={customerId} onValueChange={setCustomerId}>
-                <SelectTrigger id="ticket-customer">
-                  <SelectValue placeholder={t('select_customer')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {customers.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          </div>
-
-          {/* Category — AUDIT-FIX: M-10 — Skeleton while loading */}
-          <div className="space-y-2">
-            <Label htmlFor="ticket-category">{t('fields.category')}</Label>
-            {categoriesLoading ? (
-              <Skeleton className="h-9 w-full rounded-md" />
-            ) : (
-              <Select value={categoryId} onValueChange={setCategoryId}>
-                <SelectTrigger id="ticket-category">
-                  <SelectValue placeholder={t('select_category')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          </div>
-
-          {/* Change-specific RFC fields */}
-          {ticketType === 'change' && (
-            <>
-              <Separator />
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t('rfc.title')}</p>
-
-              <div className="space-y-2">
-                <Label>{t('rfc.justification')}</Label>
-                <Textarea
-                  value={changeJustification}
-                  onChange={(e) => setChangeJustification(e.target.value)}
-                  placeholder={t('rfc.justification_placeholder')}
-                  rows={2}
-                  className="resize-none"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>{t('rfc.rollback_plan')}</Label>
-                <Textarea
-                  value={changeRollback}
-                  onChange={(e) => setChangeRollback(e.target.value)}
-                  placeholder={t('rfc.rollback_placeholder')}
-                  rows={2}
-                  className="resize-none"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label>{t('rfc.risk_likelihood')}</Label>
-                  <Select value={changeRiskLikelihood} onValueChange={setChangeRiskLikelihood}>
-                    <SelectTrigger><SelectValue placeholder="-" /></SelectTrigger>
-                    <SelectContent>
-                      {CHANGE_RISK_LIKELIHOODS.map((l) => (
-                        <SelectItem key={l} value={l}>{t(`rfc.likelihoods.${l}`)}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>{t('rfc.risk_impact')}</Label>
-                  <Select value={changeRiskImpact} onValueChange={setChangeRiskImpact}>
-                    <SelectTrigger><SelectValue placeholder="-" /></SelectTrigger>
-                    <SelectContent>
-                      {CHANGE_RISK_IMPACTS.map((i) => (
-                        <SelectItem key={i} value={i}>{t(`rfc.impacts.${i}`)}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {autoRisk && (
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="text-muted-foreground">{t('rfc.risk_level')}:</span>
-                  <Badge variant="outline" className={cn('text-xs', riskBadgeColors[autoRisk])}>
-                    {t(`rfc.risk_levels.${autoRisk}`)}
-                  </Badge>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-
-        <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => {
-              resetForm();
-              onOpenChange(false);
-            }}
-          >
-            {tCommon('actions.cancel')}
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={createTicket.isPending}
-          >
-            {createTicket.isPending ? tCommon('status.saving') : t('create')}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Main Page Component
-// ---------------------------------------------------------------------------
-
 export function TicketBoardPage() {
   const { t, i18n } = useTranslation('tickets');
   const { t: tCommon } = useTranslation();
   const locale = i18n.language?.startsWith('de') ? 'de-DE' : 'en-US';
   const user = useAuthStore((s) => s.user);
+  const navigate = useNavigate();
 
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -1353,23 +944,6 @@ export function TicketBoardPage() {
   const [customerFilter, setCustomerFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  // Create dialog — can be triggered via URL params (e.g. ?parent=xxx&type=incident)
-  const parentParam = searchParams.get('parent');
-  const typeParam = searchParams.get('type') as TicketType | null;
-  const [createDialogOpen, setCreateDialogOpen] = useState(!!parentParam);
-
-  const handleCreateDialogClose = useCallback((isOpen: boolean) => {
-    setCreateDialogOpen(isOpen);
-    if (!isOpen && parentParam) {
-      // Remove parent/type params from URL when dialog closes
-      setSearchParams((prev) => {
-        const next = new URLSearchParams(prev);
-        next.delete('parent');
-        next.delete('type');
-        return next;
-      });
-    }
-  }, [parentParam, setSearchParams]);
 
   // ---- Multi-select & batch update state ----
   const [selectedTickets, setSelectedTickets] = useState<Set<string>>(new Set());
@@ -1620,7 +1194,7 @@ export function TicketBoardPage() {
             </Button>
           </div>
 
-          <Button onClick={() => setCreateDialogOpen(true)}>
+          <Button onClick={() => navigate('/tickets/new')}>
             <Plus className="mr-2 h-4 w-4" />
             {t('create')}
           </Button>
@@ -1803,13 +1377,6 @@ export function TicketBoardPage() {
         </>
       )}
 
-      {/* Create Ticket Dialog */}
-      <CreateTicketDialog
-        open={createDialogOpen}
-        onOpenChange={handleCreateDialogClose}
-        parentTicketId={parentParam}
-        parentTicketType={typeParam}
-      />
 
       {/* Floating Batch Action Bar */}
       {selectedTickets.size > 0 && (
