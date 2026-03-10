@@ -57,6 +57,7 @@ export interface TicketWithRelations extends Ticket {
   asset?: { id: string; name: string; display_name: string } | null;
   customer?: { id: string; name: string } | null;
   category?: { id: string; name: string } | null;
+  known_error?: { id: string; title: string; workaround: string | null } | null;
   parent_ticket?: { id: string; ticket_number: string; title: string } | null;
   child_ticket_count?: number;
 }

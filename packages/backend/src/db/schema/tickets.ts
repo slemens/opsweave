@@ -62,6 +62,8 @@ export const tickets = sqliteTable(
     sla_breached: integer('sla_breached').notNull().default(0),
     sla_paused_at: text('sla_paused_at'),          // ISO 8601 — set when status→pending
     sla_paused_total: integer('sla_paused_total').notNull().default(0), // cumulative pause seconds
+    root_cause: text('root_cause'),               // only for ticket_type='problem'
+    known_error_id: text('known_error_id'),        // FK → knownErrors, only for incidents
     parent_ticket_id: text('parent_ticket_id'),
     source: text('source').notNull().default('manual'),
     created_at: text('created_at').notNull(),

@@ -217,6 +217,7 @@ export const createTicketSchema = z.object({
   category_id: uuidSchema.nullable().default(null),
   parent_ticket_id: uuidSchema.nullable().default(null),
   source: z.enum(TICKET_SOURCES).default('manual'),
+  root_cause: z.string().max(50000).nullable().default(null),
 });
 
 export type CreateTicketInput = z.infer<typeof createTicketSchema>;
@@ -236,6 +237,8 @@ export const updateTicketSchema = z.object({
   category_id: uuidSchema.nullable().optional(),
   parent_ticket_id: uuidSchema.nullable().optional(),
   sla_tier: z.enum(SLA_TIERS).nullable().optional(),
+  root_cause: z.string().max(50000).nullable().optional(),
+  known_error_id: uuidSchema.nullable().optional(),
 });
 
 export type UpdateTicketInput = z.infer<typeof updateTicketSchema>;

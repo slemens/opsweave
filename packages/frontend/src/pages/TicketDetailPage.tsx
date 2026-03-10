@@ -20,6 +20,8 @@ import {
   Link2,
   Unlink,
   Search,
+  Bug,
+  Info,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -96,6 +98,8 @@ import type { WorkflowInstanceFull } from '@/api/workflows';
 import { useKbArticles, useLinkArticleToTicket, useUnlinkArticleFromTicket } from '@/api/kb';
 import type { KbArticle } from '@/api/kb';
 import { Input } from '@/components/ui/input';
+import { useSearchKnownErrors } from '@/api/known-errors';
+import type { KnownErrorSearchResult } from '@/api/known-errors';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -602,6 +606,31 @@ export function TicketDetailPage() {
     }
   }, [id, unlinkArticleMutation, tKb]);
 
+  // ── Known Error (Incidents) ─────────────────────────────────
+  const [keSearch, setKeSearch] = useState('');
+  const [keDebouncedSearch, setKeDebouncedSearch] = useState('');
+  const [keDropdownOpen, setKeDropdownOpen] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setKeDebouncedSearch(keSearch), 400);
+    return () => clearTimeout(timer);
+  }, [keSearch]);
+
+  const { data: keSearchResults } = useSearchKnownErrors(keDebouncedSearch);
+  const keResults: KnownErrorSearchResult[] = keSearchResults ?? [];
+
+  const handleKnownErrorSelect = useCallback(async (keId: string | null) => {
+    if (!id) return;
+    try {
+      await updateTicket.mutateAsync({ id, known_error_id: keId });
+      toast.success(t('update_success'));
+      setKeSearch('');
+      setKeDropdownOpen(false);
+    } catch {
+      toast.error(t('update_error'));
+    }
+  }, [id, updateTicket, t]);
+
   // ── Workflow ───────────────────────────────────────────────
   const { data: workflowInstance, isLoading: workflowLoading } = useTicketWorkflow(id);
   const { data: templatesData } = useWorkflowTemplates({ is_active: 'true', limit: 50 });
@@ -923,6 +952,26 @@ export function TicketDetailPage() {
               )}
             </CardContent>
           </Card>
+
+          {/* Root Cause Analysis (Problem tickets only) */}
+          {ticket.ticket_type === 'problem' && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">{t('root_cause_title')}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {ticket.root_cause ? (
+                  <p className="text-sm text-foreground/90 whitespace-pre-wrap break-words leading-relaxed">
+                    {ticket.root_cause}
+                  </p>
+                ) : (
+                  <p className="text-sm text-muted-foreground italic">
+                    {t('root_cause_empty')}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Child Tickets */}
           {((ticket.child_ticket_count ?? 0) > 0 || children.length > 0) && (
@@ -1665,6 +1714,98 @@ export function TicketDetailPage() {
               </SidebarField>
             </CardContent>
           </Card>
+
+          {/* Known Error Card (Incidents only) */}
+          {ticket.ticket_type === 'incident' && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Bug className="h-4 w-4 text-muted-foreground" />
+                  {t('known_error_title')}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {/* Currently linked known error with workaround */}
+                {ticket.known_error_id && ticket.known_error ? (
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">
+                          {ticket.known_error.title}
+                        </p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive"
+                        title={tCommon('actions.remove')}
+                        onClick={() => void handleKnownErrorSelect(null)}
+                      >
+                        <XCircle className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                    {ticket.known_error.workaround && (
+                      <div className="rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/40 p-3">
+                        <div className="flex items-center gap-1.5 mb-1.5">
+                          <Info className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                          <span className="text-xs font-semibold text-blue-700 dark:text-blue-300">
+                            {t('known_error_workaround')}
+                          </span>
+                        </div>
+                        <p className="text-sm text-blue-900 dark:text-blue-100 whitespace-pre-wrap">
+                          {ticket.known_error.workaround}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground">{t('known_error_none')}</p>
+                    {/* Search to link */}
+                    <div className="relative">
+                      <Search className="absolute left-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        value={keSearch}
+                        onChange={(e) => {
+                          setKeSearch(e.target.value);
+                          setKeDropdownOpen(true);
+                        }}
+                        onFocus={() => setKeDropdownOpen(true)}
+                        placeholder={t('kedb_search')}
+                        className="pl-7 h-7 text-xs"
+                      />
+                    </div>
+                    {keDropdownOpen && keDebouncedSearch.length >= 2 && (
+                      <div className="rounded-md border bg-popover shadow-md max-h-48 overflow-y-auto">
+                        {keResults.length === 0 ? (
+                          <p className="text-xs text-muted-foreground p-3 text-center">
+                            {t('kedb_empty')}
+                          </p>
+                        ) : (
+                          keResults.map((ke) => (
+                            <button
+                              key={ke.id}
+                              type="button"
+                              className="flex flex-col w-full text-left px-3 py-2 hover:bg-muted transition-colors border-b last:border-b-0"
+                              onClick={() => void handleKnownErrorSelect(ke.id)}
+                            >
+                              <span className="text-sm font-medium truncate">{ke.title}</span>
+                              {ke.workaround && (
+                                <span className="text-xs text-muted-foreground truncate mt-0.5">
+                                  {t('known_error_workaround')}: {ke.workaround.slice(0, 80)}
+                                  {ke.workaround.length > 80 ? '…' : ''}
+                                </span>
+                              )}
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Dates Card */}
           <Card>

@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Activity,
   Building2,
+  Bug,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -41,6 +42,7 @@ const navItems: NavItem[] = [
   { labelKey: 'nav.workflows', href: '/workflows', icon: GitBranch },
   { labelKey: 'nav.services', href: '/services', icon: BookOpen },
   { labelKey: 'nav.compliance', href: '/compliance', icon: Shield },
+  { labelKey: 'nav.known_errors', href: '/known-errors', icon: Bug },
   { labelKey: 'nav.knowledge_base', href: '/knowledge-base', icon: FileText },
   { labelKey: 'nav.monitoring', href: '/monitoring', icon: Activity },
 ];

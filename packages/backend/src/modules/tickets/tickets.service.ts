@@ -15,6 +15,7 @@ import {
   assigneeGroups,
   assets,
   customers,
+  knownErrors,
 } from '../../db/schema/index.js';
 import { NotFoundError, ValidationError, ConflictError } from '../../lib/errors.js';
 import { TICKET_NUMBER_PREFIXES, TICKET_STATUSES, calculatePriority } from '@opsweave/shared';
@@ -220,6 +221,8 @@ export async function listTickets(
       sla_breached: tickets.sla_breached,
       sla_paused_at: tickets.sla_paused_at,
       sla_paused_total: tickets.sla_paused_total,
+      root_cause: tickets.root_cause,
+      known_error_id: tickets.known_error_id,
       parent_ticket_id: tickets.parent_ticket_id,
       source: tickets.source,
       created_at: tickets.created_at,
@@ -269,6 +272,8 @@ export async function listTickets(
     sla_breached: row.sla_breached,
     sla_paused_at: row.sla_paused_at,
     sla_paused_total: row.sla_paused_total,
+    root_cause: row.root_cause,
+    known_error_id: row.known_error_id,
     parent_ticket_id: row.parent_ticket_id,
     source: row.source,
     created_at: row.created_at,
@@ -320,6 +325,8 @@ export async function getTicket(
       sla_breached: tickets.sla_breached,
       sla_paused_at: tickets.sla_paused_at,
       sla_paused_total: tickets.sla_paused_total,
+      root_cause: tickets.root_cause,
+      known_error_id: tickets.known_error_id,
       parent_ticket_id: tickets.parent_ticket_id,
       source: tickets.source,
       created_at: tickets.created_at,
@@ -367,6 +374,19 @@ export async function getTicket(
     }
   }
 
+  // If ticket has a known error, fetch known error info
+  let knownError: { id: string; title: string; workaround: string | null } | null = null;
+  if (row.known_error_id) {
+    const keRows = await d
+      .select({ id: knownErrors.id, title: knownErrors.title, workaround: knownErrors.workaround })
+      .from(knownErrors)
+      .where(and(eq(knownErrors.id, row.known_error_id), eq(knownErrors.tenant_id, tenantId)))
+      .limit(1);
+    if (keRows[0]) {
+      knownError = keRows[0];
+    }
+  }
+
   // Count child tickets
   const [childCountResult] = await d
     .select({ count: count() })
@@ -400,6 +420,8 @@ export async function getTicket(
     sla_breached: row.sla_breached,
     sla_paused_at: row.sla_paused_at,
     sla_paused_total: row.sla_paused_total,
+    root_cause: row.root_cause,
+    known_error_id: row.known_error_id,
     parent_ticket_id: row.parent_ticket_id,
     source: row.source,
     created_at: row.created_at,
@@ -412,6 +434,7 @@ export async function getTicket(
     asset: row.asset_id ? { id: row.asset_id, name: row.asset_name ?? '', display_name: row.asset_name ?? '' } : null,
     customer: row.customer_id ? { id: row.customer_id, name: row.customer_name ?? '' } : null,
     category: row.category_id ? { id: row.category_id, name: row.category_name ?? '' } : null,
+    known_error: knownError,
     parent_ticket: parentTicket,
     child_ticket_count: childCountResult?.count ?? 0,
   };
@@ -521,6 +544,7 @@ export async function createTicket(
       customer_id: data.customer_id ?? null,
       category_id: data.category_id ?? null,
       parent_ticket_id: data.parent_ticket_id ?? null,
+      root_cause: data.ticket_type === 'problem' ? (data.root_cause ?? null) : null,
       sla_tier: effectiveSlaTier ?? null,
       sla_response_due: slaResponseDue,
       sla_resolve_due: slaResolveDue,
@@ -595,6 +619,8 @@ export async function updateTicket(
     { key: 'customer_id', dbKey: 'customer_id' },
     { key: 'category_id', dbKey: 'category_id' },
     { key: 'sla_tier', dbKey: 'sla_tier' },
+    { key: 'root_cause', dbKey: 'root_cause' },
+    { key: 'known_error_id', dbKey: 'known_error_id' },
   ];
 
   const historyPromises: Promise<void>[] = [];

@@ -11,6 +11,7 @@
     "workflows": "Workflows",
     "services": "Service Catalog",
     "compliance": "Compliance",
+    "known_errors": "Known Errors",
     "knowledge_base": "Knowledge Base",
     "settings": "Settings",
     "monitoring": "Monitoring"
