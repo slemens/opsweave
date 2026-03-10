@@ -134,34 +134,39 @@ export function CustomerDetailPage() {
           icon={<Server className="h-4 w-4" />}
           label={t('cmdb:title')}
           value={stats.total_assets}
+          onClick={() => document.getElementById('section-assets')?.scrollIntoView({ behavior: 'smooth' })}
         />
         <KpiCard
           icon={<Ticket className="h-4 w-4" />}
           label={t('common:nav.tickets')}
           value={stats.total_tickets}
           sub={`${stats.open_tickets} ${t('common:customer_detail.open')}`}
+          onClick={() => document.getElementById('section-tickets')?.scrollIntoView({ behavior: 'smooth' })}
         />
         <KpiCard
           icon={<AlertTriangle className="h-4 w-4 text-destructive" />}
           label={t('common:customer_detail.sla_breaches')}
           value={stats.sla_breached_tickets}
           variant={stats.sla_breached_tickets > 0 ? 'destructive' : 'default'}
+          onClick={() => document.getElementById('section-sla')?.scrollIntoView({ behavior: 'smooth' })}
         />
         <KpiCard
           icon={<Users className="h-4 w-4" />}
           label={t('common:customer_detail.portal_users')}
           value={stats.portal_users}
+          onClick={() => navigate('/settings')}
         />
         <KpiCard
           icon={<BookOpen className="h-4 w-4" />}
           label={t('catalog:vertical.title')}
           value={vertical_catalogs.length}
+          onClick={() => document.getElementById('section-catalogs')?.scrollIntoView({ behavior: 'smooth' })}
         />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* SLA Assignments */}
-        <Card>
+        <Card id="section-sla">
           <CardHeader className="py-3">
             <CardTitle className="text-sm flex items-center gap-2">
               <ShieldCheck className="h-4 w-4" />
@@ -174,7 +179,11 @@ export function CustomerDetailPage() {
             ) : (
               <div className="space-y-2">
                 {sla_assignments.map((assignment) => (
-                  <div key={assignment.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/40">
+                  <div
+                    key={assignment.id}
+                    className="flex items-center justify-between p-2 rounded-lg bg-muted/40 cursor-pointer transition-colors hover:bg-muted/70"
+                    onClick={() => navigate('/settings?tab=sla')}
+                  >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">{assignment.definition.name}</span>
@@ -193,6 +202,7 @@ export function CustomerDetailPage() {
                         {t('common:customer_detail.resolution_time')}: {formatMinutes(assignment.definition.resolution_time_minutes)}
                       </p>
                     </div>
+                    <ExternalLink className="h-3 w-3 text-muted-foreground shrink-0 ml-2" />
                   </div>
                 ))}
               </div>
@@ -201,7 +211,7 @@ export function CustomerDetailPage() {
         </Card>
 
         {/* Vertical Catalogs */}
-        <Card>
+        <Card id="section-catalogs">
           <CardHeader className="py-3">
             <CardTitle className="text-sm flex items-center gap-2">
               <BookOpen className="h-4 w-4" />
@@ -214,7 +224,11 @@ export function CustomerDetailPage() {
             ) : (
               <div className="space-y-2">
                 {vertical_catalogs.map((vc) => (
-                  <div key={vc.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/40">
+                  <div
+                    key={vc.id}
+                    className="flex items-center justify-between p-2 rounded-lg bg-muted/40 cursor-pointer transition-colors hover:bg-muted/70"
+                    onClick={() => navigate('/services?tab=vertical')}
+                  >
                     <div>
                       <p className="text-sm font-medium">{vc.name}</p>
                       <p className="text-xs text-muted-foreground">
@@ -222,9 +236,12 @@ export function CustomerDetailPage() {
                         {vc.override_count > 0 && ` — ${vc.override_count} Overrides`}
                       </p>
                     </div>
-                    <Badge variant={vc.status === 'active' ? 'default' : 'secondary'} className="text-xs">
-                      {vc.status}
-                    </Badge>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Badge variant={vc.status === 'active' ? 'default' : 'secondary'} className="text-xs">
+                        {vc.status}
+                      </Badge>
+                      <ExternalLink className="h-3 w-3 text-muted-foreground" />
+                    </div>
                   </div>
                 ))}
               </div>
@@ -234,7 +251,7 @@ export function CustomerDetailPage() {
       </div>
 
       {/* Assets */}
-      <Card>
+      <Card id="section-assets">
         <CardHeader className="py-3">
           <div className="flex items-center justify-between">
             <CardTitle className="text-sm flex items-center gap-2">
@@ -284,7 +301,7 @@ export function CustomerDetailPage() {
       </Card>
 
       {/* Recent Tickets */}
-      <Card>
+      <Card id="section-tickets">
         <CardHeader className="py-3">
           <div className="flex items-center justify-between">
             <CardTitle className="text-sm flex items-center gap-2">
@@ -354,15 +371,20 @@ function KpiCard({
   value,
   sub,
   variant = 'default',
+  onClick,
 }: {
   icon: React.ReactNode;
   label: string;
   value: number;
   sub?: string;
   variant?: 'default' | 'destructive';
+  onClick?: () => void;
 }) {
   return (
-    <Card>
+    <Card
+      className={onClick ? 'cursor-pointer transition-colors hover:bg-muted/50' : undefined}
+      onClick={onClick}
+    >
       <CardContent className="py-4">
         <div className="flex items-center gap-2 text-muted-foreground mb-1">
           {icon}
