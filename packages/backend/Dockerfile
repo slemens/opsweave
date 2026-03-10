@@ -41,7 +41,7 @@ COPY packages/backend/package.json ./packages/backend/package.json
 RUN mkdir -p packages/frontend && \
     echo '{"name":"@opsweave/frontend","version":"0.1.0","private":true}' > packages/frontend/package.json
 
-RUN npm ci --ignore-scripts
+RUN npm ci
 
 # Copy tsconfig.base.json (extended by backend/tsconfig.json)
 COPY tsconfig.base.json ./tsconfig.base.json
@@ -56,7 +56,7 @@ COPY packages/backend/ ./packages/backend/
 RUN npm run build -w packages/backend
 
 # Prune dev dependencies
-RUN npm prune --production --workspace=packages/backend
+RUN npm prune --omit=dev
 
 # ── Stage 3: Production image ────────────────────────────────────
 FROM node:22-alpine
@@ -77,7 +77,6 @@ COPY --from=backend-build /build/packages/shared/dist/ ./packages/shared/dist/
 COPY --from=backend-build /build/packages/backend/package.json ./packages/backend/package.json
 COPY --from=backend-build /build/packages/backend/dist/ ./packages/backend/dist/
 COPY --from=backend-build /build/node_modules/ ./node_modules/
-COPY --from=backend-build /build/packages/backend/node_modules/ ./packages/backend/node_modules/
 
 # Copy i18n locales (loaded at runtime)
 COPY --from=backend-build /build/packages/backend/src/i18n/ ./packages/backend/src/i18n/
