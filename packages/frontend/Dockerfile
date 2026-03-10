@@ -18,6 +18,7 @@ RUN mkdir -p packages/backend packages/frontend && \
 
 RUN npm ci --ignore-scripts
 
+COPY tsconfig.base.json ./tsconfig.base.json
 COPY packages/shared/ ./packages/shared/
 RUN npm run build -w packages/shared
 
@@ -38,6 +39,9 @@ RUN mkdir -p packages/backend && \
     echo '{"name":"@opsweave/backend","version":"0.1.0","private":true}' > packages/backend/package.json
 
 RUN npm ci --ignore-scripts
+
+# Copy tsconfig.base.json (extended by frontend tsconfigs)
+COPY tsconfig.base.json ./tsconfig.base.json
 
 # Copy pre-built shared
 COPY --from=shared-build /build/packages/shared/ ./packages/shared/
