@@ -8,6 +8,7 @@
  */
 
 import 'dotenv/config';
+import { eq } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcryptjs';
 import { initDatabase, getDb, type TypedDb } from '../../config/database.js';
@@ -27,6 +28,8 @@ import {
   assetRelations,
   workflowTemplates,
   workflowSteps,
+  workflowInstances,
+  workflowStepInstances,
   kbArticles,
   kbArticleLinks,
   regulatoryFrameworks,
@@ -35,6 +38,9 @@ import {
   serviceDescriptions,
   horizontalCatalog,
   horizontalCatalogItems,
+  verticalCatalogs,
+  verticalCatalogOverrides,
+  assetServiceLinks,
   slaDefinitions,
   slaAssignments,
 } from '../schema/index.js';
@@ -1195,6 +1201,201 @@ async function seed() {
   ]);
   console.log('  ✓ Horizontal Catalogs: 2 catalogs (Standard + Premium) with items');
 
+  // ─── Additional Horizontal Catalogs ─────────────────────
+  const catalogDevOpsId = uuidv4();
+  const catalogManagedId = uuidv4();
+
+  await db.insert(horizontalCatalog).values([
+    {
+      id: catalogDevOpsId,
+      tenant_id: tenantId,
+      name: 'DevOps & Entwicklung',
+      description: 'Services für Entwicklungsteams: CI/CD, Versionskontrolle, Container-Plattform, Entwicklungsumgebungen.',
+      status: 'active',
+      created_at: now,
+    },
+    {
+      id: catalogManagedId,
+      tenant_id: tenantId,
+      name: 'Managed Infrastructure',
+      description: 'Vollständig verwaltete Infrastruktur-Services inkl. Betrieb, Monitoring und Incident-Response.',
+      status: 'active',
+      created_at: now,
+    },
+  ]);
+
+  // Add new service descriptions for DevOps catalog
+  const svcCiCdId = uuidv4();
+  const svcContainerId = uuidv4();
+  const svcDevEnvId = uuidv4();
+  const svcIdentityId = uuidv4();
+
+  await db.insert(serviceDescriptions).values([
+    {
+      id: svcCiCdId,
+      tenant_id: tenantId,
+      code: 'SVC-CICD',
+      title: 'CI/CD Pipeline Service',
+      description: 'Bereitstellung und Betrieb von Continuous Integration/Deployment Pipelines auf Basis von Jenkins und GitLab CI.',
+      scope_included: 'Pipeline-Konfiguration, Build-Agents, Artefakt-Management, Deployment-Automation',
+      scope_excluded: 'Entwicklung von Build-Skripten, Code-Reviews, Test-Automation',
+      compliance_tags: '["iso27001"]',
+      version: 1,
+      status: 'published',
+      created_at: now,
+      updated_at: now,
+    },
+    {
+      id: svcContainerId,
+      tenant_id: tenantId,
+      code: 'SVC-K8S',
+      title: 'Container & Orchestrierung',
+      description: 'Kubernetes-Cluster-Betrieb inkl. Namespace-Management, Ingress und Container-Registry.',
+      scope_included: 'Cluster-Betrieb, Namespace-Verwaltung, Ingress-Controller, Image-Registry, Helm-Charts',
+      scope_excluded: 'Container-Image-Erstellung, Applikations-Debugging, Custom Operators',
+      compliance_tags: '["iso27001","bsi"]',
+      version: 1,
+      status: 'published',
+      created_at: now,
+      updated_at: now,
+    },
+    {
+      id: svcDevEnvId,
+      tenant_id: tenantId,
+      code: 'SVC-DEV',
+      title: 'Entwicklungsumgebungen',
+      description: 'Bereitstellung von Entwicklungs- und Staging-Umgebungen inkl. Datenbank-Snapshots und Test-Daten.',
+      scope_included: 'VM-/Container-Bereitstellung, DB-Snapshots, Test-Daten, VPN-Zugang',
+      scope_excluded: 'IDE-Lizenzen, lokale Entwicklungsrechner, Schulungen',
+      compliance_tags: '[]',
+      version: 1,
+      status: 'published',
+      created_at: now,
+      updated_at: now,
+    },
+    {
+      id: svcIdentityId,
+      tenant_id: tenantId,
+      code: 'SVC-IAM',
+      title: 'Identity & Access Management',
+      description: 'Zentrales Identitäts- und Zugriffsmanagement über Active Directory, OIDC und SAML.',
+      scope_included: 'AD-Verwaltung, SSO-Integration, MFA-Bereitstellung, Gruppenrichtlinien, Berechtigungsmanagement',
+      scope_excluded: 'Lizenzbeschaffung für IdP-Software, Compliance-Audits, Penetration-Tests',
+      compliance_tags: '["dsgvo","iso27001","bsi"]',
+      version: 1,
+      status: 'published',
+      created_at: now,
+      updated_at: now,
+    },
+  ]);
+  console.log('  ✓ Extended Service Descriptions: 4 additional services');
+
+  // DevOps catalog items
+  await db.insert(horizontalCatalogItems).values([
+    { catalog_id: catalogDevOpsId, service_desc_id: svcCiCdId },
+    { catalog_id: catalogDevOpsId, service_desc_id: svcContainerId },
+    { catalog_id: catalogDevOpsId, service_desc_id: svcDevEnvId },
+    { catalog_id: catalogDevOpsId, service_desc_id: svcMonitoringId },
+  ]);
+
+  // Managed Infrastructure = Premium + Identity
+  await db.insert(horizontalCatalogItems).values([
+    { catalog_id: catalogManagedId, service_desc_id: svcEmailId },
+    { catalog_id: catalogManagedId, service_desc_id: svcDatabaseId },
+    { catalog_id: catalogManagedId, service_desc_id: svcNetworkId },
+    { catalog_id: catalogManagedId, service_desc_id: svcBackupId },
+    { catalog_id: catalogManagedId, service_desc_id: svcMonitoringId },
+    { catalog_id: catalogManagedId, service_desc_id: svcSecurityId },
+    { catalog_id: catalogManagedId, service_desc_id: svcIdentityId },
+    { catalog_id: catalogManagedId, service_desc_id: svcContainerId },
+  ]);
+  console.log('  ✓ Extended Horizontal Catalogs: DevOps (4 items), Managed Infrastructure (8 items)');
+
+  // ─── Extended Customers (needed for Vertical Catalogs) ───
+  const customerBankId = uuidv4();
+  const customerLogistikId = uuidv4();
+  const customerRetailId = uuidv4();
+  const customerEnergieId = uuidv4();
+  const customerStadtwerkeId = uuidv4();
+
+  await db.insert(customers).values([
+    { id: customerBankId, tenant_id: tenantId, name: 'Volksbank Rhein-Main eG', industry: 'Finanzdienstleistungen', contact_email: 'it@vb-rhein-main.de', is_active: 1, created_at: now },
+    { id: customerLogistikId, tenant_id: tenantId, name: 'Schnell Logistik GmbH', industry: 'Logistik', contact_email: 'support@schnell-logistik.de', is_active: 1, created_at: now },
+    { id: customerRetailId, tenant_id: tenantId, name: 'ModeMeyer AG', industry: 'Einzelhandel', contact_email: 'it@modemeyer.de', is_active: 1, created_at: now },
+    { id: customerEnergieId, tenant_id: tenantId, name: 'GreenPower Energie GmbH', industry: 'Energie', contact_email: 'admin@greenpower-energie.de', is_active: 1, created_at: now },
+    { id: customerStadtwerkeId, tenant_id: tenantId, name: 'Stadtwerke Offenbach', industry: 'Öffentlicher Dienst', contact_email: 'edv@stadtwerke-of.de', is_active: 0, created_at: now },
+  ]);
+  console.log('  ✓ Extended Customers: 5 additional customers');
+
+  // ─── Vertical Catalogs ──────────────────────────────────
+  const vcBankId = uuidv4();
+  const vcAcmeId = uuidv4();
+  const vcMedTechId = uuidv4();
+
+  await db.insert(verticalCatalogs).values([
+    {
+      id: vcBankId,
+      tenant_id: tenantId,
+      name: 'Volksbank Rhein-Main — Managed IT',
+      base_catalog_id: catalogManagedId,
+      customer_id: customerBankId,
+      industry: 'Finanzdienstleistungen',
+      description: 'Kundenspezifischer Katalog für die Volksbank mit erhöhten Sicherheitsanforderungen und BaFin-Compliance.',
+      status: 'active',
+      created_at: now,
+    },
+    {
+      id: vcAcmeId,
+      tenant_id: tenantId,
+      name: 'Acme GmbH — Premium IT',
+      base_catalog_id: catalogPremiumId,
+      customer_id: customerAcmeId,
+      industry: 'Produktion',
+      description: 'Premium-Services für Acme GmbH mit angepassten SLAs und priorisiertem Support.',
+      status: 'active',
+      created_at: now,
+    },
+    {
+      id: vcMedTechId,
+      tenant_id: tenantId,
+      name: 'MedTech Solutions — Healthcare IT',
+      base_catalog_id: catalogManagedId,
+      customer_id: customerMedTechId,
+      industry: 'Gesundheitswesen',
+      description: 'Spezialkatalog für MedTech mit erweiterten Datenschutzanforderungen (Patientendaten, MDR).',
+      status: 'active',
+      created_at: now,
+    },
+  ]);
+  console.log('  ✓ Vertical Catalogs: 3 catalogs (Bank, Acme, MedTech)');
+
+  // Vertical catalog overrides — Bank gets enhanced security
+  const svcSecurityBankId = uuidv4();
+  await db.insert(serviceDescriptions).values({
+    id: svcSecurityBankId,
+    tenant_id: tenantId,
+    code: 'SVC-SEC-BANK',
+    title: 'IT-Sicherheit & Compliance (Finanz)',
+    description: 'Erweiterte Sicherheitsmaßnahmen für Finanzdienstleister gemäß BaFin BAIT/DORA-Anforderungen.',
+    scope_included: 'Alle Standard-Leistungen + PCI-DSS-Compliance, WAF, DDoS-Schutz, Quarterly Pentests, 4-Augen-Prinzip bei kritischen Änderungen',
+    scope_excluded: 'SOC-2-Zertifizierung, Hardware Security Modules (HSM)',
+    compliance_tags: '["dsgvo","iso27001","bsi","bafin","pci-dss"]',
+    version: 1,
+    status: 'published',
+    created_at: now,
+    updated_at: now,
+  });
+
+  await db.insert(verticalCatalogOverrides).values({
+    id: uuidv4(),
+    vertical_id: vcBankId,
+    original_desc_id: svcSecurityId,
+    override_desc_id: svcSecurityBankId,
+    override_type: 'replace',
+    reason: 'BaFin BAIT/DORA erfordern erweiterte Sicherheitsmaßnahmen für Finanzdienstleister',
+  });
+  console.log('  ✓ Vertical Overrides: Bank gets enhanced security service');
+
   // ─── Compliance Frameworks ─────────────────────────────
   const fwIso27001Id = uuidv4();
   const fwDsgvoId = uuidv4();
@@ -1403,6 +1604,307 @@ async function seed() {
   ]);
   console.log('  ✓ Compliance Mappings: 17 requirement-service mappings');
 
+  // ─── Extended Sample Data ──────────────────────────────────
+
+  // More assets — covering different categories
+  const assetMailGwId = uuidv4();
+  const assetAdControllerId = uuidv4();
+  const assetSanId = uuidv4();
+  const assetBackupSrvId = uuidv4();
+  const assetWifiApId = uuidv4();
+  const assetVpnGwId = uuidv4();
+  const assetPrinterFloor3Id = uuidv4();
+  const assetLaptop01Id = uuidv4();
+  const assetLaptop02Id = uuidv4();
+  const assetPhone01Id = uuidv4();
+  const assetErpId = uuidv4();
+  const assetCrmId = uuidv4();
+  const assetJiraId = uuidv4();
+  const assetGitlabId = uuidv4();
+  const assetPrometheusId = uuidv4();
+  const assetK8sClusterId = uuidv4();
+  const assetRedisId = uuidv4();
+  const assetElasticId = uuidv4();
+  const assetCiCdId = uuidv4();
+  const assetDnsId = uuidv4();
+  const assetProxyId = uuidv4();
+  const assetTestVmId = uuidv4();
+  const assetStagingVmId = uuidv4();
+  const assetFileServerId = uuidv4();
+  const assetUpsId = uuidv4();
+  const assetPduId = uuidv4();
+
+  await db.insert(assets).values([
+    { id: assetMailGwId, tenant_id: tenantId, asset_type: 'server_virtual', name: 'mail-gw-01', display_name: 'Mail Gateway 01', status: 'active', ip_address: '10.0.5.10', location: 'ESXi Host 01', sla_tier: 'gold', environment: 'production', owner_group_id: opsGroupId, customer_id: null, attributes: '{"vcpu": 4, "ram_gb": 8, "os": "Ubuntu 22.04 LTS", "software": "Postfix + SpamAssassin"}', created_at: now, updated_at: now, created_by: adminId },
+    { id: assetAdControllerId, tenant_id: tenantId, asset_type: 'server_virtual', name: 'ad-dc-01', display_name: 'Active Directory Controller', status: 'active', ip_address: '10.0.1.5', location: 'ESXi Host 02', sla_tier: 'platinum', environment: 'production', owner_group_id: opsGroupId, customer_id: null, attributes: '{"vcpu": 4, "ram_gb": 16, "os": "Windows Server 2022", "role": "Primary DC"}', created_at: now, updated_at: now, created_by: adminId },
+    { id: assetSanId, tenant_id: tenantId, asset_type: 'storage', name: 'san-primary-01', display_name: 'Primary SAN Storage', status: 'active', ip_address: '10.0.10.1', location: 'RZ Frankfurt, Rack 02, HE 1-4', sla_tier: 'platinum', environment: 'production', owner_group_id: opsGroupId, customer_id: null, attributes: '{"vendor": "NetApp FAS8200", "capacity_tb": 100, "protocol": "iSCSI/NFS"}', created_at: now, updated_at: now, created_by: adminId },
+    { id: assetBackupSrvId, tenant_id: tenantId, asset_type: 'server_physical', name: 'backup-srv-01', display_name: 'Backup Server 01', status: 'active', ip_address: '10.0.10.20', location: 'RZ Frankfurt, Rack 02, HE 10-12', sla_tier: 'gold', environment: 'production', owner_group_id: opsGroupId, customer_id: null, attributes: '{"vendor": "HPE ProLiant DL380", "software": "Veeam Backup & Replication 12", "storage_tb": 50}', created_at: now, updated_at: now, created_by: adminId },
+    { id: assetWifiApId, tenant_id: tenantId, asset_type: 'network_device', name: 'wifi-ap-floor3', display_name: 'WLAN Access Point 3. OG', status: 'active', ip_address: '10.0.20.53', location: 'Bürogebäude, 3. OG, Flur', sla_tier: 'bronze', environment: 'production', owner_group_id: opsGroupId, customer_id: null, attributes: '{"vendor": "Ubiquiti UniFi U6 Pro", "ssids": ["Corp-WiFi", "Guest-WiFi"]}', created_at: now, updated_at: now, created_by: agentId },
+    { id: assetVpnGwId, tenant_id: tenantId, asset_type: 'network_device', name: 'vpn-gw-01', display_name: 'VPN Gateway', status: 'active', ip_address: '10.0.0.5', location: 'RZ Frankfurt, Rack 01, HE 3', sla_tier: 'gold', environment: 'production', owner_group_id: opsGroupId, customer_id: null, attributes: '{"vendor": "Fortinet FortiGate 100F", "concurrent_tunnels": 500, "firmware": "7.4.2"}', created_at: now, updated_at: now, created_by: adminId },
+    { id: assetPrinterFloor3Id, tenant_id: tenantId, asset_type: 'printer', name: 'prt-floor3-305', display_name: 'Drucker 3. OG Raum 305', status: 'active', ip_address: '10.0.20.100', location: 'Bürogebäude, 3. OG, Raum 305', sla_tier: 'none', environment: 'production', owner_group_id: supportGroupId, customer_id: null, attributes: '{"vendor": "HP LaserJet Enterprise M507", "type": "Laser s/w"}', created_at: now, updated_at: now, created_by: agentId },
+    { id: assetLaptop01Id, tenant_id: tenantId, asset_type: 'workstation', name: 'nb-ceo-01', display_name: 'Notebook CEO', status: 'active', ip_address: null, location: 'Bürogebäude, 4. OG, Vorstandsbüro', sla_tier: 'gold', environment: 'production', owner_group_id: supportGroupId, customer_id: null, attributes: '{"vendor": "Lenovo ThinkPad X1 Carbon Gen 11", "os": "Windows 11 Pro", "user": "Thomas Müller"}', created_at: now, updated_at: now, created_by: agentId },
+    { id: assetLaptop02Id, tenant_id: tenantId, asset_type: 'workstation', name: 'nb-dev-01', display_name: 'Notebook Entwickler 01', status: 'active', ip_address: null, location: 'Bürogebäude, 2. OG', sla_tier: 'silver', environment: 'production', owner_group_id: supportGroupId, customer_id: null, attributes: '{"vendor": "Apple MacBook Pro 16 M3", "os": "macOS Sonoma", "user": "Lisa Schneider"}', created_at: now, updated_at: now, created_by: agentId },
+    { id: assetPhone01Id, tenant_id: tenantId, asset_type: 'mobile_device', name: 'phone-ceo-01', display_name: 'Diensthandy CEO', status: 'active', ip_address: null, location: 'Mobil', sla_tier: 'gold', environment: 'production', owner_group_id: supportGroupId, customer_id: null, attributes: '{"vendor": "Apple iPhone 15 Pro", "mdm": true, "user": "Thomas Müller"}', created_at: now, updated_at: now, created_by: agentId },
+    { id: assetErpId, tenant_id: tenantId, asset_type: 'application', name: 'erp-sap-prod', display_name: 'SAP ERP Production', status: 'active', ip_address: '10.0.4.10', location: 'ESXi Host 01', sla_tier: 'platinum', environment: 'production', owner_group_id: devGroupId, customer_id: customerBankId, attributes: '{"version": "SAP S/4HANA 2023", "modules": ["FI", "CO", "MM", "SD"]}', created_at: now, updated_at: now, created_by: adminId },
+    { id: assetCrmId, tenant_id: tenantId, asset_type: 'application', name: 'crm-salesforce', display_name: 'Salesforce CRM', status: 'active', ip_address: null, location: 'Cloud (SaaS)', sla_tier: 'silver', environment: 'production', owner_group_id: devGroupId, customer_id: null, attributes: '{"edition": "Enterprise", "users": 85, "integrations": ["ERP", "Email"]}', created_at: now, updated_at: now, created_by: adminId },
+    { id: assetJiraId, tenant_id: tenantId, asset_type: 'application', name: 'jira-cloud', display_name: 'Jira Cloud', status: 'active', ip_address: null, location: 'Cloud (SaaS)', sla_tier: 'silver', environment: 'production', owner_group_id: devGroupId, customer_id: null, attributes: '{"edition": "Premium", "projects": 12}', created_at: now, updated_at: now, created_by: managerId },
+    { id: assetGitlabId, tenant_id: tenantId, asset_type: 'application', name: 'gitlab-prod', display_name: 'GitLab CE', status: 'active', ip_address: '10.0.4.20', location: 'ESXi Host 02', sla_tier: 'gold', environment: 'production', owner_group_id: devGroupId, customer_id: null, attributes: '{"version": "16.8", "runners": 4, "repos": 67}', created_at: now, updated_at: now, created_by: adminId },
+    { id: assetPrometheusId, tenant_id: tenantId, asset_type: 'application', name: 'prometheus-prod', display_name: 'Prometheus Monitoring', status: 'active', ip_address: '10.0.5.20', location: 'ESXi Host 02', sla_tier: 'gold', environment: 'production', owner_group_id: opsGroupId, customer_id: null, attributes: '{"version": "2.49", "targets": 142, "retention_days": 30}', created_at: now, updated_at: now, created_by: adminId },
+    { id: assetK8sClusterId, tenant_id: tenantId, asset_type: 'container_platform', name: 'k8s-prod-01', display_name: 'Kubernetes Production Cluster', status: 'active', ip_address: '10.0.6.1', location: 'RZ Frankfurt', sla_tier: 'platinum', environment: 'production', owner_group_id: opsGroupId, customer_id: null, attributes: '{"version": "1.29", "nodes": 6, "pods": 87, "distribution": "RKE2"}', created_at: now, updated_at: now, created_by: adminId },
+    { id: assetRedisId, tenant_id: tenantId, asset_type: 'database', name: 'redis-cache-01', display_name: 'Redis Cache Cluster', status: 'active', ip_address: '10.0.3.20', location: 'ESXi Host 01', sla_tier: 'gold', environment: 'production', owner_group_id: devGroupId, customer_id: null, attributes: '{"version": "7.2", "mode": "cluster", "nodes": 3, "memory_gb": 32}', created_at: now, updated_at: now, created_by: adminId },
+    { id: assetElasticId, tenant_id: tenantId, asset_type: 'database', name: 'elastic-prod-01', display_name: 'Elasticsearch Cluster', status: 'active', ip_address: '10.0.3.30', location: 'ESXi Host 02', sla_tier: 'silver', environment: 'production', owner_group_id: devGroupId, customer_id: null, attributes: '{"version": "8.12", "nodes": 3, "indices": 45, "size_gb": 120}', created_at: now, updated_at: now, created_by: adminId },
+    { id: assetCiCdId, tenant_id: tenantId, asset_type: 'application', name: 'jenkins-prod', display_name: 'Jenkins CI/CD', status: 'active', ip_address: '10.0.4.30', location: 'ESXi Host 02', sla_tier: 'silver', environment: 'production', owner_group_id: devGroupId, customer_id: null, attributes: '{"version": "2.440", "agents": 8, "pipelines": 34}', created_at: now, updated_at: now, created_by: managerId },
+    { id: assetDnsId, tenant_id: tenantId, asset_type: 'server_virtual', name: 'dns-ns-01', display_name: 'DNS Server 01', status: 'active', ip_address: '10.0.1.2', location: 'ESXi Host 01', sla_tier: 'platinum', environment: 'production', owner_group_id: opsGroupId, customer_id: null, attributes: '{"os": "Ubuntu 22.04", "software": "BIND 9.18", "zones": 23}', created_at: now, updated_at: now, created_by: adminId },
+    { id: assetProxyId, tenant_id: tenantId, asset_type: 'server_virtual', name: 'proxy-squid-01', display_name: 'Web Proxy', status: 'active', ip_address: '10.0.1.3', location: 'ESXi Host 02', sla_tier: 'silver', environment: 'production', owner_group_id: opsGroupId, customer_id: null, attributes: '{"os": "Ubuntu 22.04", "software": "Squid 5.7", "users": 200}', created_at: now, updated_at: now, created_by: adminId },
+    { id: assetTestVmId, tenant_id: tenantId, asset_type: 'server_virtual', name: 'test-vm-01', display_name: 'Test VM 01', status: 'active', ip_address: '10.0.100.10', location: 'ESXi Host 02', sla_tier: 'none', environment: 'test', owner_group_id: devGroupId, customer_id: null, attributes: '{"vcpu": 2, "ram_gb": 4, "os": "Ubuntu 22.04"}', created_at: now, updated_at: now, created_by: agentId },
+    { id: assetStagingVmId, tenant_id: tenantId, asset_type: 'server_virtual', name: 'staging-app-01', display_name: 'Staging Application Server', status: 'active', ip_address: '10.0.100.20', location: 'ESXi Host 02', sla_tier: 'none', environment: 'staging', owner_group_id: devGroupId, customer_id: null, attributes: '{"vcpu": 4, "ram_gb": 8, "os": "Ubuntu 22.04"}', created_at: now, updated_at: now, created_by: managerId },
+    { id: assetFileServerId, tenant_id: tenantId, asset_type: 'server_virtual', name: 'file-srv-01', display_name: 'Fileserver 01', status: 'active', ip_address: '10.0.2.50', location: 'ESXi Host 01', sla_tier: 'silver', environment: 'production', owner_group_id: opsGroupId, customer_id: null, attributes: '{"os": "Windows Server 2022", "shares": 15, "size_tb": 8}', created_at: now, updated_at: now, created_by: adminId },
+    { id: assetUpsId, tenant_id: tenantId, asset_type: 'power_supply', name: 'ups-rack01', display_name: 'USV Rack 01', status: 'active', ip_address: '10.0.0.200', location: 'RZ Frankfurt, Rack 01, HE 45', sla_tier: 'gold', environment: 'production', owner_group_id: opsGroupId, customer_id: null, attributes: '{"vendor": "APC Smart-UPS 3000", "capacity_va": 3000, "runtime_min": 15}', created_at: now, updated_at: now, created_by: adminId },
+    { id: assetPduId, tenant_id: tenantId, asset_type: 'power_supply', name: 'pdu-rack01-a', display_name: 'PDU Rack 01 A-Seite', status: 'active', ip_address: '10.0.0.201', location: 'RZ Frankfurt, Rack 01', sla_tier: 'none', environment: 'production', owner_group_id: opsGroupId, customer_id: null, attributes: '{"vendor": "APC Metered Rack PDU", "outlets": 24, "amps": 32}', created_at: now, updated_at: now, created_by: adminId },
+  ]);
+  console.log('  ✓ Extended Assets: 26 additional assets');
+
+  // Extended Asset Relations
+  await db.insert(assetRelations).values([
+    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetMailGwId, target_asset_id: assetEsxi01Id, relation_type: 'runs_on', properties: '{}', created_at: now, created_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetAdControllerId, target_asset_id: assetEsxi02Id, relation_type: 'runs_on', properties: '{}', created_at: now, created_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetDnsId, target_asset_id: assetEsxi01Id, relation_type: 'runs_on', properties: '{}', created_at: now, created_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetProxyId, target_asset_id: assetEsxi02Id, relation_type: 'runs_on', properties: '{}', created_at: now, created_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetFileServerId, target_asset_id: assetEsxi01Id, relation_type: 'runs_on', properties: '{}', created_at: now, created_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetGitlabId, target_asset_id: assetEsxi02Id, relation_type: 'runs_on', properties: '{}', created_at: now, created_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetRedisId, target_asset_id: assetK8sClusterId, relation_type: 'runs_on', properties: '{}', created_at: now, created_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetElasticId, target_asset_id: assetK8sClusterId, relation_type: 'runs_on', properties: '{}', created_at: now, created_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetErpId, target_asset_id: assetMysqlId, relation_type: 'depends_on', properties: '{}', created_at: now, created_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetErpId, target_asset_id: assetAdControllerId, relation_type: 'depends_on', properties: '{}', created_at: now, created_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetGitlabId, target_asset_id: assetRedisId, relation_type: 'depends_on', properties: '{}', created_at: now, created_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetCiCdId, target_asset_id: assetGitlabId, relation_type: 'depends_on', properties: '{}', created_at: now, created_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetPrometheusId, target_asset_id: assetK8sClusterId, relation_type: 'runs_on', properties: '{}', created_at: now, created_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetBackupSrvId, target_asset_id: assetSanId, relation_type: 'depends_on', properties: '{}', created_at: now, created_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetUpsId, target_asset_id: assetRackId, relation_type: 'member_of', properties: '{}', created_at: now, created_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetPduId, target_asset_id: assetRackId, relation_type: 'member_of', properties: '{}', created_at: now, created_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetVpnGwId, target_asset_id: assetFwId, relation_type: 'connected_to', properties: '{}', created_at: now, created_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetFileServerId, target_asset_id: assetSanId, relation_type: 'depends_on', properties: '{}', created_at: now, created_by: adminId },
+  ]);
+  console.log('  ✓ Extended Relations: 18 additional relations');
+
+  // Asset-Service Links (vertical catalogs → assets)
+  await db.insert(assetServiceLinks).values([
+    { asset_id: assetErpId, vertical_id: vcBankId, tenant_id: tenantId, effective_from: '2025-01-01', effective_until: null },
+    { asset_id: assetWeb01Id, vertical_id: vcAcmeId, tenant_id: tenantId, effective_from: '2025-01-01', effective_until: null },
+    { asset_id: assetWeb02Id, vertical_id: vcAcmeId, tenant_id: tenantId, effective_from: '2025-01-01', effective_until: null },
+    { asset_id: assetDb01Id, vertical_id: vcMedTechId, tenant_id: tenantId, effective_from: '2025-06-01', effective_until: null },
+  ]);
+  console.log('  ✓ Asset-Service Links: 4 links');
+
+  // ─── Extended Tickets (30+ more) ──────────────────────────
+  const h = 1000 * 60 * 60; // 1 hour in ms
+  const d = h * 24; // 1 day in ms
+
+  const extendedTickets = [
+    // --- Recent open incidents ---
+    { id: uuidv4(), tenant_id: tenantId, ticket_number: 'INC-2026-00005', ticket_type: 'incident' as const, subtype: null, title: 'SAP-Login für Buchhaltung nicht möglich', description: 'Die Buchhaltungsabteilung kann sich seit 09:00 Uhr nicht mehr am SAP-System anmelden. Fehlermeldung: "User locked"', status: 'open' as const, priority: 'critical' as const, impact: 'high' as const, urgency: 'critical' as const, asset_id: assetErpId, assignee_id: managerId, assignee_group_id: devGroupId, reporter_id: viewerId, customer_id: customerBankId, category_id: catApplikationId, workflow_instance_id: null, current_step_id: null, sla_tier: 'platinum', sla_response_due: new Date(Date.now() + 15 * 60 * 1000).toISOString(), sla_resolve_due: new Date(Date.now() + 2 * h).toISOString(), sla_breached: 0, parent_ticket_id: null, source: 'manual' as const, created_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(), updated_at: now, resolved_at: null, closed_at: null, created_by: viewerId },
+    { id: uuidv4(), tenant_id: tenantId, ticket_number: 'INC-2026-00006', ticket_type: 'incident' as const, subtype: null, title: 'Fileserver-Freigabe nicht erreichbar', description: 'Die Netzwerkfreigabe \\\\file-srv-01\\shared ist für mehrere Abteilungen nicht erreichbar.', status: 'open' as const, priority: 'high' as const, impact: 'high' as const, urgency: 'high' as const, asset_id: assetFileServerId, assignee_id: agentId, assignee_group_id: opsGroupId, reporter_id: managerId, customer_id: null, category_id: catServerId, workflow_instance_id: null, current_step_id: null, sla_tier: 'silver', sla_response_due: new Date(Date.now() + 1 * h).toISOString(), sla_resolve_due: new Date(Date.now() + 8 * h).toISOString(), sla_breached: 0, parent_ticket_id: null, source: 'manual' as const, created_at: new Date(Date.now() - 45 * 60 * 1000).toISOString(), updated_at: now, resolved_at: null, closed_at: null, created_by: managerId },
+    { id: uuidv4(), tenant_id: tenantId, ticket_number: 'INC-2026-00007', ticket_type: 'incident' as const, subtype: null, title: 'WLAN im 3. OG ausgefallen', description: 'Kein WLAN-Empfang im gesamten 3. Obergeschoss. Access Point scheint offline zu sein.', status: 'in_progress' as const, priority: 'medium' as const, impact: 'medium' as const, urgency: 'medium' as const, asset_id: assetWifiApId, assignee_id: agentId, assignee_group_id: supportGroupId, reporter_id: viewerId, customer_id: null, category_id: catNetzwerkId, workflow_instance_id: null, current_step_id: null, sla_tier: 'bronze', sla_response_due: new Date(Date.now() + 2 * h).toISOString(), sla_resolve_due: new Date(Date.now() + 24 * h).toISOString(), sla_breached: 0, parent_ticket_id: null, source: 'portal' as const, created_at: new Date(Date.now() - 2 * h).toISOString(), updated_at: now, resolved_at: null, closed_at: null, created_by: viewerId },
+    { id: uuidv4(), tenant_id: tenantId, ticket_number: 'INC-2026-00008', ticket_type: 'incident' as const, subtype: null, title: 'Kubernetes-Pods in CrashLoopBackOff', description: 'Mehrere Pods im Production-Namespace starten nicht mehr. Logs zeigen OOM-Kills.', status: 'in_progress' as const, priority: 'critical' as const, impact: 'high' as const, urgency: 'critical' as const, asset_id: assetK8sClusterId, assignee_id: managerId, assignee_group_id: opsGroupId, reporter_id: adminId, customer_id: null, category_id: catServerId, workflow_instance_id: null, current_step_id: null, sla_tier: 'platinum', sla_response_due: new Date(Date.now() - 10 * 60 * 1000).toISOString(), sla_resolve_due: new Date(Date.now() + 3 * h).toISOString(), sla_breached: 1, parent_ticket_id: null, source: 'monitoring' as const, created_at: new Date(Date.now() - 3 * h).toISOString(), updated_at: now, resolved_at: null, closed_at: null, created_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, ticket_number: 'INC-2026-00009', ticket_type: 'incident' as const, subtype: null, title: 'Jenkins-Builds schlagen fehl', description: 'Seit heute Morgen schlagen alle Jenkins-Builds mit "Disk space too low" fehl.', status: 'open' as const, priority: 'high' as const, impact: 'medium' as const, urgency: 'high' as const, asset_id: assetCiCdId, assignee_id: null, assignee_group_id: devGroupId, reporter_id: managerId, customer_id: null, category_id: catApplikationId, workflow_instance_id: null, current_step_id: null, sla_tier: 'silver', sla_response_due: new Date(Date.now() + 1 * h).toISOString(), sla_resolve_due: new Date(Date.now() + 8 * h).toISOString(), sla_breached: 0, parent_ticket_id: null, source: 'manual' as const, created_at: new Date(Date.now() - 1 * h).toISOString(), updated_at: now, resolved_at: null, closed_at: null, created_by: managerId },
+    { id: uuidv4(), tenant_id: tenantId, ticket_number: 'INC-2026-00010', ticket_type: 'incident' as const, subtype: null, title: 'USV-Alarm im Serverraum', description: 'Die USV im Rack 01 zeigt einen Batterie-Alarm. Laufzeit auf 5 Minuten reduziert.', status: 'open' as const, priority: 'critical' as const, impact: 'high' as const, urgency: 'critical' as const, asset_id: assetUpsId, assignee_id: agentId, assignee_group_id: opsGroupId, reporter_id: adminId, customer_id: null, category_id: catServerId, workflow_instance_id: null, current_step_id: null, sla_tier: 'gold', sla_response_due: new Date(Date.now() + 30 * 60 * 1000).toISOString(), sla_resolve_due: new Date(Date.now() + 4 * h).toISOString(), sla_breached: 0, parent_ticket_id: null, source: 'monitoring' as const, created_at: new Date(Date.now() - 20 * 60 * 1000).toISOString(), updated_at: now, resolved_at: null, closed_at: null, created_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, ticket_number: 'INC-2026-00011', ticket_type: 'incident' as const, subtype: null, title: 'Elasticsearch-Cluster Yellow Status', description: 'Der Elasticsearch-Cluster ist im Yellow-Status. Einige Replikas können nicht zugewiesen werden.', status: 'in_progress' as const, priority: 'medium' as const, impact: 'low' as const, urgency: 'medium' as const, asset_id: assetElasticId, assignee_id: agentId, assignee_group_id: devGroupId, reporter_id: agentId, customer_id: null, category_id: catDatenbankId, workflow_instance_id: null, current_step_id: null, sla_tier: 'silver', sla_response_due: null, sla_resolve_due: null, sla_breached: 0, parent_ticket_id: null, source: 'monitoring' as const, created_at: new Date(Date.now() - 6 * h).toISOString(), updated_at: now, resolved_at: null, closed_at: null, created_by: agentId },
+    { id: uuidv4(), tenant_id: tenantId, ticket_number: 'INC-2026-00012', ticket_type: 'incident' as const, subtype: null, title: 'Outlook-Kalender synchronisiert nicht', description: 'Mehrere Mitarbeiter berichten, dass Outlook-Kalender seit heute Morgen nicht mehr synchronisieren.', status: 'pending' as const, priority: 'medium' as const, impact: 'medium' as const, urgency: 'medium' as const, asset_id: assetMailGwId, assignee_id: agentId, assignee_group_id: supportGroupId, reporter_id: viewerId, customer_id: customerAcmeId, category_id: catApplikationId, workflow_instance_id: null, current_step_id: null, sla_tier: 'silver', sla_response_due: null, sla_resolve_due: null, sla_breached: 0, parent_ticket_id: null, source: 'portal' as const, created_at: new Date(Date.now() - 5 * h).toISOString(), updated_at: now, resolved_at: null, closed_at: null, created_by: viewerId },
+    { id: uuidv4(), tenant_id: tenantId, ticket_number: 'INC-2026-00013', ticket_type: 'incident' as const, subtype: null, title: 'GitLab-Runner nicht erreichbar', description: 'Zwei von vier GitLab-Runnern sind offline. CI/CD-Pipelines laufen mit Verzögerung.', status: 'in_progress' as const, priority: 'high' as const, impact: 'medium' as const, urgency: 'high' as const, asset_id: assetGitlabId, assignee_id: managerId, assignee_group_id: devGroupId, reporter_id: managerId, customer_id: null, category_id: catApplikationId, workflow_instance_id: null, current_step_id: null, sla_tier: 'gold', sla_response_due: null, sla_resolve_due: null, sla_breached: 0, parent_ticket_id: null, source: 'manual' as const, created_at: new Date(Date.now() - 4 * h).toISOString(), updated_at: now, resolved_at: null, closed_at: null, created_by: managerId },
+
+    // --- Changes ---
+    { id: uuidv4(), tenant_id: tenantId, ticket_number: 'CHG-2026-00002', ticket_type: 'change' as const, subtype: 'standard', title: 'Kubernetes-Cluster auf v1.30 aktualisieren', description: 'Geplantes Update des Production-K8s-Clusters von v1.29 auf v1.30. Rolling Update, kein Downtime erwartet.', status: 'open' as const, priority: 'medium' as const, impact: 'medium' as const, urgency: 'low' as const, asset_id: assetK8sClusterId, assignee_id: adminId, assignee_group_id: opsGroupId, reporter_id: adminId, customer_id: null, category_id: catServerId, workflow_instance_id: null, current_step_id: null, sla_tier: null, sla_response_due: null, sla_resolve_due: null, sla_breached: 0, parent_ticket_id: null, source: 'manual' as const, created_at: new Date(Date.now() - 2 * d).toISOString(), updated_at: now, resolved_at: null, closed_at: null, created_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, ticket_number: 'CHG-2026-00003', ticket_type: 'change' as const, subtype: 'normal', title: 'AD-Migration auf neuen Domain Controller', description: 'Migration des Active Directory auf den neuen DC. Alte Gesamtstruktur wird abgelöst.', status: 'pending' as const, priority: 'high' as const, impact: 'high' as const, urgency: 'medium' as const, asset_id: assetAdControllerId, assignee_id: managerId, assignee_group_id: opsGroupId, reporter_id: adminId, customer_id: null, category_id: catServerId, workflow_instance_id: null, current_step_id: null, sla_tier: null, sla_response_due: null, sla_resolve_due: null, sla_breached: 0, parent_ticket_id: null, source: 'manual' as const, created_at: new Date(Date.now() - 5 * d).toISOString(), updated_at: now, resolved_at: null, closed_at: null, created_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, ticket_number: 'CHG-2026-00004', ticket_type: 'change' as const, subtype: 'emergency', title: 'Notfall-Patch für Log4j-Schwachstelle', description: 'CVE-2024-XXXX betrifft unsere Elasticsearch-Installation. Sofortiger Patch erforderlich.', status: 'in_progress' as const, priority: 'critical' as const, impact: 'high' as const, urgency: 'critical' as const, asset_id: assetElasticId, assignee_id: adminId, assignee_group_id: opsGroupId, reporter_id: adminId, customer_id: null, category_id: catSecurityId, workflow_instance_id: null, current_step_id: null, sla_tier: 'gold', sla_response_due: new Date(Date.now() + 30 * 60 * 1000).toISOString(), sla_resolve_due: new Date(Date.now() + 4 * h).toISOString(), sla_breached: 0, parent_ticket_id: null, source: 'manual' as const, created_at: new Date(Date.now() - 1 * h).toISOString(), updated_at: now, resolved_at: null, closed_at: null, created_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, ticket_number: 'CHG-2026-00005', ticket_type: 'change' as const, subtype: 'standard', title: 'SAN-Storage Kapazitätserweiterung', description: 'Erweiterung des NetApp SAN um 20TB für wachsenden Backup-Bedarf.', status: 'pending' as const, priority: 'medium' as const, impact: 'low' as const, urgency: 'low' as const, asset_id: assetSanId, assignee_id: null, assignee_group_id: opsGroupId, reporter_id: managerId, customer_id: null, category_id: catServerId, workflow_instance_id: null, current_step_id: null, sla_tier: null, sla_response_due: null, sla_resolve_due: null, sla_breached: 0, parent_ticket_id: null, source: 'manual' as const, created_at: new Date(Date.now() - 7 * d).toISOString(), updated_at: now, resolved_at: null, closed_at: null, created_by: managerId },
+
+    // --- Problems ---
+    { id: uuidv4(), tenant_id: tenantId, ticket_number: 'PRB-2026-00002', ticket_type: 'problem' as const, subtype: null, title: 'Wiederkehrende DNS-Timeout-Fehler', description: 'Mehrere Dienste berichten sporadisch DNS-Timeouts. Betrifft interne Namensauflösung. Tritt 2-3x pro Woche auf.', status: 'open' as const, priority: 'high' as const, impact: 'medium' as const, urgency: 'high' as const, asset_id: assetDnsId, assignee_id: adminId, assignee_group_id: opsGroupId, reporter_id: agentId, customer_id: null, category_id: catNetzwerkId, workflow_instance_id: null, current_step_id: null, sla_tier: 'platinum', sla_response_due: null, sla_resolve_due: null, sla_breached: 0, parent_ticket_id: null, source: 'manual' as const, created_at: new Date(Date.now() - 14 * d).toISOString(), updated_at: now, resolved_at: null, closed_at: null, created_by: agentId },
+    { id: uuidv4(), tenant_id: tenantId, ticket_number: 'PRB-2026-00003', ticket_type: 'problem' as const, subtype: null, title: 'Redis-Cluster Failover-Probleme', description: 'Bei geplanten Wartungsarbeiten failovert der Redis-Cluster nicht korrekt. Sentinel-Konfiguration muss überprüft werden.', status: 'in_progress' as const, priority: 'medium' as const, impact: 'medium' as const, urgency: 'medium' as const, asset_id: assetRedisId, assignee_id: managerId, assignee_group_id: devGroupId, reporter_id: managerId, customer_id: null, category_id: catDatenbankId, workflow_instance_id: null, current_step_id: null, sla_tier: 'gold', sla_response_due: null, sla_resolve_due: null, sla_breached: 0, parent_ticket_id: null, source: 'manual' as const, created_at: new Date(Date.now() - 10 * d).toISOString(), updated_at: now, resolved_at: null, closed_at: null, created_by: managerId },
+
+    // --- Resolved / Closed tickets (history) ---
+    { id: uuidv4(), tenant_id: tenantId, ticket_number: 'INC-2026-00014', ticket_type: 'incident' as const, subtype: null, title: 'Drucker im EG druckt Papierstau-Meldung', description: 'Drucker im Erdgeschoss zeigt dauerhaft Papierstau an, obwohl kein Stau vorhanden ist.', status: 'resolved' as const, priority: 'low' as const, impact: 'low' as const, urgency: 'low' as const, asset_id: assetPrinterFloor3Id, assignee_id: agentId, assignee_group_id: supportGroupId, reporter_id: viewerId, customer_id: null, category_id: catArbeitsplatzId, workflow_instance_id: null, current_step_id: null, sla_tier: 'none', sla_response_due: null, sla_resolve_due: null, sla_breached: 0, parent_ticket_id: null, source: 'portal' as const, created_at: new Date(Date.now() - 3 * d).toISOString(), updated_at: new Date(Date.now() - 2 * d).toISOString(), resolved_at: new Date(Date.now() - 2 * d).toISOString(), closed_at: null, created_by: viewerId },
+    { id: uuidv4(), tenant_id: tenantId, ticket_number: 'INC-2026-00015', ticket_type: 'incident' as const, subtype: null, title: 'Notebook startet nicht mehr', description: 'Notebook nb-dev-01 startet nach Windows-Update nicht mehr. Bluescreen beim Booten.', status: 'closed' as const, priority: 'medium' as const, impact: 'low' as const, urgency: 'medium' as const, asset_id: assetLaptop02Id, assignee_id: agentId, assignee_group_id: supportGroupId, reporter_id: viewerId, customer_id: null, category_id: catArbeitsplatzId, workflow_instance_id: null, current_step_id: null, sla_tier: 'silver', sla_response_due: null, sla_resolve_due: null, sla_breached: 0, parent_ticket_id: null, source: 'manual' as const, created_at: new Date(Date.now() - 5 * d).toISOString(), updated_at: new Date(Date.now() - 4 * d).toISOString(), resolved_at: new Date(Date.now() - 4 * d).toISOString(), closed_at: new Date(Date.now() - 3 * d).toISOString(), created_by: viewerId },
+    { id: uuidv4(), tenant_id: tenantId, ticket_number: 'INC-2026-00016', ticket_type: 'incident' as const, subtype: null, title: 'VPN-Zertifikat abgelaufen', description: 'Das SSL-Zertifikat für den VPN-Gateway ist abgelaufen. Externe Mitarbeiter können sich nicht verbinden.', status: 'closed' as const, priority: 'critical' as const, impact: 'high' as const, urgency: 'critical' as const, asset_id: assetVpnGwId, assignee_id: adminId, assignee_group_id: opsGroupId, reporter_id: agentId, customer_id: null, category_id: catSecurityId, workflow_instance_id: null, current_step_id: null, sla_tier: 'gold', sla_response_due: null, sla_resolve_due: null, sla_breached: 1, parent_ticket_id: null, source: 'monitoring' as const, created_at: new Date(Date.now() - 8 * d).toISOString(), updated_at: new Date(Date.now() - 7 * d).toISOString(), resolved_at: new Date(Date.now() - 7 * d).toISOString(), closed_at: new Date(Date.now() - 7 * d).toISOString(), created_by: agentId },
+    { id: uuidv4(), tenant_id: tenantId, ticket_number: 'INC-2026-00017', ticket_type: 'incident' as const, subtype: null, title: 'Backup-Job fehlgeschlagen (Veeam)', description: 'Der nächtliche Backup-Job für die Datenbank-VMs ist mit Fehler "Insufficient disk space" abgebrochen.', status: 'resolved' as const, priority: 'high' as const, impact: 'medium' as const, urgency: 'high' as const, asset_id: assetBackupSrvId, assignee_id: agentId, assignee_group_id: opsGroupId, reporter_id: adminId, customer_id: null, category_id: catServerId, workflow_instance_id: null, current_step_id: null, sla_tier: 'gold', sla_response_due: null, sla_resolve_due: null, sla_breached: 0, parent_ticket_id: null, source: 'monitoring' as const, created_at: new Date(Date.now() - 4 * d).toISOString(), updated_at: new Date(Date.now() - 3 * d).toISOString(), resolved_at: new Date(Date.now() - 3 * d).toISOString(), closed_at: null, created_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, ticket_number: 'CHG-2026-00006', ticket_type: 'change' as const, subtype: 'standard', title: 'SSL-Zertifikate erneuern (Let\'s Encrypt)', description: 'Alle Let\'s Encrypt Zertifikate für externe Services erneuern. Automatisierung via Certbot überprüfen.', status: 'closed' as const, priority: 'medium' as const, impact: 'low' as const, urgency: 'medium' as const, asset_id: assetProxyId, assignee_id: adminId, assignee_group_id: opsGroupId, reporter_id: adminId, customer_id: null, category_id: catSecurityId, workflow_instance_id: null, current_step_id: null, sla_tier: null, sla_response_due: null, sla_resolve_due: null, sla_breached: 0, parent_ticket_id: null, source: 'manual' as const, created_at: new Date(Date.now() - 12 * d).toISOString(), updated_at: new Date(Date.now() - 10 * d).toISOString(), resolved_at: new Date(Date.now() - 10 * d).toISOString(), closed_at: new Date(Date.now() - 10 * d).toISOString(), created_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, ticket_number: 'INC-2026-00018', ticket_type: 'incident' as const, subtype: null, title: 'Salesforce-Integration liefert falsche Daten', description: 'Die ERP-Salesforce-Integration zeigt seit dem letzten Update inkorrekte Kundennummern an.', status: 'in_progress' as const, priority: 'high' as const, impact: 'medium' as const, urgency: 'high' as const, asset_id: assetCrmId, assignee_id: managerId, assignee_group_id: devGroupId, reporter_id: viewerId, customer_id: customerRetailId, category_id: catApplikationId, workflow_instance_id: null, current_step_id: null, sla_tier: 'silver', sla_response_due: null, sla_resolve_due: null, sla_breached: 0, parent_ticket_id: null, source: 'manual' as const, created_at: new Date(Date.now() - 1 * d).toISOString(), updated_at: now, resolved_at: null, closed_at: null, created_by: viewerId },
+    { id: uuidv4(), tenant_id: tenantId, ticket_number: 'INC-2026-00019', ticket_type: 'incident' as const, subtype: null, title: 'Prometheus-Alerting sendet keine E-Mails', description: 'Der Alertmanager von Prometheus sendet seit 3 Tagen keine E-Mail-Benachrichtigungen. SMTP-Konfiguration prüfen.', status: 'open' as const, priority: 'high' as const, impact: 'medium' as const, urgency: 'high' as const, asset_id: assetPrometheusId, assignee_id: null, assignee_group_id: opsGroupId, reporter_id: agentId, customer_id: null, category_id: catApplikationId, workflow_instance_id: null, current_step_id: null, sla_tier: 'gold', sla_response_due: new Date(Date.now() + 30 * 60 * 1000).toISOString(), sla_resolve_due: new Date(Date.now() + 4 * h).toISOString(), sla_breached: 0, parent_ticket_id: null, source: 'manual' as const, created_at: new Date(Date.now() - 2 * h).toISOString(), updated_at: now, resolved_at: null, closed_at: null, created_by: agentId },
+    { id: uuidv4(), tenant_id: tenantId, ticket_number: 'INC-2026-00020', ticket_type: 'incident' as const, subtype: null, title: 'NAS-Speicher zu 95% voll', description: 'Der NAS-Speicher erreicht kritische Auslastung. Alte Daten müssen archiviert oder gelöscht werden.', status: 'open' as const, priority: 'medium' as const, impact: 'low' as const, urgency: 'high' as const, asset_id: assetNasId, assignee_id: agentId, assignee_group_id: opsGroupId, reporter_id: adminId, customer_id: null, category_id: catServerId, workflow_instance_id: null, current_step_id: null, sla_tier: 'silver', sla_response_due: null, sla_resolve_due: null, sla_breached: 0, parent_ticket_id: null, source: 'monitoring' as const, created_at: new Date(Date.now() - 12 * h).toISOString(), updated_at: now, resolved_at: null, closed_at: null, created_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, ticket_number: 'INC-2026-00021', ticket_type: 'incident' as const, subtype: null, title: 'CEO-Notebook langsam nach Update', description: 'Das Notebook des CEO ist nach dem letzten Windows-Update extrem langsam. Teams-Calls brechen ab.', status: 'in_progress' as const, priority: 'high' as const, impact: 'low' as const, urgency: 'critical' as const, asset_id: assetLaptop01Id, assignee_id: agentId, assignee_group_id: supportGroupId, reporter_id: viewerId, customer_id: null, category_id: catArbeitsplatzId, workflow_instance_id: null, current_step_id: null, sla_tier: 'gold', sla_response_due: null, sla_resolve_due: null, sla_breached: 0, parent_ticket_id: null, source: 'manual' as const, created_at: new Date(Date.now() - 6 * h).toISOString(), updated_at: now, resolved_at: null, closed_at: null, created_by: viewerId },
+    { id: uuidv4(), tenant_id: tenantId, ticket_number: 'INC-2026-00022', ticket_type: 'incident' as const, subtype: null, title: 'Diensthandy GPS funktioniert nicht', description: 'Das iPhone des CEOs zeigt keinen GPS-Standort an. MDM-Profil eventuell fehlerhaft.', status: 'pending' as const, priority: 'low' as const, impact: 'low' as const, urgency: 'low' as const, asset_id: assetPhone01Id, assignee_id: agentId, assignee_group_id: supportGroupId, reporter_id: viewerId, customer_id: null, category_id: catArbeitsplatzId, workflow_instance_id: null, current_step_id: null, sla_tier: 'gold', sla_response_due: null, sla_resolve_due: null, sla_breached: 0, parent_ticket_id: null, source: 'portal' as const, created_at: new Date(Date.now() - 2 * d).toISOString(), updated_at: now, resolved_at: null, closed_at: null, created_by: viewerId },
+    { id: uuidv4(), tenant_id: tenantId, ticket_number: 'CHG-2026-00007', ticket_type: 'change' as const, subtype: 'standard', title: 'GitLab CE auf Version 17.0 aktualisieren', description: 'Planmäßiges Update der GitLab-Instanz auf die neueste Major-Version.', status: 'open' as const, priority: 'medium' as const, impact: 'medium' as const, urgency: 'low' as const, asset_id: assetGitlabId, assignee_id: managerId, assignee_group_id: devGroupId, reporter_id: managerId, customer_id: null, category_id: catApplikationId, workflow_instance_id: null, current_step_id: null, sla_tier: null, sla_response_due: null, sla_resolve_due: null, sla_breached: 0, parent_ticket_id: null, source: 'manual' as const, created_at: new Date(Date.now() - 3 * d).toISOString(), updated_at: now, resolved_at: null, closed_at: null, created_by: managerId },
+    { id: uuidv4(), tenant_id: tenantId, ticket_number: 'INC-2026-00023', ticket_type: 'incident' as const, subtype: null, title: 'Web-Proxy blockiert interne URLs', description: 'Der Squid-Proxy blockiert seit heute fälschlicherweise interne Confluence-URLs. Whitelist fehlerhaft.', status: 'resolved' as const, priority: 'medium' as const, impact: 'medium' as const, urgency: 'medium' as const, asset_id: assetProxyId, assignee_id: agentId, assignee_group_id: opsGroupId, reporter_id: managerId, customer_id: null, category_id: catNetzwerkId, workflow_instance_id: null, current_step_id: null, sla_tier: 'silver', sla_response_due: null, sla_resolve_due: null, sla_breached: 0, parent_ticket_id: null, source: 'manual' as const, created_at: new Date(Date.now() - 1 * d).toISOString(), updated_at: new Date(Date.now() - 18 * h).toISOString(), resolved_at: new Date(Date.now() - 18 * h).toISOString(), closed_at: null, created_by: managerId },
+    { id: uuidv4(), tenant_id: tenantId, ticket_number: 'INC-2026-00024', ticket_type: 'incident' as const, subtype: null, title: 'Jira-Performance extrem langsam', description: 'Jira Cloud reagiert seit 2 Stunden extrem langsam. Atlassian Status-Page zeigt keine Störung.', status: 'open' as const, priority: 'medium' as const, impact: 'medium' as const, urgency: 'medium' as const, asset_id: assetJiraId, assignee_id: null, assignee_group_id: devGroupId, reporter_id: managerId, customer_id: null, category_id: catApplikationId, workflow_instance_id: null, current_step_id: null, sla_tier: 'silver', sla_response_due: null, sla_resolve_due: null, sla_breached: 0, parent_ticket_id: null, source: 'manual' as const, created_at: new Date(Date.now() - 3 * h).toISOString(), updated_at: now, resolved_at: null, closed_at: null, created_by: managerId },
+    { id: uuidv4(), tenant_id: tenantId, ticket_number: 'INC-2026-00025', ticket_type: 'incident' as const, subtype: null, title: 'Staging-Server nicht erreichbar', description: 'Der Staging-Application-Server antwortet nicht auf SSH oder HTTP. Vermutlich VM abgestürzt.', status: 'resolved' as const, priority: 'low' as const, impact: 'low' as const, urgency: 'low' as const, asset_id: assetStagingVmId, assignee_id: agentId, assignee_group_id: devGroupId, reporter_id: agentId, customer_id: null, category_id: catServerId, workflow_instance_id: null, current_step_id: null, sla_tier: 'none', sla_response_due: null, sla_resolve_due: null, sla_breached: 0, parent_ticket_id: null, source: 'manual' as const, created_at: new Date(Date.now() - 2 * d).toISOString(), updated_at: new Date(Date.now() - 2 * d + 2 * h).toISOString(), resolved_at: new Date(Date.now() - 2 * d + 2 * h).toISOString(), closed_at: null, created_by: agentId },
+  ];
+
+  await db.insert(tickets).values(extendedTickets);
+  console.log(`  ✓ Extended Tickets: ${extendedTickets.length} additional tickets`);
+
+  // Extended comments for various tickets
+  await db.insert(ticketComments).values([
+    { id: uuidv4(), tenant_id: tenantId, ticket_id: extendedTickets[0]!.id, author_id: managerId, content: 'SAP-Basis-Team kontaktiert. Prüfung der User-Locks läuft.', is_internal: 1, source: 'agent', created_at: new Date(Date.now() - 20 * 60 * 1000).toISOString() },
+    { id: uuidv4(), tenant_id: tenantId, ticket_id: extendedTickets[0]!.id, author_id: adminId, content: 'Es sind 47 User-Accounts betroffen. Ursache: fehlgeschlagener Batch-Job der Passwort-Policy.', is_internal: 1, source: 'agent', created_at: new Date(Date.now() - 10 * 60 * 1000).toISOString() },
+    { id: uuidv4(), tenant_id: tenantId, ticket_id: extendedTickets[3]!.id, author_id: adminId, content: 'Memory-Limits der betroffenen Pods von 512Mi auf 1Gi erhöht. Beobachtung läuft.', is_internal: 1, source: 'agent', created_at: new Date(Date.now() - 2 * h).toISOString() },
+    { id: uuidv4(), tenant_id: tenantId, ticket_id: extendedTickets[3]!.id, author_id: managerId, content: 'Root Cause: Java-Applikation hat Memory Leak bei hoher Last. Hotfix wird deployed.', is_internal: 1, source: 'agent', created_at: new Date(Date.now() - 1 * h).toISOString() },
+    { id: uuidv4(), tenant_id: tenantId, ticket_id: extendedTickets[5]!.id, author_id: agentId, content: 'USV-Hersteller kontaktiert. Ersatzbatterien sind auf dem Weg (Lieferung morgen).', is_internal: 0, source: 'agent', created_at: new Date(Date.now() - 10 * 60 * 1000).toISOString() },
+    { id: uuidv4(), tenant_id: tenantId, ticket_id: extendedTickets[11]!.id, author_id: adminId, content: 'Patch erfolgreich auf Staging getestet. Production-Deployment heute Nacht geplant.', is_internal: 1, source: 'agent', created_at: new Date(Date.now() - 30 * 60 * 1000).toISOString() },
+    { id: uuidv4(), tenant_id: tenantId, ticket_id: extendedTickets[16]!.id, author_id: agentId, content: 'Veeam-Logs zeigen vollen Deduplications-Store. Alte Restore-Points werden bereinigt.', is_internal: 1, source: 'agent', created_at: new Date(Date.now() - 3 * d + 2 * h).toISOString() },
+    { id: uuidv4(), tenant_id: tenantId, ticket_id: extendedTickets[19]!.id, author_id: managerId, content: 'Salesforce-Support hat API-Version-Conflict bestätigt. Fix in nächstem Release.', is_internal: 0, source: 'agent', created_at: new Date(Date.now() - 12 * h).toISOString() },
+    { id: uuidv4(), tenant_id: tenantId, ticket_id: extendedTickets[21]!.id, author_id: agentId, content: 'Windows Update KB5034441 als Ursache identifiziert. Rollback durchgeführt.', is_internal: 1, source: 'agent', created_at: new Date(Date.now() - 4 * h).toISOString() },
+    { id: uuidv4(), tenant_id: tenantId, ticket_id: extendedTickets[24]!.id, author_id: agentId, content: 'Proxy-Whitelist aktualisiert. Confluence-URLs sind wieder erreichbar.', is_internal: 0, source: 'agent', created_at: new Date(Date.now() - 18 * h).toISOString() },
+  ]);
+  console.log('  ✓ Extended Comments: 10 additional comments');
+
+  // Extended history entries
+  await db.insert(ticketHistory).values([
+    { id: uuidv4(), tenant_id: tenantId, ticket_id: extendedTickets[2]!.id, field_changed: 'status', old_value: 'open', new_value: 'in_progress', changed_by: agentId, changed_at: new Date(Date.now() - 1.5 * h).toISOString() },
+    { id: uuidv4(), tenant_id: tenantId, ticket_id: extendedTickets[3]!.id, field_changed: 'status', old_value: 'open', new_value: 'in_progress', changed_by: managerId, changed_at: new Date(Date.now() - 2.5 * h).toISOString() },
+    { id: uuidv4(), tenant_id: tenantId, ticket_id: extendedTickets[3]!.id, field_changed: 'priority', old_value: 'high', new_value: 'critical', changed_by: adminId, changed_at: new Date(Date.now() - 2 * h).toISOString() },
+    { id: uuidv4(), tenant_id: tenantId, ticket_id: extendedTickets[15]!.id, field_changed: 'status', old_value: 'open', new_value: 'resolved', changed_by: agentId, changed_at: new Date(Date.now() - 4 * d).toISOString() },
+    { id: uuidv4(), tenant_id: tenantId, ticket_id: extendedTickets[15]!.id, field_changed: 'status', old_value: 'resolved', new_value: 'closed', changed_by: managerId, changed_at: new Date(Date.now() - 3 * d).toISOString() },
+    { id: uuidv4(), tenant_id: tenantId, ticket_id: extendedTickets[16]!.id, field_changed: 'status', old_value: 'open', new_value: 'closed', changed_by: adminId, changed_at: new Date(Date.now() - 7 * d).toISOString() },
+    { id: uuidv4(), tenant_id: tenantId, ticket_id: extendedTickets[16]!.id, field_changed: 'assignee_id', old_value: null, new_value: adminId, changed_by: agentId, changed_at: new Date(Date.now() - 8 * d + 1 * h).toISOString() },
+  ]);
+  console.log('  ✓ Extended History: 7 additional history entries');
+
+  // ─── Extended Workflow Templates ─────────────────────────
+  const wfProblemMgmtId = uuidv4();
+  const wfOnboardingId = uuidv4();
+  const wfSecurityIncId = uuidv4();
+
+  await db.insert(workflowTemplates).values([
+    {
+      id: wfProblemMgmtId,
+      tenant_id: tenantId,
+      name: 'Problem-Management',
+      description: 'Root Cause Analyse und nachhaltige Problembehebung',
+      trigger_type: 'ticket_created',
+      trigger_subtype: 'problem',
+      is_active: 1,
+      version: 1,
+      created_by: adminId,
+      created_at: now,
+      updated_at: now,
+    },
+    {
+      id: wfOnboardingId,
+      tenant_id: tenantId,
+      name: 'Mitarbeiter-Onboarding',
+      description: 'IT-Setup für neue Mitarbeiter inkl. Account-Erstellung, Hardware und Zugänge',
+      trigger_type: 'manual',
+      trigger_subtype: null,
+      is_active: 1,
+      version: 1,
+      created_by: adminId,
+      created_at: now,
+      updated_at: now,
+    },
+    {
+      id: wfSecurityIncId,
+      tenant_id: tenantId,
+      name: 'Security Incident Response',
+      description: 'Sofortmaßnahmen und Eskalation bei Sicherheitsvorfällen (CERT-Prozess)',
+      trigger_type: 'ticket_created',
+      trigger_subtype: 'incident',
+      is_active: 1,
+      version: 1,
+      created_by: adminId,
+      created_at: now,
+      updated_at: now,
+    },
+  ]);
+
+  // Steps for Problem-Management
+  const pmStep1Id = uuidv4();
+  const pmStep2Id = uuidv4();
+  const pmStep3Id = uuidv4();
+  const pmStep4Id = uuidv4();
+
+  await db.insert(workflowSteps).values([
+    { id: pmStep1Id, template_id: wfProblemMgmtId, name: 'Problem-Identifikation', step_order: 1, step_type: 'form', config: JSON.stringify({ fields: [{ name: 'affected_services', label: 'Betroffene Services', type: 'text', required: true }, { name: 'incident_count', label: 'Anzahl verknüpfter Incidents', type: 'text', required: true }, { name: 'first_occurrence', label: 'Erstmaliges Auftreten', type: 'text', required: true }] }), timeout_hours: 4, next_step_id: null },
+    { id: pmStep2Id, template_id: wfProblemMgmtId, name: 'Root Cause Analyse', step_order: 2, step_type: 'form', config: JSON.stringify({ fields: [{ name: 'root_cause', label: 'Root Cause', type: 'text', required: true }, { name: 'analysis_method', label: 'Analysemethode (5-Why, Ishikawa, etc.)', type: 'text', required: true }, { name: 'evidence', label: 'Beweise/Logs', type: 'text', required: false }] }), timeout_hours: 24, next_step_id: null },
+    { id: pmStep3Id, template_id: wfProblemMgmtId, name: 'Lösungsvorschlag genehmigen', step_order: 3, step_type: 'approval', config: JSON.stringify({ approvers: ['manager'], min_approvals: 1, description: 'Genehmigung des Lösungsvorschlags durch das Management' }), timeout_hours: 48, next_step_id: null },
+    { id: pmStep4Id, template_id: wfProblemMgmtId, name: 'Workaround/Fix implementieren', step_order: 4, step_type: 'form', config: JSON.stringify({ fields: [{ name: 'fix_description', label: 'Beschreibung der Lösung', type: 'text', required: true }, { name: 'change_ticket', label: 'Verknüpftes Change-Ticket', type: 'text', required: false }, { name: 'verified', label: 'Fix verifiziert?', type: 'text', required: true }] }), timeout_hours: 72, next_step_id: null },
+  ]);
+
+  // Steps for Onboarding
+  const obStep1Id = uuidv4();
+  const obStep2Id = uuidv4();
+  const obStep3Id = uuidv4();
+  const obStep4Id = uuidv4();
+  const obStep5Id = uuidv4();
+
+  await db.insert(workflowSteps).values([
+    { id: obStep1Id, template_id: wfOnboardingId, name: 'Personalinfo erfassen', step_order: 1, step_type: 'form', config: JSON.stringify({ fields: [{ name: 'employee_name', label: 'Name des Mitarbeiters', type: 'text', required: true }, { name: 'department', label: 'Abteilung', type: 'text', required: true }, { name: 'start_date', label: 'Startdatum', type: 'text', required: true }, { name: 'role', label: 'Position/Rolle', type: 'text', required: true }] }), timeout_hours: 24, next_step_id: null },
+    { id: obStep2Id, template_id: wfOnboardingId, name: 'AD-Account & E-Mail erstellen', step_order: 2, step_type: 'form', config: JSON.stringify({ fields: [{ name: 'username', label: 'Benutzername', type: 'text', required: true }, { name: 'email', label: 'E-Mail-Adresse', type: 'text', required: true }, { name: 'groups', label: 'AD-Gruppen', type: 'text', required: true }] }), timeout_hours: 8, next_step_id: null },
+    { id: obStep3Id, template_id: wfOnboardingId, name: 'Hardware bestellen', step_order: 3, step_type: 'routing', config: JSON.stringify({ options: [{ label: 'Laptop (Standard)', next_step_id: null }, { label: 'Laptop (Entwickler)', next_step_id: null }, { label: 'Desktop-Arbeitsplatz', next_step_id: null }] }), timeout_hours: 48, next_step_id: null },
+    { id: obStep4Id, template_id: wfOnboardingId, name: 'Software & Lizenzen', step_order: 4, step_type: 'form', config: JSON.stringify({ fields: [{ name: 'software_list', label: 'Benötigte Software', type: 'text', required: true }, { name: 'vpn_access', label: 'VPN-Zugang benötigt?', type: 'text', required: true }, { name: 'special_access', label: 'Sonderzugänge', type: 'text', required: false }] }), timeout_hours: 24, next_step_id: null },
+    { id: obStep5Id, template_id: wfOnboardingId, name: 'Manager-Freigabe', step_order: 5, step_type: 'approval', config: JSON.stringify({ approvers: ['manager'], min_approvals: 1, description: 'Bestätigung dass alle Zugänge eingerichtet sind' }), timeout_hours: 24, next_step_id: null },
+  ]);
+
+  // Steps for Security Incident Response
+  const siStep1Id = uuidv4();
+  const siStep2Id = uuidv4();
+  const siStep3Id = uuidv4();
+  const siStep4Id = uuidv4();
+
+  await db.insert(workflowSteps).values([
+    { id: siStep1Id, template_id: wfSecurityIncId, name: 'Bedrohungsbewertung', step_order: 1, step_type: 'form', config: JSON.stringify({ fields: [{ name: 'threat_type', label: 'Art der Bedrohung', type: 'text', required: true }, { name: 'affected_systems', label: 'Betroffene Systeme', type: 'text', required: true }, { name: 'data_breach', label: 'Datenverlust möglich?', type: 'text', required: true }, { name: 'severity', label: 'Schweregrad (P1-P4)', type: 'text', required: true }] }), timeout_hours: 1, next_step_id: null },
+    { id: siStep2Id, template_id: wfSecurityIncId, name: 'Sofortmaßnahmen', step_order: 2, step_type: 'form', config: JSON.stringify({ fields: [{ name: 'containment', label: 'Eindämmungsmaßnahmen', type: 'text', required: true }, { name: 'isolation', label: 'System isoliert?', type: 'text', required: true }, { name: 'evidence_preserved', label: 'Beweise gesichert?', type: 'text', required: true }] }), timeout_hours: 2, next_step_id: null },
+    { id: siStep3Id, template_id: wfSecurityIncId, name: 'CISO-Eskalation', step_order: 3, step_type: 'approval', config: JSON.stringify({ approvers: ['admin'], min_approvals: 1, description: 'CISO muss bei Datenverlust innerhalb 72h die Behörden informieren (DSGVO Art. 33)' }), timeout_hours: 4, next_step_id: null },
+    { id: siStep4Id, template_id: wfSecurityIncId, name: 'Post-Incident Report', step_order: 4, step_type: 'form', config: JSON.stringify({ fields: [{ name: 'timeline', label: 'Zeitstrahl des Vorfalls', type: 'text', required: true }, { name: 'root_cause', label: 'Root Cause', type: 'text', required: true }, { name: 'lessons_learned', label: 'Lessons Learned', type: 'text', required: true }, { name: 'preventive_measures', label: 'Präventivmaßnahmen', type: 'text', required: true }] }), timeout_hours: 168, next_step_id: null },
+  ]);
+  console.log('  ✓ Extended Workflows: 3 templates (Problem-Mgmt, Onboarding, Security IR) + 13 steps');
+
+  // ─── Workflow Instances (running on tickets) ──────────────
+  const wiProblem1Id = uuidv4();
+  const prbTicketId = extendedTickets[13]!.id; // PRB-2026-00002
+
+  await db.insert(workflowInstances).values({
+    id: wiProblem1Id,
+    tenant_id: tenantId,
+    template_id: wfProblemMgmtId,
+    ticket_id: prbTicketId,
+    status: 'active',
+    started_at: new Date(Date.now() - 14 * d).toISOString(),
+    completed_at: null,
+  });
+
+  await db.insert(workflowStepInstances).values([
+    { id: uuidv4(), instance_id: wiProblem1Id, step_id: pmStep1Id, status: 'completed', assigned_to: agentId, assigned_group: opsGroupId, form_data: JSON.stringify({ affected_services: 'DNS, AD, E-Mail (abhängig)', incident_count: '7', first_occurrence: '2026-02-24' }), started_at: new Date(Date.now() - 14 * d).toISOString(), completed_at: new Date(Date.now() - 13 * d).toISOString(), completed_by: agentId },
+    { id: uuidv4(), instance_id: wiProblem1Id, step_id: pmStep2Id, status: 'in_progress', assigned_to: adminId, assigned_group: opsGroupId, form_data: '{}', started_at: new Date(Date.now() - 13 * d).toISOString(), completed_at: null, completed_by: null },
+    { id: uuidv4(), instance_id: wiProblem1Id, step_id: pmStep3Id, status: 'pending', assigned_to: null, assigned_group: null, form_data: '{}', started_at: null, completed_at: null, completed_by: null },
+    { id: uuidv4(), instance_id: wiProblem1Id, step_id: pmStep4Id, status: 'pending', assigned_to: null, assigned_group: null, form_data: '{}', started_at: null, completed_at: null, completed_by: null },
+  ]);
+
+  const wiSecurityId = uuidv4();
+  const secTicketId = extendedTickets[11]!.id; // CHG-2026-00004 (Log4j)
+
+  await db.insert(workflowInstances).values({
+    id: wiSecurityId,
+    tenant_id: tenantId,
+    template_id: wfSecurityIncId,
+    ticket_id: secTicketId,
+    status: 'active',
+    started_at: new Date(Date.now() - 1 * h).toISOString(),
+    completed_at: null,
+  });
+
+  await db.insert(workflowStepInstances).values([
+    { id: uuidv4(), instance_id: wiSecurityId, step_id: siStep1Id, status: 'completed', assigned_to: adminId, assigned_group: opsGroupId, form_data: JSON.stringify({ threat_type: 'CVE / Remote Code Execution', affected_systems: 'Elasticsearch Cluster (3 Nodes)', data_breach: 'Nein — keine externen Zugriffe festgestellt', severity: 'P1' }), started_at: new Date(Date.now() - 1 * h).toISOString(), completed_at: new Date(Date.now() - 50 * 60 * 1000).toISOString(), completed_by: adminId },
+    { id: uuidv4(), instance_id: wiSecurityId, step_id: siStep2Id, status: 'in_progress', assigned_to: adminId, assigned_group: opsGroupId, form_data: '{}', started_at: new Date(Date.now() - 50 * 60 * 1000).toISOString(), completed_at: null, completed_by: null },
+    { id: uuidv4(), instance_id: wiSecurityId, step_id: siStep3Id, status: 'pending', assigned_to: null, assigned_group: null, form_data: '{}', started_at: null, completed_at: null, completed_by: null },
+    { id: uuidv4(), instance_id: wiSecurityId, step_id: siStep4Id, status: 'pending', assigned_to: null, assigned_group: null, form_data: '{}', started_at: null, completed_at: null, completed_by: null },
+  ]);
+
+  // Update tickets to reference their workflow instances
+  await db.update(tickets).set({ workflow_instance_id: wiProblem1Id }).where(eq(tickets.id, prbTicketId)).run();
+  await db.update(tickets).set({ workflow_instance_id: wiSecurityId }).where(eq(tickets.id, secTicketId)).run();
+
+  console.log('  ✓ Workflow Instances: 2 active (Problem-Mgmt on DNS-Problem, Security IR on Log4j-Patch)');
+
   // ─── SLA Definitions ──────────────────────────────────────
   const slaGoldId = uuidv4();
   const slaSilverId = uuidv4();
@@ -1497,6 +1999,20 @@ async function seed() {
     },
   ]);
   console.log('  ✓ SLA Assignments: 3 assignments (DB→Gold, Acme→Gold, Workplace→Bronze)');
+
+  // Extended SLA assignments for additional customers and assets
+  await db.insert(slaAssignments).values([
+    { id: uuidv4(), tenant_id: tenantId, sla_definition_id: slaGoldId, service_id: null, customer_id: customerBankId, asset_id: null, priority: 50, created_at: now },
+    { id: uuidv4(), tenant_id: tenantId, sla_definition_id: slaSilverId, service_id: null, customer_id: customerLogistikId, asset_id: null, priority: 50, created_at: now },
+    { id: uuidv4(), tenant_id: tenantId, sla_definition_id: slaSilverId, service_id: null, customer_id: customerRetailId, asset_id: null, priority: 50, created_at: now },
+    { id: uuidv4(), tenant_id: tenantId, sla_definition_id: slaGoldId, service_id: null, customer_id: customerEnergieId, asset_id: null, priority: 50, created_at: now },
+    { id: uuidv4(), tenant_id: tenantId, sla_definition_id: slaGoldId, service_id: null, customer_id: null, asset_id: assetK8sClusterId, priority: 100, created_at: now },
+    { id: uuidv4(), tenant_id: tenantId, sla_definition_id: slaGoldId, service_id: null, customer_id: null, asset_id: assetErpId, priority: 100, created_at: now },
+    { id: uuidv4(), tenant_id: tenantId, sla_definition_id: slaGoldId, service_id: svcEmailId, customer_id: null, asset_id: null, priority: 25, created_at: now },
+    { id: uuidv4(), tenant_id: tenantId, sla_definition_id: slaSilverId, service_id: svcWebHostingId, customer_id: null, asset_id: null, priority: 25, created_at: now },
+    { id: uuidv4(), tenant_id: tenantId, sla_definition_id: slaGoldId, service_id: svcMonitoringId, customer_id: customerBankId, asset_id: null, priority: 75, created_at: now },
+  ]);
+  console.log('  ✓ Extended SLA Assignments: 9 additional assignments');
 
   console.log('\n✅ Seed completed successfully!');
   console.log('\n📋 Login credentials:');

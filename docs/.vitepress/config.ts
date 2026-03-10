@@ -27,7 +27,7 @@ export default defineConfig({
       { text: 'Features', link: '/features/tickets', activeMatch: '/features/' },
       { text: 'API', link: '/api/', activeMatch: '/api/' },
       {
-        text: 'v0.2.5',
+        text: 'v0.2.6',
         items: [
           { text: 'Changelog', link: 'https://github.com/slemens/opsweave/blob/main/CHANGELOG.md' },
           { text: 'Releases', link: 'https://github.com/slemens/opsweave/releases' },
