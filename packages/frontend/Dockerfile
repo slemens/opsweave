@@ -38,12 +38,10 @@ COPY packages/frontend/package.json ./packages/frontend/package.json
 RUN mkdir -p packages/backend && \
     echo '{"name":"@opsweave/backend","version":"0.1.0","private":true}' > packages/backend/package.json
 
-# Install dependencies and fix platform-specific native bindings
-# npm ci --ignore-scripts skips postinstall which is needed on Alpine/musl
-# for rollup (@rollup/rollup-linux-x64-musl) and esbuild (@esbuild/linux-x64)
-RUN npm ci --ignore-scripts && \
-    node node_modules/esbuild/install.js && \
-    npm install @rollup/rollup-linux-x64-musl --no-save --no-audit --no-fund
+# Delete lockfile and use npm install to get correct platform-specific
+# native bindings (rollup, esbuild, lightningcss) for Alpine/musl.
+# npm ci with a macOS-generated lockfile cannot resolve these correctly.
+RUN rm -f package-lock.json && npm install --no-audit --no-fund
 
 # Copy tsconfig.base.json (extended by frontend tsconfigs)
 COPY tsconfig.base.json ./tsconfig.base.json
