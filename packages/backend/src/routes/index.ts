@@ -20,6 +20,7 @@ import { settingsRouter, licenseRouter } from '../modules/settings/settings.rout
 import { slaRouter } from '../modules/sla/sla.routes.js';
 import { knownErrorRouter } from '../modules/known-errors/known-errors.routes.js';
 import notificationRouter from '../modules/notifications/notification.routes.js';
+import { escalationRouter } from '../modules/escalation/escalation.routes.js';
 
 // ─── Central API Router ────────────────────────────────────
 const apiRouter = Router();
@@ -60,6 +61,7 @@ protectedRouter.use('/license', licenseRouter);
 protectedRouter.use('/sla', slaRouter);
 protectedRouter.use('/known-errors', knownErrorRouter);
 protectedRouter.use('/notifications', notificationRouter);
+protectedRouter.use('/escalation', escalationRouter);
 
 // AUDIT-FIX: L-01 — See TODO_BACKLOG.md#01 (monitoring module not yet implemented)
 // protectedRouter.use('/monitoring', monitoringRouter);

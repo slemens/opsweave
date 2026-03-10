@@ -12,6 +12,7 @@
     "categories": "Categories",
     "sla": "SLA",
     "notifications": "Notifications",
+    "escalation": "Escalation",
     "system": "System"
   },
   "general": {
@@ -234,6 +235,28 @@
       "major_incident_resolved": "Major Incident Resolved",
       "major_incident_resolved_hint": "Notification when a major incident has been resolved"
     }
+  },
+  "escalation": {
+    "title": "Escalation Rules",
+    "description": "Define rules for automatic ticket escalation based on SLA progress.",
+    "create": "Create Rule",
+    "edit": "Edit Rule",
+    "name": "Name",
+    "ticket_type": "Ticket Type",
+    "ticket_type_all": "All Types",
+    "priority": "Priority",
+    "priority_all": "All Priorities",
+    "threshold": "SLA Threshold",
+    "threshold_hint": "Percentage of SLA time that must have elapsed",
+    "target_group": "Target Group",
+    "level": "Escalation Level",
+    "active": "Active",
+    "empty": "No escalation rules found",
+    "empty_hint": "Create the first rule for automatic escalation.",
+    "delete_confirm": "Are you sure you want to delete this escalation rule?",
+    "create_success": "Escalation rule created",
+    "update_success": "Escalation rule updated",
+    "delete_success": "Escalation rule deleted"
   },
   "saved": "Settings saved",
   "save_error": "Error saving settings",

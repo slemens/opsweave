@@ -258,6 +258,27 @@
   "major_incident": {
     "banner": "MAJOR INCIDENT",
     "commander": "Incident Commander",
-    "no_commander": "Kein Incident Commander"
+    "no_commander": "Kein Incident Commander",
+    "declare": "Als Major Incident deklarieren",
+    "resolve": "Major Incident aufheben",
+    "declared_at": "Ausgerufen am",
+    "declared_by": "Ausgerufen von",
+    "bridge_call": "Bridge-Call URL",
+    "bridge_call_placeholder": "https://teams.microsoft.com/...",
+    "declare_confirm": "Möchten Sie dieses Ticket als Major Incident deklarieren? Alle Administratoren und Manager werden benachrichtigt.",
+    "resolve_confirm": "Möchten Sie den Major-Incident-Status aufheben?",
+    "declared_success": "Major Incident deklariert",
+    "resolved_success": "Major Incident aufgehoben"
+  },
+  "escalation": {
+    "title": "Eskalation",
+    "level": "Eskalationsstufe",
+    "escalate": "Eskalieren",
+    "escalated_at": "Eskaliert am",
+    "target_group": "Zielgruppe",
+    "reason": "Grund",
+    "reason_placeholder": "Grund für die Eskalation...",
+    "escalated_success": "Ticket eskaliert",
+    "no_escalation": "Nicht eskaliert"
   }
 }
