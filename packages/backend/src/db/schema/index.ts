@@ -71,5 +71,8 @@ export { escalationRules } from './escalation.js';
 // SLA Definitions & Assignments
 export { slaDefinitions, slaAssignments } from './sla.js';
 
+// Audit Log
+export { auditLogs } from './audit.js';
+
 // System (global, no tenant_id)
 export { systemSettings } from './system.js';

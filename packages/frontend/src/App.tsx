@@ -36,6 +36,7 @@ const CustomersSettingsPage = lazy(() => import('@/pages/settings/CustomersSetti
 const SlaSettingsPage = lazy(() => import('@/pages/settings/SlaSettingsPage'));
 const NotificationSettingsPage = lazy(() => import('@/pages/settings/NotificationSettingsPage'));
 const EscalationSettingsPage = lazy(() => import('@/pages/settings/EscalationSettingsPage'));
+const AuditLogPage = lazy(() => import('@/pages/settings/AuditLogPage'));
 const SystemSettingsPage = lazy(() => import('@/pages/settings/SystemSettingsPage'));
 
 function SettingsFallback() {
@@ -82,6 +83,7 @@ export function App() {
               <Route path="sla" element={<Suspense fallback={<SettingsFallback />}><SlaSettingsPage /></Suspense>} />
               <Route path="notifications" element={<Suspense fallback={<SettingsFallback />}><NotificationSettingsPage /></Suspense>} />
               <Route path="escalation" element={<Suspense fallback={<SettingsFallback />}><EscalationSettingsPage /></Suspense>} />
+              <Route path="audit" element={<Suspense fallback={<SettingsFallback />}><AuditLogPage /></Suspense>} />
               <Route path="system" element={<Suspense fallback={<SettingsFallback />}><SystemSettingsPage /></Suspense>} />
             </Route>
           </Route>

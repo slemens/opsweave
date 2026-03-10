@@ -13,6 +13,7 @@
     "sla": "SLA",
     "notifications": "Notifications",
     "escalation": "Escalation",
+    "audit": "Audit Log",
     "system": "System"
   },
   "general": {
@@ -274,6 +275,24 @@
     "create_success": "Escalation rule created",
     "update_success": "Escalation rule updated",
     "delete_success": "Escalation rule deleted"
+  },
+  "audit": {
+    "title": "Audit Log",
+    "description": "Record of all security-relevant actions in your organization.",
+    "search_placeholder": "Search...",
+    "all_events": "All Events",
+    "all_resources": "All Resources",
+    "empty": "No audit log entries",
+    "empty_hint": "Actions are automatically logged.",
+    "columns": {
+      "time": "Time",
+      "actor": "User",
+      "event": "Event",
+      "resource": "Resource",
+      "ip": "IP Address",
+      "details": "Details"
+    },
+    "page_info": "Page {{page}} of {{total}} ({{count}} entries)"
   },
   "saved": "Settings saved",
   "save_error": "Error saving settings",

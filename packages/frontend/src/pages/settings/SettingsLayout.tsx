@@ -9,6 +9,7 @@ import {
   Clock,
   Bell,
   TrendingUp,
+  Shield,
   Server,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -22,6 +23,7 @@ const settingsNav = [
   { to: '/settings/sla', icon: Clock, labelKey: 'settings:tabs.sla' },
   { to: '/settings/notifications', icon: Bell, labelKey: 'settings:tabs.notifications' },
   { to: '/settings/escalation', icon: TrendingUp, labelKey: 'settings:tabs.escalation' },
+  { to: '/settings/audit', icon: Shield, labelKey: 'settings:tabs.audit' },
   { to: '/settings/system', icon: Server, labelKey: 'settings:tabs.system' },
 ] as const;
 

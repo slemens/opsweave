@@ -540,6 +540,21 @@ CREATE TABLE IF NOT EXISTS notification_preferences (
   created_at TEXT NOT NULL
 );
 
+-- audit_logs
+CREATE TABLE IF NOT EXISTS audit_logs (
+  id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  actor_id TEXT NOT NULL,
+  actor_email TEXT NOT NULL,
+  event_type TEXT NOT NULL,
+  resource_type TEXT NOT NULL,
+  resource_id TEXT,
+  details TEXT NOT NULL DEFAULT '{}',
+  ip_address TEXT,
+  user_agent TEXT,
+  created_at TEXT NOT NULL
+);
+
 -- system_settings (NO tenant_id - global)
 CREATE TABLE IF NOT EXISTS system_settings (
   key TEXT PRIMARY KEY,
@@ -572,6 +587,11 @@ CREATE INDEX IF NOT EXISTS idx_np_tenant_user ON notification_preferences(tenant
 CREATE INDEX IF NOT EXISTS idx_np_tenant_user_event ON notification_preferences(tenant_id, user_id, event_type, channel);
 CREATE INDEX IF NOT EXISTS idx_esc_tenant ON escalation_rules(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_esc_tenant_active ON escalation_rules(tenant_id, is_active);
+CREATE INDEX IF NOT EXISTS idx_audit_tenant ON audit_logs(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_audit_tenant_event ON audit_logs(tenant_id, event_type);
+CREATE INDEX IF NOT EXISTS idx_audit_tenant_resource ON audit_logs(tenant_id, resource_type);
+CREATE INDEX IF NOT EXISTS idx_audit_tenant_actor ON audit_logs(tenant_id, actor_id);
+CREATE INDEX IF NOT EXISTS idx_audit_tenant_created ON audit_logs(tenant_id, created_at);
 `;
 
 async function setup() {
