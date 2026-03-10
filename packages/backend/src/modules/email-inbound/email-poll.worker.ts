@@ -1,4 +1,4 @@
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 
 import { getDb, type TypedDb } from '../../config/database.js';
 import { emailInboundConfigs } from '../../db/schema/email.js';
@@ -14,21 +14,100 @@ import logger from '../../lib/logger.js';
  */
 const pollingIntervals = new Map<string, ReturnType<typeof setInterval>>();
 
+// AUDIT-FIX: M-06 — Exponential backoff constants
+const BACKOFF_INITIAL_MS = 1_000;
+const BACKOFF_MAX_MS = 30_000;
+const BACKOFF_FACTOR = 2;
+const MAX_RETRIES = 10;
+
 // ─── Public API ───────────────────────────────────────────
 
 /**
- * Load all active IMAP configs from the database and start a polling
- * interval for each one.
+ * Wait for the database to become available using exponential backoff,
+ * then load all active IMAP configs and start polling.
  *
- * Call this once after the server (and database) has started.
+ * Call this once after the server has started.
  */
 export async function startEmailPollingWorker(): Promise<void> {
-  logger.info('Starting IMAP polling worker');
+  logger.info('[email-poll] Starting IMAP polling worker');
 
-  // Small delay to ensure the DB schema + seed have fully initialised
-  // before we query email_inbound_configs (avoids race on fresh DB)
-  await new Promise((resolve) => setTimeout(resolve, 3000));
+  // AUDIT-FIX: M-06 — Wait for DB with exponential backoff
+  const dbReady = await waitForDb();
+  if (!dbReady) {
+    logger.error('[email-poll] DB not reachable after retries — polling will not start. Retrying in background.');
+    // Schedule a background retry that keeps trying indefinitely
+    scheduleBackgroundRetry();
+    return;
+  }
 
+  await loadAndStartPolling();
+}
+
+/**
+ * Stop all polling intervals.  Call this during graceful shutdown.
+ */
+export function stopEmailPollingWorker(): void {
+  if (pollingIntervals.size === 0) {
+    return;
+  }
+
+  logger.info('[email-poll] Stopping IMAP polling worker');
+
+  for (const [configId, handle] of pollingIntervals) {
+    clearInterval(handle);
+    logger.info({ configId }, '[email-poll] Stopped polling for config');
+  }
+
+  pollingIntervals.clear();
+}
+
+// ─── DB readiness check ──────────────────────────────────
+
+// AUDIT-FIX: M-06 — Exponential backoff for DB readiness
+async function waitForDb(): Promise<boolean> {
+  let delay = BACKOFF_INITIAL_MS;
+
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const db = getDb() as TypedDb;
+      await db.run(sql`SELECT 1`);
+      logger.info(`[email-poll] DB ready (attempt ${attempt}/${MAX_RETRIES})`);
+      return true;
+    } catch (err) {
+      logger.warn(
+        { err, attempt, maxRetries: MAX_RETRIES, nextDelayMs: delay },
+        `[email-poll] Waiting for DB... attempt ${attempt}/${MAX_RETRIES}`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      delay = Math.min(delay * BACKOFF_FACTOR, BACKOFF_MAX_MS);
+    }
+  }
+
+  return false;
+}
+
+// AUDIT-FIX: M-06 — Keep retrying in background if initial attempts fail
+function scheduleBackgroundRetry(): void {
+  const handle = setInterval(() => {
+    void (async () => {
+      try {
+        const db = getDb() as TypedDb;
+        await db.run(sql`SELECT 1`);
+        logger.info('[email-poll] DB became available — starting polling');
+        clearInterval(handle);
+        await loadAndStartPolling();
+      } catch {
+        logger.warn('[email-poll] DB still not available, will retry...');
+      }
+    })();
+  }, BACKOFF_MAX_MS);
+}
+
+// ─── Internal helpers ─────────────────────────────────────
+
+const POLL_INTERVAL_MS = 60_000; // 60 seconds
+
+async function loadAndStartPolling(): Promise<void> {
   let activeConfigs: Array<{
     id: string;
     tenant_id: string;
@@ -52,38 +131,16 @@ export async function startEmailPollingWorker(): Promise<void> {
         ),
       );
   } catch (err) {
-    logger.error({ err }, 'Failed to load active IMAP configurations');
+    logger.error({ err }, '[email-poll] Failed to load active IMAP configurations');
     return;
   }
 
-  logger.info({ count: activeConfigs.length }, 'Found active IMAP configurations');
+  logger.info({ count: activeConfigs.length }, '[email-poll] Found active IMAP configurations');
 
   for (const cfg of activeConfigs) {
     schedulePolling(cfg);
   }
 }
-
-/**
- * Stop all polling intervals.  Call this during graceful shutdown.
- */
-export function stopEmailPollingWorker(): void {
-  if (pollingIntervals.size === 0) {
-    return;
-  }
-
-  logger.info('Stopping IMAP polling worker');
-
-  for (const [configId, handle] of pollingIntervals) {
-    clearInterval(handle);
-    logger.info({ configId }, 'Stopped polling for config');
-  }
-
-  pollingIntervals.clear();
-}
-
-// ─── Internal helpers ─────────────────────────────────────
-
-const POLL_INTERVAL_MS = 60_000; // 60 seconds
 
 function schedulePolling(cfg: {
   id: string;
@@ -91,7 +148,7 @@ function schedulePolling(cfg: {
   config: string;
 }): void {
   if (pollingIntervals.has(cfg.id)) {
-    logger.warn({ configId: cfg.id }, 'Already polling for config — skipping duplicate');
+    logger.warn({ configId: cfg.id }, '[email-poll] Already polling for config — skipping duplicate');
     return;
   }
 
@@ -106,11 +163,11 @@ function schedulePolling(cfg: {
 
   pollingIntervals.set(cfg.id, handle);
 
-  logger.info({ configId: cfg.id, intervalSec: POLL_INTERVAL_MS / 1000 }, 'Polling started for config');
+  logger.info({ configId: cfg.id, intervalSec: POLL_INTERVAL_MS / 1000 }, '[email-poll] Polling started for config');
 }
 
 function runPoll(poller: ImapPoller, configId: string): void {
   poller.poll().catch((err: unknown) => {
-    logger.error({ err, configId }, 'Poll failed for config');
+    logger.error({ err, configId }, '[email-poll] Poll failed for config');
   });
 }
