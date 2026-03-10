@@ -11,6 +11,7 @@
     "customers": "Customers",
     "categories": "Categories",
     "sla": "SLA",
+    "notifications": "Notifications",
     "system": "System"
   },
   "general": {
@@ -211,6 +212,28 @@
     "delete_success": "SLA deleted successfully",
     "assignment_success": "Assignment created successfully",
     "assignment_delete_success": "Assignment deleted successfully"
+  },
+  "notifications": {
+    "title": "Email Notifications",
+    "description": "Choose which events you want to be notified about via email.",
+    "events": {
+      "ticket_assigned": "Ticket Assigned",
+      "ticket_assigned_hint": "Notification when a ticket is assigned to you",
+      "ticket_status_changed": "Status Changed",
+      "ticket_status_changed_hint": "Notification when the status of one of your tickets changes",
+      "ticket_commented": "New Comment",
+      "ticket_commented_hint": "Notification when a new comment is added to your tickets",
+      "sla_warning": "SLA Warning",
+      "sla_warning_hint": "Warning when an SLA deadline is approaching",
+      "sla_breached": "SLA Breached",
+      "sla_breached_hint": "Notification when an SLA deadline has been exceeded",
+      "ticket_escalated": "Ticket Escalated",
+      "ticket_escalated_hint": "Notification when a ticket has been escalated",
+      "major_incident_declared": "Major Incident Declared",
+      "major_incident_declared_hint": "Notification when a major incident is declared",
+      "major_incident_resolved": "Major Incident Resolved",
+      "major_incident_resolved_hint": "Notification when a major incident has been resolved"
+    }
   },
   "saved": "Settings saved",
   "save_error": "Error saving settings",

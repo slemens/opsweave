@@ -62,6 +62,9 @@ export { kbArticles, kbArticleLinks } from './knowledge-base.js';
 // Known Error Database (KEDB)
 export { knownErrors } from './known-errors.js';
 
+// Notifications
+export { notificationPreferences } from './notifications.js';
+
 // SLA Definitions & Assignments
 export { slaDefinitions, slaAssignments } from './sla.js';
 

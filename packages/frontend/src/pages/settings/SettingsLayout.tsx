@@ -7,6 +7,7 @@ import {
   Users,
   Briefcase,
   Clock,
+  Bell,
   Server,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -18,6 +19,7 @@ const settingsNav = [
   { to: '/settings/users', icon: Users, labelKey: 'settings:tabs.groups' },
   { to: '/settings/customers', icon: Briefcase, labelKey: 'settings:tabs.customers' },
   { to: '/settings/sla', icon: Clock, labelKey: 'settings:tabs.sla' },
+  { to: '/settings/notifications', icon: Bell, labelKey: 'settings:tabs.notifications' },
   { to: '/settings/system', icon: Server, labelKey: 'settings:tabs.system' },
 ] as const;
 

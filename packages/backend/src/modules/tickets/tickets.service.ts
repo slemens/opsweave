@@ -18,6 +18,7 @@ import {
   knownErrors,
 } from '../../db/schema/index.js';
 import { NotFoundError, ValidationError, ConflictError } from '../../lib/errors.js';
+import { notify, getAffectedUsers, type NotificationPayload } from '../notifications/notification.service.js';
 import { TICKET_NUMBER_PREFIXES, TICKET_STATUSES, calculatePriority, calculateChangeRisk } from '@opsweave/shared';
 import type { TicketFilterParams, CreateTicketInput, UpdateTicketInput } from '@opsweave/shared';
 
@@ -861,6 +862,36 @@ export async function updateTicket(
     )
     .returning();
 
+  // ── Fire-and-forget notifications ──
+  const notifPayload: NotificationPayload = {
+    ticket_id: ticketId,
+    ticket_number: existing.ticket_number as string,
+    ticket_title: existing.title as string,
+    ticket_type: existing.ticket_type as string,
+  };
+
+  const affectedUsers = await getAffectedUsers(
+    tenantId,
+    (updated?.assignee_id ?? existing.assignee_id) as string | null,
+    existing.reporter_id as string,
+    userId,
+  );
+
+  if (data.status && data.status !== existing.status) {
+    void notify(tenantId, 'ticket_status_changed', {
+      ...notifPayload,
+      old_value: existing.status as string,
+      new_value: data.status,
+    }, affectedUsers);
+  }
+
+  if (data.assignee_id !== undefined && data.assignee_id !== existing.assignee_id) {
+    // Notify the newly assigned user
+    if (data.assignee_id) {
+      void notify(tenantId, 'ticket_assigned', notifPayload, [data.assignee_id]);
+    }
+  }
+
   return updated;
 }
 
@@ -1041,7 +1072,14 @@ export async function addTicketComment(
   const d = db();
 
   const ticketRows = await d
-    .select({ id: tickets.id })
+    .select({
+      id: tickets.id,
+      ticket_number: tickets.ticket_number,
+      title: tickets.title,
+      ticket_type: tickets.ticket_type,
+      assignee_id: tickets.assignee_id,
+      reporter_id: tickets.reporter_id,
+    })
     .from(tickets)
     .where(
       and(
@@ -1055,6 +1093,7 @@ export async function addTicketComment(
     throw new NotFoundError('Ticket not found');
   }
 
+  const ticketInfo = ticketRows[0]!;
   const now = new Date().toISOString();
   const commentId = uuidv4();
 
@@ -1100,6 +1139,23 @@ export async function addTicketComment(
     .leftJoin(users, eq(ticketComments.author_id, users.id))
     .where(eq(ticketComments.id, commentId))
     .limit(1);
+
+  // Notify on external comments (not internal)
+  if (!data.is_internal && data.source !== 'system') {
+    const affectedUsers = await getAffectedUsers(
+      tenantId,
+      ticketInfo.assignee_id,
+      ticketInfo.reporter_id,
+      authorId,
+    );
+    void notify(tenantId, 'ticket_commented', {
+      ticket_id: ticketId,
+      ticket_number: ticketInfo.ticket_number,
+      ticket_title: ticketInfo.title,
+      ticket_type: ticketInfo.ticket_type,
+      comment_content: data.content,
+    }, affectedUsers);
+  }
 
   if (withAuthor) {
     const { author_name, author_email, ...rest } = withAuthor;

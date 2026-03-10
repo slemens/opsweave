@@ -164,6 +164,17 @@ CREATE TABLE IF NOT EXISTS tickets (
   category_id TEXT REFERENCES ticket_categories(id),
   parent_ticket_id TEXT,
   source TEXT NOT NULL DEFAULT 'manual',
+  change_justification TEXT,
+  change_risk_level TEXT,
+  change_risk_likelihood TEXT,
+  change_risk_impact TEXT,
+  change_implementation TEXT,
+  change_rollback_plan TEXT,
+  change_planned_start TEXT,
+  change_planned_end TEXT,
+  change_actual_start TEXT,
+  change_actual_end TEXT,
+  incident_commander_id TEXT REFERENCES users(id),
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   resolved_at TEXT,
@@ -480,6 +491,32 @@ CREATE TABLE IF NOT EXISTS sla_assignments (
   UNIQUE(tenant_id, sla_definition_id, service_id, customer_id, asset_id)
 );
 
+-- known_errors (KEDB)
+CREATE TABLE IF NOT EXISTS known_errors (
+  id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  title TEXT NOT NULL,
+  symptom TEXT NOT NULL,
+  workaround TEXT,
+  root_cause TEXT,
+  status TEXT NOT NULL DEFAULT 'identified',
+  problem_id TEXT REFERENCES tickets(id),
+  created_by TEXT NOT NULL REFERENCES users(id),
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+-- notification_preferences
+CREATE TABLE IF NOT EXISTS notification_preferences (
+  id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  user_id TEXT NOT NULL REFERENCES users(id),
+  event_type TEXT NOT NULL,
+  channel TEXT NOT NULL DEFAULT 'email',
+  enabled INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL
+);
+
 -- system_settings (NO tenant_id - global)
 CREATE TABLE IF NOT EXISTS system_settings (
   key TEXT PRIMARY KEY,
@@ -504,6 +541,12 @@ CREATE INDEX IF NOT EXISTS idx_slaassign_tenant ON sla_assignments(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_slaassign_tenant_asset ON sla_assignments(tenant_id, asset_id);
 CREATE INDEX IF NOT EXISTS idx_slaassign_tenant_customer ON sla_assignments(tenant_id, customer_id);
 CREATE INDEX IF NOT EXISTS idx_slaassign_tenant_service ON sla_assignments(tenant_id, service_id);
+CREATE INDEX IF NOT EXISTS idx_ke_tenant ON known_errors(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_ke_tenant_status ON known_errors(tenant_id, status);
+CREATE INDEX IF NOT EXISTS idx_ke_tenant_problem ON known_errors(tenant_id, problem_id);
+CREATE INDEX IF NOT EXISTS idx_np_tenant ON notification_preferences(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_np_tenant_user ON notification_preferences(tenant_id, user_id);
+CREATE INDEX IF NOT EXISTS idx_np_tenant_user_event ON notification_preferences(tenant_id, user_id, event_type, channel);
 `;
 
 async function setup() {
