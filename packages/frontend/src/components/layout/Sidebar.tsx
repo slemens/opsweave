@@ -25,6 +25,7 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { useAuthStore } from '@/stores/auth-store';
+import { useSystemInfo } from '@/api/system';
 
 interface NavItem {
   labelKey: string;
@@ -53,6 +54,8 @@ export function Sidebar() {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const user = useAuthStore((s) => s.user);
+  // AUDIT-FIX: C-06 — Display app version in sidebar
+  const { data: systemInfo } = useSystemInfo();
 
   const userInitials = user?.displayName
     ? user.displayName
@@ -190,6 +193,13 @@ export function Sidebar() {
             </div>
           )}
         </div>
+
+        {/* AUDIT-FIX: C-06 — Version display */}
+        {systemInfo?.version && !collapsed && (
+          <p className="px-3 py-1 text-[11px] text-muted-foreground/60">
+            OpsWeave v{systemInfo.version}
+          </p>
+        )}
 
         {/* Collapse toggle */}
         <Button
