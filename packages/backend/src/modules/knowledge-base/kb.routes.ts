@@ -17,6 +17,7 @@ import {
   deleteArticle,
   linkToTicket,
   unlinkFromTicket,
+  searchArticles,
 } from './kb.controller.js';
 
 const kbRouter = Router();
@@ -35,6 +36,13 @@ kbRouter.get(
   validateQuery(kbFilterSchema),
   listArticles,
 );
+
+/**
+ * GET /api/v1/kb/articles/search
+ * Full-text search with relevance scoring and snippets.
+ * Query params: q (required), visibility, limit
+ */
+kbRouter.get('/search', searchArticles);
 
 /**
  * POST /api/v1/kb/articles

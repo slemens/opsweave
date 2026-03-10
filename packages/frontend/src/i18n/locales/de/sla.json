@@ -1,0 +1,29 @@
+{
+  "reports": {
+    "title": "SLA-Performance",
+    "subtitle": "Übersicht der Service-Level-Compliance und Reaktionszeiten.",
+    "error": "Report konnte nicht geladen werden.",
+    "retry": "Erneut versuchen",
+    "no_data": "Keine Daten im ausgewählten Zeitraum.",
+    "days_7": "Letzte 7 Tage",
+    "days_14": "Letzte 14 Tage",
+    "days_30": "Letzte 30 Tage",
+    "days_90": "Letzte 90 Tage",
+    "total_tickets": "Tickets gesamt",
+    "with_sla": "{{count}} mit SLA",
+    "compliance_rate": "SLA-Compliance",
+    "breached": "SLA-Verletzungen",
+    "breach_rate": "Verletzungsrate",
+    "avg_resolution": "Ø Lösungszeit",
+    "breach_trend": "SLA-Verlauf",
+    "by_type": "Nach Ticket-Typ",
+    "by_priority": "Nach Priorität",
+    "total_label": "Gesamt",
+    "breached_label": "Verletzt",
+    "col_priority": "Priorität",
+    "col_total": "Gesamt",
+    "col_breached": "Verletzt",
+    "col_breach_rate": "Verletzungsrate",
+    "col_avg_resolution": "Ø Lösungszeit"
+  }
+}

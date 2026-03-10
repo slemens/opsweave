@@ -54,6 +54,14 @@ export function deleteAssignment(req: Request, res: Response) {
 
 // ─── SLA Resolution (preview) ─────────────────────────────
 
+// ─── SLA Reports ──────────────────────────────────────────
+
+export function performanceReport(req: Request, res: Response) {
+  const days = parseInt(req.query['days'] as string, 10) || 30;
+  const data = slaService.getSlaPerformanceReport(requireTenantId(req), days);
+  sendSuccess(res, data);
+}
+
 export function resolveEffective(req: Request, res: Response) {
   const { asset_id, customer_id, service_id } = req.query as Record<string, string>;
   const result = slaService.resolveEffectiveSla(requireTenantId(req), {

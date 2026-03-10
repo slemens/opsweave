@@ -14,7 +14,8 @@
     "known_errors": "Known Errors",
     "knowledge_base": "Knowledge Base",
     "settings": "Settings",
-    "monitoring": "Monitoring"
+    "monitoring": "Monitoring",
+    "sla_reports": "SLA Reports"
   },
   "actions": {
     "save": "Save",

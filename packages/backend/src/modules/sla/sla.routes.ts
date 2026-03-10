@@ -54,5 +54,8 @@ slaRouter.get('/assignments', ctrl.listAssignments);
 slaRouter.post('/assignments', requireRole('admin'), validate(createAssignmentSchema), ctrl.createAssignment);
 slaRouter.delete('/assignments/:id', requireRole('admin'), ctrl.deleteAssignment);
 
+// Reports
+slaRouter.get('/reports/performance', ctrl.performanceReport);
+
 // Resolution preview
 slaRouter.get('/resolve', ctrl.resolveEffective);
