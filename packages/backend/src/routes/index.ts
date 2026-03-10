@@ -22,6 +22,7 @@ import { knownErrorRouter } from '../modules/known-errors/known-errors.routes.js
 import notificationRouter from '../modules/notifications/notification.routes.js';
 import { escalationRouter } from '../modules/escalation/escalation.routes.js';
 import { auditRouter } from '../modules/audit/audit.routes.js';
+import { monitoringRouter, monitoringWebhookRouter } from '../modules/monitoring/monitoring.routes.js';
 
 // ─── Central API Router ────────────────────────────────────
 const apiRouter = Router();
@@ -65,8 +66,10 @@ protectedRouter.use('/notifications', notificationRouter);
 protectedRouter.use('/escalation', escalationRouter);
 protectedRouter.use('/audit', auditRouter);
 
-// AUDIT-FIX: L-01 — See TODO_BACKLOG.md#01 (monitoring module not yet implemented)
-// protectedRouter.use('/monitoring', monitoringRouter);
+protectedRouter.use('/monitoring', monitoringRouter);
+
+// Monitoring webhook is public (uses webhook_secret instead of JWT auth)
+apiRouter.use(monitoringWebhookRouter);
 
 apiRouter.use(protectedRouter);
 
