@@ -38,10 +38,23 @@ export interface KbFilterParams {
 
 // ─── Query Keys ───────────────────────────────────────────
 
+export interface KbSearchResult {
+  id: string;
+  title: string;
+  slug: string;
+  category: string | null;
+  visibility: string;
+  status: string;
+  snippet: string;
+  relevance: number;
+  published_at: string | null;
+}
+
 export const kbKeys = {
   all: ['kb'] as const,
   list: (params?: KbFilterParams) => [...kbKeys.all, 'list', params] as const,
   detail: (id: string) => [...kbKeys.all, 'detail', id] as const,
+  search: (q: string) => [...kbKeys.all, 'search', q] as const,
 };
 
 // ─── Queries ──────────────────────────────────────────────
@@ -104,6 +117,15 @@ export function useLinkArticleToTicket() {
       qc.invalidateQueries({ queryKey: kbKeys.all });
       qc.invalidateQueries({ queryKey: kbKeys.detail(articleId) });
     },
+  });
+}
+
+export function useKbSearch(query: string) {
+  return useQuery({
+    queryKey: kbKeys.search(query),
+    queryFn: () =>
+      apiClient.get<KbSearchResult[]>(`/kb/articles/search?q=${encodeURIComponent(query)}`),
+    enabled: query.trim().length >= 2,
   });
 }
 

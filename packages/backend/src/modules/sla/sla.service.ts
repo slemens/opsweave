@@ -1,4 +1,4 @@
-import { eq, and, count, desc, isNull } from 'drizzle-orm';
+import { eq, and, count, desc, isNull, sql } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 
 import { getDb, type TypedDb } from '../../config/database.js';
@@ -8,6 +8,7 @@ import {
   serviceDescriptions,
   customers,
   assets,
+  tickets,
 } from '../../db/schema/index.js';
 import { NotFoundError, ValidationError } from '../../lib/errors.js';
 
@@ -408,4 +409,160 @@ export function resolveEffectiveSla(
     .get();
 
   return defaultSla ?? null;
+}
+
+// =============================================================================
+// SLA Performance Report
+// =============================================================================
+
+export interface SlaPerformanceReport {
+  summary: {
+    total_tickets: number;
+    total_with_sla: number;
+    total_breached: number;
+    breach_rate: number;
+    avg_resolution_hours: number | null;
+  };
+  by_priority: Array<{
+    priority: string;
+    total: number;
+    breached: number;
+    breach_rate: number;
+    avg_resolution_hours: number | null;
+  }>;
+  by_type: Array<{
+    ticket_type: string;
+    total: number;
+    breached: number;
+    breach_rate: number;
+  }>;
+  breach_trend: Array<{
+    date: string;
+    total: number;
+    breached: number;
+  }>;
+}
+
+/**
+ * Generate SLA performance report for a tenant.
+ * @param days Number of days to look back (default 30)
+ */
+export function getSlaPerformanceReport(
+  tenantId: string,
+  days = 30,
+): SlaPerformanceReport {
+  const d = db();
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - days);
+  const cutoffStr = cutoff.toISOString();
+
+  // All tickets in time window
+  const allTickets = d
+    .select({
+      id: tickets.id,
+      priority: tickets.priority,
+      ticket_type: tickets.ticket_type,
+      sla_breached: tickets.sla_breached,
+      sla_response_due: tickets.sla_response_due,
+      sla_resolve_due: tickets.sla_resolve_due,
+      sla_paused_total: tickets.sla_paused_total,
+      created_at: tickets.created_at,
+      resolved_at: tickets.resolved_at,
+    })
+    .from(tickets)
+    .where(
+      and(
+        eq(tickets.tenant_id, tenantId),
+        sql`${tickets.created_at} >= ${cutoffStr}`,
+      ),
+    )
+    .all();
+
+  // Summary
+  const totalTickets = allTickets.length;
+  const withSla = allTickets.filter((t) => t.sla_response_due || t.sla_resolve_due);
+  const breached = allTickets.filter((t) => t.sla_breached === 1);
+  const totalWithSla = withSla.length;
+  const totalBreached = breached.length;
+  const breachRate = totalWithSla > 0 ? Math.round((totalBreached / totalWithSla) * 10000) / 100 : 0;
+
+  // Average resolution hours (resolved tickets only)
+  const resolvedTickets = allTickets.filter((t) => t.resolved_at);
+  let avgResolutionHours: number | null = null;
+  if (resolvedTickets.length > 0) {
+    const totalHours = resolvedTickets.reduce((sum, t) => {
+      const created = new Date(t.created_at).getTime();
+      const resolved = new Date(t.resolved_at!).getTime();
+      const pausedMs = (t.sla_paused_total ?? 0) * 1000;
+      return sum + (resolved - created - pausedMs) / 3_600_000;
+    }, 0);
+    avgResolutionHours = Math.round((totalHours / resolvedTickets.length) * 10) / 10;
+  }
+
+  // By priority
+  const priorityMap = new Map<string, { total: number; breached: number; resHours: number[]; }>();
+  for (const t of allTickets) {
+    const p = t.priority ?? 'medium';
+    const entry = priorityMap.get(p) ?? { total: 0, breached: 0, resHours: [] };
+    entry.total++;
+    if (t.sla_breached === 1) entry.breached++;
+    if (t.resolved_at) {
+      const created = new Date(t.created_at).getTime();
+      const resolved = new Date(t.resolved_at).getTime();
+      const pausedMs = (t.sla_paused_total ?? 0) * 1000;
+      entry.resHours.push((resolved - created - pausedMs) / 3_600_000);
+    }
+    priorityMap.set(p, entry);
+  }
+  const byPriority = Array.from(priorityMap.entries()).map(([priority, e]) => ({
+    priority,
+    total: e.total,
+    breached: e.breached,
+    breach_rate: e.total > 0 ? Math.round((e.breached / e.total) * 10000) / 100 : 0,
+    avg_resolution_hours: e.resHours.length > 0
+      ? Math.round((e.resHours.reduce((a, b) => a + b, 0) / e.resHours.length) * 10) / 10
+      : null,
+  }));
+
+  // By type
+  const typeMap = new Map<string, { total: number; breached: number; }>();
+  for (const t of allTickets) {
+    const tt = t.ticket_type;
+    const entry = typeMap.get(tt) ?? { total: 0, breached: 0 };
+    entry.total++;
+    if (t.sla_breached === 1) entry.breached++;
+    typeMap.set(tt, entry);
+  }
+  const byType = Array.from(typeMap.entries()).map(([ticket_type, e]) => ({
+    ticket_type,
+    total: e.total,
+    breached: e.breached,
+    breach_rate: e.total > 0 ? Math.round((e.breached / e.total) * 10000) / 100 : 0,
+  }));
+
+  // Breach trend (daily)
+  const dayMap = new Map<string, { total: number; breached: number; }>();
+  for (const t of allTickets) {
+    const date = t.created_at.slice(0, 10);
+    const entry = dayMap.get(date) ?? { total: 0, breached: 0 };
+    entry.total++;
+    if (t.sla_breached === 1) entry.breached++;
+    dayMap.set(date, entry);
+  }
+  const breachTrend = Array.from(dayMap.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, e]) => ({ date, total: e.total, breached: e.breached }));
+
+  return {
+    summary: {
+      total_tickets: totalTickets,
+      total_with_sla: totalWithSla,
+      total_breached: totalBreached,
+      breach_rate: breachRate,
+      avg_resolution_hours: avgResolutionHours,
+    },
+    by_priority: byPriority,
+    by_type: byType,
+    breach_trend: breachTrend,
+  };
 }

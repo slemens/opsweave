@@ -61,11 +61,40 @@ export interface CreateSlaAssignmentPayload {
 
 // ─── Query Keys ────────────────────────────────────────────
 
+export interface SlaPerformanceReport {
+  summary: {
+    total_tickets: number;
+    total_with_sla: number;
+    total_breached: number;
+    breach_rate: number;
+    avg_resolution_hours: number | null;
+  };
+  by_priority: Array<{
+    priority: string;
+    total: number;
+    breached: number;
+    breach_rate: number;
+    avg_resolution_hours: number | null;
+  }>;
+  by_type: Array<{
+    ticket_type: string;
+    total: number;
+    breached: number;
+    breach_rate: number;
+  }>;
+  breach_trend: Array<{
+    date: string;
+    total: number;
+    breached: number;
+  }>;
+}
+
 const slaKeys = {
   all: ['sla'] as const,
   definitions: () => [...slaKeys.all, 'definitions'] as const,
   definition: (id: string) => [...slaKeys.all, 'definition', id] as const,
   assignments: () => [...slaKeys.all, 'assignments'] as const,
+  performanceReport: (days: number) => [...slaKeys.all, 'performance', days] as const,
 };
 
 // ─── Definition Hooks ──────────────────────────────────────
@@ -134,5 +163,14 @@ export function useDeleteSlaAssignment() {
   return useMutation({
     mutationFn: (id: string) => apiClient.delete(`/sla/assignments/${id}`),
     onSuccess: () => void qc.invalidateQueries({ queryKey: slaKeys.all }),
+  });
+}
+
+// ─── Performance Report Hook ─────────────────────────────────
+
+export function useSlaPerformanceReport(days = 30) {
+  return useQuery({
+    queryKey: slaKeys.performanceReport(days),
+    queryFn: () => apiClient.get<SlaPerformanceReport>(`/sla/reports/performance?days=${days}`),
   });
 }

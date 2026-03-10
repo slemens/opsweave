@@ -563,3 +563,153 @@ export async function listPublicArticles(
     status: 'published',
   });
 }
+
+// =============================================================================
+// Full-text Search with Relevance Scoring and Snippets
+// =============================================================================
+
+export interface KbSearchResult {
+  id: string;
+  title: string;
+  slug: string;
+  category: string | null;
+  visibility: string;
+  status: string;
+  snippet: string;
+  relevance: number;
+  published_at: string | null;
+}
+
+/**
+ * Full-text search across KB articles with relevance scoring.
+ * Title matches score higher than content matches.
+ * Returns highlighted snippets with context around matches.
+ */
+export function searchKbArticles(
+  tenantId: string,
+  query: string,
+  options: { visibility?: string; limit?: number } = {},
+): KbSearchResult[] {
+  const d = db();
+  const maxResults = options.limit ?? 20;
+  const searchTerm = query.trim().toLowerCase();
+
+  if (!searchTerm) return [];
+
+  const conditions = [eq(kbArticles.tenant_id, tenantId), eq(kbArticles.status, 'published')];
+  if (options.visibility) {
+    conditions.push(eq(kbArticles.visibility, options.visibility));
+  }
+
+  // Get all published articles matching the search
+  conditions.push(
+    or(
+      like(kbArticles.title, `%${searchTerm}%`),
+      like(kbArticles.content, `%${searchTerm}%`),
+      like(kbArticles.category, `%${searchTerm}%`),
+    )!,
+  );
+
+  const rows = d
+    .select({
+      id: kbArticles.id,
+      title: kbArticles.title,
+      slug: kbArticles.slug,
+      category: kbArticles.category,
+      content: kbArticles.content,
+      visibility: kbArticles.visibility,
+      status: kbArticles.status,
+      published_at: kbArticles.published_at,
+    })
+    .from(kbArticles)
+    .where(and(...conditions))
+    .limit(maxResults * 2) // Over-fetch for scoring
+    .all();
+
+  // Score and rank results
+  const scored = rows.map((row) => {
+    let relevance = 0;
+    const titleLower = row.title.toLowerCase();
+    const contentLower = (row.content ?? '').toLowerCase();
+
+    // Title exact match (highest)
+    if (titleLower === searchTerm) relevance += 100;
+    // Title starts with search term
+    else if (titleLower.startsWith(searchTerm)) relevance += 80;
+    // Title contains search term
+    else if (titleLower.includes(searchTerm)) relevance += 60;
+
+    // Content contains search term
+    if (contentLower.includes(searchTerm)) {
+      relevance += 30;
+      // Bonus for multiple occurrences (up to 5)
+      const occurrences = Math.min(contentLower.split(searchTerm).length - 1, 5);
+      relevance += occurrences * 5;
+    }
+
+    // Category match bonus
+    if (row.category?.toLowerCase().includes(searchTerm)) relevance += 20;
+
+    // Generate snippet with context
+    const snippet = generateSnippet(row.content ?? '', searchTerm, 150);
+
+    return {
+      id: row.id,
+      title: row.title,
+      slug: row.slug,
+      category: row.category,
+      visibility: row.visibility,
+      status: row.status,
+      snippet,
+      relevance,
+      published_at: row.published_at,
+    };
+  });
+
+  // Sort by relevance descending
+  scored.sort((a, b) => b.relevance - a.relevance);
+
+  return scored.slice(0, maxResults);
+}
+
+/**
+ * Generate a text snippet with context around the first match.
+ */
+function generateSnippet(content: string, searchTerm: string, maxLength: number): string {
+  // Strip markdown syntax
+  const plain = content
+    .replace(/#{1,6}\s/g, '')
+    .replace(/\*\*(.+?)\*\*/g, '$1')
+    .replace(/\*(.+?)\*/g, '$1')
+    .replace(/`(.+?)`/g, '$1')
+    .replace(/\[(.+?)\]\(.+?\)/g, '$1')
+    .replace(/[-*+]\s/g, '')
+    .replace(/\n+/g, ' ')
+    .trim();
+
+  const idx = plain.toLowerCase().indexOf(searchTerm);
+  if (idx === -1) {
+    return plain.slice(0, maxLength) + (plain.length > maxLength ? '…' : '');
+  }
+
+  // Center the snippet around the match
+  const halfLen = Math.floor(maxLength / 2);
+  let start = Math.max(0, idx - halfLen);
+  let end = Math.min(plain.length, idx + searchTerm.length + halfLen);
+
+  // Adjust to not cut words
+  if (start > 0) {
+    const spaceIdx = plain.indexOf(' ', start);
+    if (spaceIdx !== -1 && spaceIdx < idx) start = spaceIdx + 1;
+  }
+  if (end < plain.length) {
+    const spaceIdx = plain.lastIndexOf(' ', end);
+    if (spaceIdx > idx + searchTerm.length) end = spaceIdx;
+  }
+
+  let snippet = plain.slice(start, end);
+  if (start > 0) snippet = '…' + snippet;
+  if (end < plain.length) snippet = snippet + '…';
+
+  return snippet;
+}

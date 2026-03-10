@@ -1,0 +1,29 @@
+{
+  "reports": {
+    "title": "SLA Performance",
+    "subtitle": "Overview of service level compliance and response times.",
+    "error": "Failed to load report.",
+    "retry": "Retry",
+    "no_data": "No data in the selected time range.",
+    "days_7": "Last 7 days",
+    "days_14": "Last 14 days",
+    "days_30": "Last 30 days",
+    "days_90": "Last 90 days",
+    "total_tickets": "Total Tickets",
+    "with_sla": "{{count}} with SLA",
+    "compliance_rate": "SLA Compliance",
+    "breached": "SLA Breaches",
+    "breach_rate": "breach rate",
+    "avg_resolution": "Avg Resolution",
+    "breach_trend": "SLA Trend",
+    "by_type": "By Ticket Type",
+    "by_priority": "By Priority",
+    "total_label": "Total",
+    "breached_label": "Breached",
+    "col_priority": "Priority",
+    "col_total": "Total",
+    "col_breached": "Breached",
+    "col_breach_rate": "Breach Rate",
+    "col_avg_resolution": "Avg Resolution"
+  }
+}

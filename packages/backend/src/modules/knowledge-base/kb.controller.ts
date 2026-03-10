@@ -110,6 +110,23 @@ export async function linkToTicket(
 }
 
 /**
+ * GET /api/v1/kb/articles/search
+ * Full-text search across published KB articles with relevance scoring.
+ */
+export function searchArticles(
+  req: Request,
+  res: Response,
+): void {
+  const tenantId = requireTenantId(req);
+  const q = typeof req.query['q'] === 'string' ? req.query['q'] : '';
+  const visibility = typeof req.query['visibility'] === 'string' ? req.query['visibility'] : undefined;
+  const limit = parseInt(req.query['limit'] as string, 10) || 20;
+
+  const results = kbService.searchKbArticles(tenantId, q, { visibility, limit });
+  sendSuccess(res, results);
+}
+
+/**
  * DELETE /api/v1/kb/articles/:id/link/:ticketId
  * Remove a link between a KB article and a ticket.
  */

@@ -15,6 +15,7 @@ import {
   Activity,
   Building2,
   Bug,
+  BarChart3,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -45,6 +46,7 @@ const navItems: NavItem[] = [
   { labelKey: 'nav.known_errors', href: '/known-errors', icon: Bug },
   { labelKey: 'nav.knowledge_base', href: '/knowledge-base', icon: FileText },
   { labelKey: 'nav.monitoring', href: '/monitoring', icon: Activity },
+  { labelKey: 'nav.sla_reports', href: '/reports/sla', icon: BarChart3 },
 ];
 
 const bottomNavItems: NavItem[] = [
