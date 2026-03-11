@@ -2,6 +2,8 @@
 
 OpsWeave integriert externe Monitoring-Systeme und verarbeitet deren Events automatisch. Unterstuetzt werden **Check_MK** (v1 Livestatus + v2 REST API) sowie beliebige Systeme ueber Webhook-Inbound.
 
+![Monitoring Dashboard](/screenshots/monitoring.png)
+
 ## Monitoring Sources
 
 Monitoring-Quellen werden zentral verwaltet. Jede Quelle definiert den Typ, die Verbindungsdaten und optionale Webhook-Secrets.

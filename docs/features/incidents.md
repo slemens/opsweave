@@ -2,6 +2,8 @@
 
 OpsWeave unterstuetzt den vollstaendigen ITIL-konformen Incident-Management-Prozess einschliesslich Major Incidents, Eskalationsstufen, Problem Management und einer Known Error Database (KEDB).
 
+![Incident Detail](/screenshots/ticket-detail.png)
+
 ## Major Incidents
 
 Ein Major Incident ist ein Incident mit erheblicher Auswirkung auf geschaeftskritische Services, der eine koordinierte Reaktion erfordert.
