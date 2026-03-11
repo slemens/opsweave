@@ -31,13 +31,12 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: '22'
-          cache: 'npm'
 
-      - name: Install dependencies
-        run: cd docs && npm install
-
-      - name: Build docs
-        run: cd docs && npx vitepress build
+      - name: Install and build docs
+        working-directory: docs
+        run: |
+          npm install
+          npx vitepress build
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
