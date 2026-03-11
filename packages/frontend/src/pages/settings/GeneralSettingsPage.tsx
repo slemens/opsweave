@@ -277,7 +277,7 @@ function LicenseSection() {
     labelKey: string;
     current: number;
     max: number;
-  }> = usage
+  }> = usage?.assets
     ? [
         { labelKey: 'settings:license.assets', current: usage.assets.current, max: usage.assets.max },
         { labelKey: 'settings:license.users', current: usage.users.current, max: usage.users.max },
