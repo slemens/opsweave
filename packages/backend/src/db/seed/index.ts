@@ -50,10 +50,26 @@ import {
   assetServiceLinks,
   slaDefinitions,
   slaAssignments,
+  projects,
+  projectAssets,
+  complianceControls,
+  requirementControlMappings,
+  complianceAudits,
+  auditFindings,
+  complianceEvidence,
+  assetRegulatoryFlags,
+  assetClassifications,
+  assetCapacities,
+  serviceProfiles,
+  serviceEntitlements,
+  escalationRules,
+  monitoringSources,
+  knownErrors,
 } from '../schema/index.js';
 import { DEMO_LICENSE_KEY } from './demo-license.js';
 
 const now = new Date().toISOString();
+const daysAgo = (n: number) => new Date(Date.now() - n * 86400000).toISOString();
 const BCRYPT_ROUNDS = 12;
 
 /**
@@ -806,6 +822,18 @@ async function doSeed(): Promise<void> {
       sla_breached: 0,
       parent_ticket_id: null,
       source: 'manual' as const,
+      change_risk_level: 'low',
+      change_risk_likelihood: 'unlikely',
+      change_risk_impact: 'low',
+      change_planned_start: new Date(Date.now() + 3 * 86400000).toISOString(),
+      change_planned_end: new Date(Date.now() + 3 * 86400000 + 3600000).toISOString(),
+      change_implementation: 'iptables-Regel auf fw-edge-01 hinzufügen, Ports 80+443 für 10.0.1.50',
+      change_rollback_plan: 'Regel entfernen: iptables -D INPUT ...',
+      cab_required: 0,
+      cab_decision: null,
+      cab_decision_by: null,
+      cab_decision_at: null,
+      cab_notes: null,
       created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
       updated_at: now,
       resolved_at: null,
@@ -1818,12 +1846,12 @@ async function doSeed(): Promise<void> {
     { id: assetErpId, tenant_id: tenantId, asset_type: 'application', name: 'erp-sap-prod', display_name: 'SAP ERP Production', status: 'active', ip_address: '10.0.4.10', location: 'ESXi Host 01', sla_tier: 'platinum', environment: 'production', owner_group_id: devGroupId, customer_id: customerBankId, attributes: '{"version": "SAP S/4HANA 2023", "modules": ["FI", "CO", "MM", "SD"]}', created_at: now, updated_at: now, created_by: adminId },
     { id: assetCrmId, tenant_id: tenantId, asset_type: 'application', name: 'crm-salesforce', display_name: 'Salesforce CRM', status: 'active', ip_address: null, location: 'Cloud (SaaS)', sla_tier: 'silver', environment: 'production', owner_group_id: devGroupId, customer_id: null, attributes: '{"edition": "Enterprise", "users": 85, "integrations": ["ERP", "Email"]}', created_at: now, updated_at: now, created_by: adminId },
     { id: assetJiraId, tenant_id: tenantId, asset_type: 'application', name: 'jira-cloud', display_name: 'Jira Cloud', status: 'active', ip_address: null, location: 'Cloud (SaaS)', sla_tier: 'silver', environment: 'production', owner_group_id: devGroupId, customer_id: null, attributes: '{"edition": "Premium", "projects": 12}', created_at: now, updated_at: now, created_by: managerId },
-    { id: assetGitlabId, tenant_id: tenantId, asset_type: 'application', name: 'gitlab-prod', display_name: 'GitLab CE', status: 'active', ip_address: '10.0.4.70', location: 'ESXi Host 02', sla_tier: 'gold', environment: 'production', owner_group_id: devGroupId, customer_id: null, attributes: '{"version": "16.8", "runners": 4, "repos": 67}', created_at: now, updated_at: now, created_by: adminId },
+    { id: assetGitlabId, tenant_id: tenantId, asset_type: 'application', name: 'gitlab-prod', display_name: 'GitLab CE', status: 'active', ip_address: '10.0.5.00', location: 'ESXi Host 02', sla_tier: 'gold', environment: 'production', owner_group_id: devGroupId, customer_id: null, attributes: '{"version": "16.8", "runners": 4, "repos": 67}', created_at: now, updated_at: now, created_by: adminId },
     { id: assetPrometheusId, tenant_id: tenantId, asset_type: 'application', name: 'prometheus-prod', display_name: 'Prometheus Monitoring', status: 'active', ip_address: '10.0.5.20', location: 'ESXi Host 02', sla_tier: 'gold', environment: 'production', owner_group_id: opsGroupId, customer_id: null, attributes: '{"version": "2.49", "targets": 142, "retention_days": 30}', created_at: now, updated_at: now, created_by: adminId },
     { id: assetK8sClusterId, tenant_id: tenantId, asset_type: 'container_platform', name: 'k8s-prod-01', display_name: 'Kubernetes Production Cluster', status: 'active', ip_address: '10.0.6.1', location: 'RZ Frankfurt', sla_tier: 'platinum', environment: 'production', owner_group_id: opsGroupId, customer_id: null, attributes: '{"version": "1.29", "nodes": 6, "pods": 87, "distribution": "RKE2"}', created_at: now, updated_at: now, created_by: adminId },
     { id: assetRedisId, tenant_id: tenantId, asset_type: 'database', name: 'redis-cache-01', display_name: 'Redis Cache Cluster', status: 'active', ip_address: '10.0.3.20', location: 'ESXi Host 01', sla_tier: 'gold', environment: 'production', owner_group_id: devGroupId, customer_id: null, attributes: '{"version": "7.2", "mode": "cluster", "nodes": 3, "memory_gb": 32}', created_at: now, updated_at: now, created_by: adminId },
     { id: assetElasticId, tenant_id: tenantId, asset_type: 'database', name: 'elastic-prod-01', display_name: 'Elasticsearch Cluster', status: 'active', ip_address: '10.0.3.30', location: 'ESXi Host 02', sla_tier: 'silver', environment: 'production', owner_group_id: devGroupId, customer_id: null, attributes: '{"version": "8.12", "nodes": 3, "indices": 45, "size_gb": 120}', created_at: now, updated_at: now, created_by: adminId },
-    { id: assetCiCdId, tenant_id: tenantId, asset_type: 'application', name: 'jenkins-prod', display_name: 'Jenkins CI/CD', status: 'active', ip_address: '10.0.4.70', location: 'ESXi Host 02', sla_tier: 'silver', environment: 'production', owner_group_id: devGroupId, customer_id: null, attributes: '{"version": "2.440", "agents": 8, "pipelines": 34}', created_at: now, updated_at: now, created_by: managerId },
+    { id: assetCiCdId, tenant_id: tenantId, asset_type: 'application', name: 'jenkins-prod', display_name: 'Jenkins CI/CD', status: 'active', ip_address: '10.0.5.00', location: 'ESXi Host 02', sla_tier: 'silver', environment: 'production', owner_group_id: devGroupId, customer_id: null, attributes: '{"version": "2.440", "agents": 8, "pipelines": 34}', created_at: now, updated_at: now, created_by: managerId },
     { id: assetDnsId, tenant_id: tenantId, asset_type: 'server_virtual', name: 'dns-ns-01', display_name: 'DNS Server 01', status: 'active', ip_address: '10.0.1.2', location: 'ESXi Host 01', sla_tier: 'platinum', environment: 'production', owner_group_id: opsGroupId, customer_id: null, attributes: '{"os": "Ubuntu 22.04", "software": "BIND 9.18", "zones": 23}', created_at: now, updated_at: now, created_by: adminId },
     { id: assetProxyId, tenant_id: tenantId, asset_type: 'server_virtual', name: 'proxy-squid-01', display_name: 'Web Proxy', status: 'active', ip_address: '10.0.1.3', location: 'ESXi Host 02', sla_tier: 'silver', environment: 'production', owner_group_id: opsGroupId, customer_id: null, attributes: '{"os": "Ubuntu 22.04", "software": "Squid 5.7", "users": 200}', created_at: now, updated_at: now, created_by: adminId },
     { id: assetTestVmId, tenant_id: tenantId, asset_type: 'server_virtual', name: 'test-vm-01', display_name: 'Test VM 01', status: 'active', ip_address: '10.0.100.10', location: 'ESXi Host 02', sla_tier: 'none', environment: 'test', owner_group_id: devGroupId, customer_id: null, attributes: '{"vcpu": 2, "ram_gb": 4, "os": "Ubuntu 22.04"}', created_at: now, updated_at: now, created_by: agentId },
@@ -2184,6 +2212,538 @@ async function doSeed(): Promise<void> {
   ]);
   logger.info('  ✓ Extended SLA Assignments: 9 additional assignments');
 
+  // ─── Projects (Evo-2C) ──────────────────────────────────────
+  const projDcMigrationId = uuidv4();
+  const projSecHardeningId = uuidv4();
+  const projErpRolloutId = uuidv4();
+
+  await db.insert(projects).values([
+    {
+      id: projDcMigrationId,
+      tenant_id: tenantId,
+      customer_id: null,
+      name: 'DC Migration 2025',
+      code: 'PROJ-DC-2025',
+      description: 'Migration des primären Rechenzentrums von Frankfurt nach München. Umzug aller physischen Server und Netzwerkkomponenten.',
+      status: 'active',
+      start_date: '2025-01-15',
+      end_date: '2025-12-31',
+      created_at: daysAgo(90),
+      updated_at: now,
+    },
+    {
+      id: projSecHardeningId,
+      tenant_id: tenantId,
+      customer_id: customerBankId,
+      name: 'Security Hardening Q1',
+      code: 'PROJ-SEC-Q1',
+      description: 'Härtung aller produktiven Systeme gemäß BSI IT-Grundschutz Anforderungen für BayernBank.',
+      status: 'active',
+      start_date: '2026-01-01',
+      end_date: '2026-03-31',
+      created_at: daysAgo(70),
+      updated_at: now,
+    },
+    {
+      id: projErpRolloutId,
+      tenant_id: tenantId,
+      customer_id: customerBankId,
+      name: 'ERP Rollout BayernBank',
+      code: 'PROJ-ERP-BB',
+      description: 'Einführung SAP S/4HANA für BayernBank AG inklusive Datenmigration und Schulung.',
+      status: 'planning',
+      start_date: '2026-04-01',
+      end_date: '2026-09-30',
+      created_at: daysAgo(14),
+      updated_at: now,
+    },
+  ]);
+
+  // Project Assets
+  await db.insert(projectAssets).values([
+    { project_id: projDcMigrationId, asset_id: assetRackId, tenant_id: tenantId, role: 'migration_target', added_at: daysAgo(90) },
+    { project_id: projDcMigrationId, asset_id: assetEsxi01Id, tenant_id: tenantId, role: 'migration_target', added_at: daysAgo(90) },
+    { project_id: projDcMigrationId, asset_id: assetEsxi02Id, tenant_id: tenantId, role: 'migration_target', added_at: daysAgo(90) },
+    { project_id: projDcMigrationId, asset_id: assetSanId, tenant_id: tenantId, role: 'migration_target', added_at: daysAgo(85) },
+    { project_id: projSecHardeningId, asset_id: assetFwId, tenant_id: tenantId, role: 'hardening_target', added_at: daysAgo(70) },
+    { project_id: projSecHardeningId, asset_id: assetAdControllerId, tenant_id: tenantId, role: 'hardening_target', added_at: daysAgo(70) },
+    { project_id: projSecHardeningId, asset_id: assetDnsId, tenant_id: tenantId, role: 'hardening_target', added_at: daysAgo(65) },
+    { project_id: projSecHardeningId, asset_id: assetVpnGwId, tenant_id: tenantId, role: 'hardening_target', added_at: daysAgo(60) },
+    { project_id: projErpRolloutId, asset_id: assetErpId, tenant_id: tenantId, role: 'primary_system', added_at: daysAgo(14) },
+    { project_id: projErpRolloutId, asset_id: assetDb01Id, tenant_id: tenantId, role: 'database_backend', added_at: daysAgo(14) },
+  ]);
+  logger.info('  ✓ Projects: 3 projects with 10 asset links');
+
+  // ─── Compliance Controls (Evo-4A) ─────────────────────────
+  const ctrlAccessMgmtId = uuidv4();
+  const ctrlEncryptionId = uuidv4();
+  const ctrlBackupId = uuidv4();
+  const ctrlIncidentResponseId = uuidv4();
+  const ctrlMonitoringId = uuidv4();
+  const ctrlPatchMgmtId = uuidv4();
+  const ctrlNetworkSegId = uuidv4();
+  const ctrlEndpointProtId = uuidv4();
+  const ctrlDpiaId = uuidv4();
+  const ctrlBreachNotifId = uuidv4();
+  const ctrlAssetInventoryId = uuidv4();
+  const ctrlChangeCtrlId = uuidv4();
+
+  await db.insert(complianceControls).values([
+    { id: ctrlAccessMgmtId, tenant_id: tenantId, code: 'CTRL-001', title: 'Zugriffskontrolle & Berechtigungsmanagement', description: 'RBAC-basierte Zugriffskontrolle für alle Systeme. PAM für privilegierte Accounts. Regelmäßige Rezertifizierung.', category: 'Zugriffskontrolle', control_type: 'preventive', status: 'implemented', owner_id: adminId, created_at: daysAgo(180), updated_at: daysAgo(30) },
+    { id: ctrlEncryptionId, tenant_id: tenantId, code: 'CTRL-002', title: 'Verschlüsselung (at-rest & in-transit)', description: 'AES-256 für Daten at-rest, TLS 1.3 für Daten in-transit. Zertifikatsmanagement über interne CA.', category: 'Kryptographie', control_type: 'preventive', status: 'implemented', owner_id: adminId, created_at: daysAgo(180), updated_at: daysAgo(15) },
+    { id: ctrlBackupId, tenant_id: tenantId, code: 'CTRL-003', title: 'Datensicherung & Recovery', description: 'Tägliche inkrementelle Backups, wöchentliche Vollsicherung. Monatliche Restore-Tests. RPO: 24h, RTO: 4h.', category: 'Business Continuity', control_type: 'corrective', status: 'verified', owner_id: managerId, created_at: daysAgo(180), updated_at: daysAgo(7) },
+    { id: ctrlIncidentResponseId, tenant_id: tenantId, code: 'CTRL-004', title: 'Incident-Response-Prozess', description: 'Definierter IR-Prozess mit Eskalationsstufen, Kommunikationsplan und 72h-Meldefrist an Aufsichtsbehörde.', category: 'Incident Management', control_type: 'corrective', status: 'implemented', owner_id: managerId, created_at: daysAgo(120), updated_at: daysAgo(20) },
+    { id: ctrlMonitoringId, tenant_id: tenantId, code: 'CTRL-005', title: 'Systemüberwachung & Logging', description: 'Zentrales Monitoring via Checkmk + Prometheus. Syslog-Aggregation via Elasticsearch. Anomalie-Erkennung aktiv.', category: 'Überwachung', control_type: 'detective', status: 'implemented', owner_id: adminId, created_at: daysAgo(150), updated_at: daysAgo(5) },
+    { id: ctrlPatchMgmtId, tenant_id: tenantId, code: 'CTRL-006', title: 'Patch-Management', description: 'Monatlicher Patch-Zyklus. Kritische Patches innerhalb 72h. Patch-Compliance-Report für alle Systeme.', category: 'Systemhärtung', control_type: 'preventive', status: 'implemented', owner_id: managerId, created_at: daysAgo(150), updated_at: daysAgo(10) },
+    { id: ctrlNetworkSegId, tenant_id: tenantId, code: 'CTRL-007', title: 'Netzwerksegmentierung', description: 'VLANs für Produktion, Management, DMZ und Gäste. Firewall-Regeln zwischen Segmenten.', category: 'Netzwerksicherheit', control_type: 'preventive', status: 'verified', owner_id: adminId, created_at: daysAgo(200), updated_at: daysAgo(30) },
+    { id: ctrlEndpointProtId, tenant_id: tenantId, code: 'CTRL-008', title: 'Endpoint Protection', description: 'Antivirus + EDR auf allen Endgeräten. Application Whitelisting auf Servern. USB-Kontrolle.', category: 'Endgerätesicherheit', control_type: 'preventive', status: 'planned', owner_id: managerId, created_at: daysAgo(60), updated_at: daysAgo(5) },
+    { id: ctrlDpiaId, tenant_id: tenantId, code: 'CTRL-009', title: 'Datenschutz-Folgenabschätzung (DSFA)', description: 'Durchführung von DSFA für alle Verarbeitungstätigkeiten mit hohem Risiko gemäß Art. 35 DSGVO.', category: 'Datenschutz', control_type: 'preventive', status: 'implemented', owner_id: adminId, created_at: daysAgo(100), updated_at: daysAgo(25) },
+    { id: ctrlBreachNotifId, tenant_id: tenantId, code: 'CTRL-010', title: 'Meldeprozess Datenschutzverletzungen', description: 'Prozess zur Meldung von Datenschutzverletzungen an Aufsichtsbehörde binnen 72h gemäß Art. 33 DSGVO.', category: 'Datenschutz', control_type: 'corrective', status: 'implemented', owner_id: managerId, created_at: daysAgo(100), updated_at: daysAgo(20) },
+    { id: ctrlAssetInventoryId, tenant_id: tenantId, code: 'CTRL-011', title: 'Asset-Inventarisierung', description: 'Vollständiges CMDB mit automatischer Discovery. Quartalsweise Inventur. Verantwortliche pro Asset.', category: 'Asset Management', control_type: 'detective', status: 'verified', owner_id: adminId, created_at: daysAgo(200), updated_at: daysAgo(3) },
+    { id: ctrlChangeCtrlId, tenant_id: tenantId, code: 'CTRL-012', title: 'Change-Management-Prozess', description: 'Formaler Change-Prozess mit CAB-Genehmigung, Rollback-Plan und Post-Implementation-Review.', category: 'Change Management', control_type: 'preventive', status: 'implemented', owner_id: managerId, created_at: daysAgo(180), updated_at: daysAgo(10) },
+  ]);
+  logger.info('  ✓ Compliance Controls: 12 controls');
+
+  // Requirement → Control Mappings
+  await db.insert(requirementControlMappings).values([
+    { requirement_id: reqA5_1Id, control_id: ctrlAccessMgmtId, tenant_id: tenantId, coverage: 'full', notes: 'ISMS-Richtlinie definiert Zugriffskontrollen' },
+    { requirement_id: reqA8_1Id, control_id: ctrlEndpointProtId, tenant_id: tenantId, coverage: 'partial', notes: 'EDR-Rollout noch in Planung' },
+    { requirement_id: reqA8_2Id, control_id: ctrlAccessMgmtId, tenant_id: tenantId, coverage: 'full', notes: 'PAM für alle privilegierten Accounts' },
+    { requirement_id: reqA8_3Id, control_id: ctrlAccessMgmtId, tenant_id: tenantId, coverage: 'full', notes: 'RBAC + Least Privilege' },
+    { requirement_id: reqA12_1Id, control_id: ctrlBackupId, tenant_id: tenantId, coverage: 'full', notes: 'Tägliche Backups + monatliche Restore-Tests' },
+    { requirement_id: reqA12_3Id, control_id: ctrlMonitoringId, tenant_id: tenantId, coverage: 'full', notes: 'Checkmk + Prometheus mit Alerting' },
+    { requirement_id: reqDsgvo32Id, control_id: ctrlEncryptionId, tenant_id: tenantId, coverage: 'full', notes: 'AES-256 at-rest, TLS 1.3 in-transit' },
+    { requirement_id: reqDsgvo32Id, control_id: ctrlNetworkSegId, tenant_id: tenantId, coverage: 'full', notes: 'Netzwerksegmentierung als TOM' },
+    { requirement_id: reqDsgvo33Id, control_id: ctrlBreachNotifId, tenant_id: tenantId, coverage: 'full', notes: '72h-Meldeprozess definiert' },
+    { requirement_id: reqDsgvo33Id, control_id: ctrlIncidentResponseId, tenant_id: tenantId, coverage: 'full', notes: 'IR-Plan inkl. Meldekette' },
+    { requirement_id: reqDsgvo35Id, control_id: ctrlDpiaId, tenant_id: tenantId, coverage: 'full', notes: 'DSFA-Prozess für Hochrisiko-Verarbeitungen' },
+    { requirement_id: reqDsgvo25Id, control_id: ctrlEncryptionId, tenant_id: tenantId, coverage: 'partial', notes: 'Privacy by Design — Verschlüsselung' },
+    { requirement_id: reqA5_2Id, control_id: ctrlAssetInventoryId, tenant_id: tenantId, coverage: 'full', notes: 'Asset-Owner in CMDB definiert' },
+    { requirement_id: reqA6_1Id, control_id: ctrlAccessMgmtId, tenant_id: tenantId, coverage: 'partial', notes: 'Screening vor Zugriffsvergabe' },
+  ]);
+  logger.info('  ✓ Requirement-Control Mappings: 14 mappings');
+
+  // ─── Compliance Audits (Evo-4B) ───────────────────────────
+  const auditIso2024Id = uuidv4();
+  const auditDsgvo2025Id = uuidv4();
+  const auditBsiId = uuidv4();
+
+  await db.insert(complianceAudits).values([
+    { id: auditIso2024Id, tenant_id: tenantId, name: 'ISO 27001 Rezertifizierung 2024', framework_id: fwIso27001Id, audit_type: 'certification', status: 'completed', auditor: 'TÜV Süd — Dr. Klaus Weber', start_date: '2024-09-15', end_date: '2024-10-10', scope: 'Gesamtes ISMS inkl. RZ Frankfurt', notes: 'Rezertifizierung erfolgreich. 2 Minor Findings, 1 Observation.', created_at: daysAgo(180), updated_at: daysAgo(150) },
+    { id: auditDsgvo2025Id, tenant_id: tenantId, name: 'DSGVO Compliance Review Q1/2026', framework_id: fwDsgvoId, audit_type: 'internal', status: 'in_progress', auditor: 'Maria Manager (DSB)', start_date: '2026-02-01', end_date: null, scope: 'Alle Verarbeitungstätigkeiten mit personenbezogenen Daten', notes: 'Internes Review der DSGVO-Konformität.', created_at: daysAgo(40), updated_at: daysAgo(2) },
+    { id: auditBsiId, tenant_id: tenantId, name: 'BSI IT-Grundschutz Basis-Check', framework_id: fwIso27001Id, audit_type: 'external', status: 'planned', auditor: 'datenschutz-nord GmbH', start_date: '2026-06-01', end_date: '2026-06-30', scope: 'Kritische Infrastruktur: RZ, Netzwerk, Datenbanken', notes: null, created_at: daysAgo(7), updated_at: daysAgo(7) },
+  ]);
+
+  // Audit Findings
+  await db.insert(auditFindings).values([
+    { id: uuidv4(), audit_id: auditIso2024Id, tenant_id: tenantId, control_id: ctrlPatchMgmtId, requirement_id: reqA8_1Id, severity: 'minor', title: 'Patch-Compliance unter Zielwert', description: 'Patch-Compliance-Rate liegt bei 87% statt der geforderten 95%. Insbesondere Legacy-Systeme betroffen.', status: 'in_remediation', remediation_plan: 'Automatisiertes Patching via Ansible bis Q2/2025. Legacy-Systeme in separates VLAN isoliert.', due_date: '2025-06-30', resolved_at: null, resolved_by: null, created_at: daysAgo(150), updated_at: daysAgo(30) },
+    { id: uuidv4(), audit_id: auditIso2024Id, tenant_id: tenantId, control_id: ctrlEndpointProtId, requirement_id: reqA8_1Id, severity: 'minor', title: 'Endpoint Protection nicht flächendeckend', description: 'EDR-Agent fehlt auf 12 von 230 Endgeräten (5.2%). Hauptsächlich BYOD-Geräte.', status: 'resolved', remediation_plan: 'BYOD-Policy verschärft. NAC implementiert.', due_date: '2025-03-31', resolved_at: daysAgo(60), resolved_by: adminId, created_at: daysAgo(150), updated_at: daysAgo(60) },
+    { id: uuidv4(), audit_id: auditIso2024Id, tenant_id: tenantId, control_id: null, requirement_id: reqA5_2Id, severity: 'observation', title: 'Rollen-Dokumentation unvollständig', description: 'Sicherheitsrollen sind definiert, aber die Dokumentation der Verantwortlichkeitsmatrix ist veraltet.', status: 'resolved', remediation_plan: 'RACI-Matrix aktualisiert und im Wiki veröffentlicht.', due_date: '2025-01-31', resolved_at: daysAgo(120), resolved_by: managerId, created_at: daysAgo(150), updated_at: daysAgo(120) },
+    { id: uuidv4(), audit_id: auditDsgvo2025Id, tenant_id: tenantId, control_id: ctrlDpiaId, requirement_id: reqDsgvo35Id, severity: 'major', title: 'DSFA für HR-System ausstehend', description: 'Für das HR-System mit umfangreicher Mitarbeiterdatenverarbeitung wurde noch keine DSFA durchgeführt.', status: 'open', remediation_plan: null, due_date: '2026-04-30', resolved_at: null, resolved_by: null, created_at: daysAgo(10), updated_at: daysAgo(10) },
+    { id: uuidv4(), audit_id: auditDsgvo2025Id, tenant_id: tenantId, control_id: ctrlBreachNotifId, requirement_id: reqDsgvo30Id, severity: 'minor', title: 'Verarbeitungsverzeichnis unvollständig', description: 'Das Verzeichnis der Verarbeitungstätigkeiten enthält nicht alle Cloud-Dienste (SaaS).', status: 'in_remediation', remediation_plan: 'Inventarisierung aller SaaS-Dienste läuft. Verzeichnis wird bis Ende März ergänzt.', due_date: '2026-03-31', resolved_at: null, resolved_by: null, created_at: daysAgo(10), updated_at: daysAgo(3) },
+  ]);
+  logger.info('  ✓ Compliance Audits: 3 audits + 5 findings');
+
+  // ─── Compliance Evidence (Evo-4C) ─────────────────────────
+  await db.insert(complianceEvidence).values([
+    { id: uuidv4(), tenant_id: tenantId, control_id: ctrlAccessMgmtId, evidence_type: 'document', title: 'ISMS-Richtlinie v2.1', url: 'https://wiki.internal/isms/access-policy-v2.1.pdf', description: 'Aktuelle Zugriffskontrollrichtlinie, genehmigt am 15.01.2025.', uploaded_at: daysAgo(60), uploaded_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, control_id: ctrlBackupId, evidence_type: 'report', title: 'Backup Restore-Test Dezember 2025', url: 'https://wiki.internal/backup/restore-test-2025-12.pdf', description: 'Monatlicher Restore-Test: 100% Erfolgsquote, RTO eingehalten (3h42m vs. 4h Ziel).', uploaded_at: daysAgo(90), uploaded_by: managerId },
+    { id: uuidv4(), tenant_id: tenantId, control_id: ctrlMonitoringId, evidence_type: 'screenshot', title: 'Checkmk Dashboard — Produktionssysteme', url: 'https://monitoring.internal/screenshot-prod-2026-03.png', description: 'Screenshot des Monitoring-Dashboards mit Uptime > 99.9%.', uploaded_at: daysAgo(5), uploaded_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, control_id: ctrlNetworkSegId, evidence_type: 'document', title: 'Netzwerkplan mit VLAN-Segmentierung', url: 'https://wiki.internal/network/vlan-plan-v3.pdf', description: 'Aktueller Netzwerkplan mit allen VLANs und Firewall-Regeln zwischen Segmenten.', uploaded_at: daysAgo(30), uploaded_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, control_id: ctrlEncryptionId, evidence_type: 'test_result', title: 'TLS-Scan Ergebnis März 2026', url: 'https://wiki.internal/security/tls-scan-2026-03.html', description: 'Qualys SSL Labs Scan: A+ Rating für alle externen Endpoints.', uploaded_at: daysAgo(3), uploaded_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, control_id: ctrlChangeCtrlId, evidence_type: 'log', title: 'Change-Management Audit Trail Q4/2025', url: 'https://wiki.internal/change/audit-trail-q4-2025.csv', description: 'Export aller genehmigten Changes aus Q4/2025 mit CAB-Protokollen.', uploaded_at: daysAgo(45), uploaded_by: managerId },
+  ]);
+  logger.info('  ✓ Compliance Evidence: 6 evidence items');
+
+  // ─── Asset Regulatory Flags ───────────────────────────────
+  await db.insert(assetRegulatoryFlags).values([
+    { asset_id: assetDb01Id, framework_id: fwIso27001Id, tenant_id: tenantId, reason: 'Verarbeitet geschäftskritische Daten — ISO 27001 Scope', flagged_at: daysAgo(180), flagged_by: adminId },
+    { asset_id: assetDb01Id, framework_id: fwDsgvoId, tenant_id: tenantId, reason: 'Speichert personenbezogene Daten (Kundendaten)', flagged_at: daysAgo(180), flagged_by: adminId },
+    { asset_id: assetMysqlId, framework_id: fwDsgvoId, tenant_id: tenantId, reason: 'Datenbank mit personenbezogenen Daten', flagged_at: daysAgo(150), flagged_by: adminId },
+    { asset_id: assetErpId, framework_id: fwDsgvoId, tenant_id: tenantId, reason: 'SAP ERP verarbeitet HR- und Kundendaten', flagged_at: daysAgo(100), flagged_by: managerId },
+    { asset_id: assetErpId, framework_id: fwIso27001Id, tenant_id: tenantId, reason: 'Geschäftskritisches System — ISO 27001 Scope', flagged_at: daysAgo(100), flagged_by: managerId },
+    { asset_id: assetFwId, framework_id: fwIso27001Id, tenant_id: tenantId, reason: 'Perimeter-Sicherheit — ISO 27001 Annex A.13', flagged_at: daysAgo(200), flagged_by: adminId },
+    { asset_id: assetAdControllerId, framework_id: fwIso27001Id, tenant_id: tenantId, reason: 'Zentrales Identitätsmanagement — ISO 27001 A.9', flagged_at: daysAgo(180), flagged_by: adminId },
+  ]);
+  logger.info('  ✓ Asset Regulatory Flags: 7 flags');
+
+  // ─── Seed Evo Types (must run before classifications/capacities) ─────
+  // seedEvoTypes() creates classification models/values and capacity types.
+  // It's idempotent (checks if types already exist), so safe to call here.
+  await seedEvoTypes();
+
+  // ─── Asset Classifications (Evo-1C) ───────────────────────
+
+  const allClassValues = await db.select({
+    id: classificationValues.id,
+    model_id: classificationValues.model_id,
+    value: classificationValues.value,
+  }).from(classificationValues);
+
+  // Note: classification models are created in seedEvoTypes, not in doSeed.
+  // The models/values may not exist yet at this point.
+  // We check and only seed classifications if values exist.
+  if (allClassValues.length > 0) {
+    const cvByValue = (val: string) => allClassValues.find(v => v.value === val);
+
+    const classificationInserts: Array<{
+      asset_id: string;
+      value_id: string;
+      tenant_id: string;
+      justification: string;
+      classified_by: string;
+      classified_at: string;
+    }> = [];
+
+    const addClassification = (assetId: string, valueKey: string, justification: string) => {
+      const cv = cvByValue(valueKey);
+      if (cv) {
+        classificationInserts.push({
+          asset_id: assetId,
+          value_id: cv.id,
+          tenant_id: tenantId,
+          justification,
+          classified_by: adminId,
+          classified_at: daysAgo(60),
+        });
+      }
+    };
+
+    // Database Server — high confidentiality, high integrity, very high availability, critical
+    addClassification(assetDb01Id, 'confidentiality_high', 'Speichert Kundendaten und Geschäftsdaten');
+    addClassification(assetDb01Id, 'integrity_high', 'Datenintegrität geschäftskritisch');
+    addClassification(assetDb01Id, 'availability_very_high', '24/7 Verfügbarkeit erforderlich');
+    addClassification(assetDb01Id, 'critical', 'Geschäftskritisches System');
+    addClassification(assetDb01Id, 'hoch', 'BSI Schutzbedarf: Hoch');
+
+    // Edge Firewall — high confidentiality, high integrity, very high availability
+    addClassification(assetFwId, 'confidentiality_high', 'Perimeter-Sicherheitskomponente');
+    addClassification(assetFwId, 'availability_very_high', 'Ausfall = kein Internet/VPN');
+    addClassification(assetFwId, 'critical', 'Geschäftskritische Infrastruktur');
+    addClassification(assetFwId, 'sehr_hoch', 'BSI Schutzbedarf: Sehr hoch');
+
+    // ERP System — high everything
+    addClassification(assetErpId, 'confidentiality_high', 'HR- und Finanzdaten');
+    addClassification(assetErpId, 'integrity_very_high', 'Finanz- und Buchungsdaten');
+    addClassification(assetErpId, 'availability_high', 'Arbeitszeit-kritisch');
+    addClassification(assetErpId, 'critical', 'Geschäftskritisches ERP');
+    addClassification(assetErpId, 'sehr_hoch', 'BSI Schutzbedarf: Sehr hoch');
+
+    // Web Servers — medium confidentiality, normal availability
+    addClassification(assetWeb01Id, 'confidentiality_normal', 'Öffentliche Webanwendung');
+    addClassification(assetWeb01Id, 'availability_high', 'Kunden-facing Service');
+    addClassification(assetWeb01Id, 'high', 'Wichtiges Kundensystem');
+    addClassification(assetWeb01Id, 'normal', 'BSI Schutzbedarf: Normal');
+
+    // NAS Backup — low confidentiality, high integrity
+    addClassification(assetNasId, 'integrity_high', 'Backup-Datenintegrität');
+    addClassification(assetNasId, 'availability_normal', 'Nicht zeitkritisch');
+    addClassification(assetNasId, 'medium', 'Mittlere Business-Kritikalität');
+
+    // Dev VM — low everything
+    addClassification(assetDevVmId, 'confidentiality_low', 'Nur Testdaten');
+    addClassification(assetDevVmId, 'availability_low', 'Entwicklungssystem');
+    addClassification(assetDevVmId, 'low', 'Geringe Business-Kritikalität');
+    addClassification(assetDevVmId, 'normal', 'BSI Schutzbedarf: Normal');
+
+    if (classificationInserts.length > 0) {
+      await db.insert(assetClassifications).values(classificationInserts);
+      logger.info(`  ✓ Asset Classifications: ${classificationInserts.length} classification assignments`);
+    }
+  }
+
+  // ─── Asset Capacities (Evo-3C) ────────────────────────────
+  const allCapTypes = await db.select({
+    id: capacityTypes.id,
+    slug: capacityTypes.slug,
+  }).from(capacityTypes).where(eq(capacityTypes.tenant_id, tenantId));
+
+  if (allCapTypes.length > 0) {
+    const capBySlug = (slug: string) => allCapTypes.find(c => c.slug === slug);
+
+    const capacityInserts: Array<{
+      id: string;
+      asset_id: string;
+      capacity_type_id: string;
+      tenant_id: string;
+      direction: string;
+      total: string;
+      allocated: string;
+      reserved: string;
+      created_at: string;
+      updated_at: string;
+    }> = [];
+
+    const addCap = (assetId: string, slug: string, dir: string, total: string, allocated: string, reserved: string) => {
+      const ct = capBySlug(slug);
+      if (ct) {
+        capacityInserts.push({
+          id: uuidv4(),
+          asset_id: assetId,
+          capacity_type_id: ct.id,
+          tenant_id: tenantId,
+          direction: dir,
+          total,
+          allocated,
+          reserved,
+          created_at: daysAgo(30),
+          updated_at: now,
+        });
+      }
+    };
+
+    // ESXi Host 01 — provides compute
+    addCap(assetEsxi01Id, 'cpu_cores', 'provides', '64', '48', '8');
+    addCap(assetEsxi01Id, 'ram_gb', 'provides', '512', '384', '64');
+    addCap(assetEsxi01Id, 'storage_gb', 'provides', '4000', '3200', '400');
+
+    // ESXi Host 02 — provides compute
+    addCap(assetEsxi02Id, 'cpu_cores', 'provides', '64', '36', '12');
+    addCap(assetEsxi02Id, 'ram_gb', 'provides', '512', '280', '64');
+
+    // SAN — provides storage
+    addCap(assetSanId, 'storage_gb', 'provides', '102400', '78000', '10000');
+    addCap(assetSanId, 'iops', 'provides', '100000', '65000', '15000');
+
+    // Rack — provides rack units and power
+    addCap(assetRackId, 'rack_units', 'provides', '42', '35', '3');
+    addCap(assetRackId, 'power_watts', 'provides', '10000', '7500', '1000');
+
+    // Core Switch — provides ports and bandwidth
+    addCap(assetSwId, 'ports', 'provides', '48', '38', '4');
+    addCap(assetSwId, 'bandwidth_mbps', 'provides', '10000', '6500', '1500');
+
+    // Web01 VM — consumes compute
+    addCap(assetWeb01Id, 'cpu_cores', 'consumes', '4', '4', '0');
+    addCap(assetWeb01Id, 'ram_gb', 'consumes', '16', '16', '0');
+
+    if (capacityInserts.length > 0) {
+      await db.insert(assetCapacities).values(capacityInserts);
+      logger.info(`  ✓ Asset Capacities: ${capacityInserts.length} capacity records`);
+    }
+  }
+
+  // ─── Service Profiles (Evo-2A) ────────────────────────────
+  const spEnterprise24Id = uuidv4();
+  const spStandardId = uuidv4();
+  const spBasicId = uuidv4();
+
+  await db.insert(serviceProfiles).values([
+    {
+      id: spEnterprise24Id,
+      tenant_id: tenantId,
+      name: 'Enterprise 24/7',
+      description: 'Premium-Profil für geschäftskritische Services. 24/7 Support, garantierte Reaktionszeiten, dedizierte Ansprechpartner.',
+      dimensions: JSON.stringify({
+        support_hours: '24/7',
+        response_time: '30min',
+        resolution_time: '4h',
+        dedicated_contact: true,
+        proactive_monitoring: true,
+        monthly_reporting: true,
+      }),
+      sla_definition_id: slaGoldId,
+      is_active: 1,
+      created_at: daysAgo(120),
+      updated_at: daysAgo(10),
+    },
+    {
+      id: spStandardId,
+      tenant_id: tenantId,
+      name: 'Standard Business',
+      description: 'Standard-Profil für reguläre Business Services. Geschäftszeiten-Support.',
+      dimensions: JSON.stringify({
+        support_hours: 'Mo-Fr 08:00-18:00',
+        response_time: '4h',
+        resolution_time: '24h',
+        dedicated_contact: false,
+        proactive_monitoring: true,
+        monthly_reporting: false,
+      }),
+      sla_definition_id: slaSilverId,
+      is_active: 1,
+      created_at: daysAgo(120),
+      updated_at: daysAgo(10),
+    },
+    {
+      id: spBasicId,
+      tenant_id: tenantId,
+      name: 'Basic',
+      description: 'Basis-Profil für nicht-kritische Services. Best-Effort Support.',
+      dimensions: JSON.stringify({
+        support_hours: 'Mo-Fr 09:00-17:00',
+        response_time: '8h',
+        resolution_time: '48h',
+        dedicated_contact: false,
+        proactive_monitoring: false,
+        monthly_reporting: false,
+      }),
+      sla_definition_id: slaBronzeId,
+      is_active: 1,
+      created_at: daysAgo(120),
+      updated_at: daysAgo(10),
+    },
+  ]);
+
+  // Service Entitlements
+  await db.insert(serviceEntitlements).values([
+    { id: uuidv4(), tenant_id: tenantId, customer_id: customerBankId, service_id: svcDatabaseId, profile_id: spEnterprise24Id, scope: JSON.stringify({ included: ['PostgreSQL', 'MySQL', 'Redis'], excluded: ['MongoDB'], addon: [] }), effective_from: '2025-01-01', effective_until: '2026-12-31', created_at: daysAgo(120) },
+    { id: uuidv4(), tenant_id: tenantId, customer_id: customerBankId, service_id: svcSecurityId, profile_id: spEnterprise24Id, scope: JSON.stringify({ included: ['Firewall', 'IDS', 'PAM'], excluded: [], addon: ['Penetrationstest'] }), effective_from: '2025-01-01', effective_until: '2026-12-31', created_at: daysAgo(120) },
+    { id: uuidv4(), tenant_id: tenantId, customer_id: customerAcmeId, service_id: svcWebHostingId, profile_id: spStandardId, scope: JSON.stringify({ included: ['Web Hosting', 'SSL'], excluded: ['CDN'], addon: [] }), effective_from: '2025-06-01', effective_until: '2026-05-31', created_at: daysAgo(90) },
+    { id: uuidv4(), tenant_id: tenantId, customer_id: customerStadtwerkeId, service_id: svcEmailId, profile_id: spBasicId, scope: JSON.stringify({ included: ['E-Mail Basic'], excluded: ['Archivierung'], addon: [] }), effective_from: '2026-01-01', effective_until: null, created_at: daysAgo(60) },
+  ]);
+  logger.info('  ✓ Service Profiles: 3 profiles + 4 entitlements');
+
+  // ─── Escalation Rules ─────────────────────────────────────
+  await db.insert(escalationRules).values([
+    { id: uuidv4(), tenant_id: tenantId, name: 'SLA 80% → 2nd Level', ticket_type: null, priority: null, sla_threshold_pct: 80, target_group_id: opsGroupId, escalation_level: 1, is_active: 1, created_at: daysAgo(120), updated_at: daysAgo(30) },
+    { id: uuidv4(), tenant_id: tenantId, name: 'Critical 90% → Operations', ticket_type: 'incident', priority: 'critical', sla_threshold_pct: 90, target_group_id: opsGroupId, escalation_level: 2, is_active: 1, created_at: daysAgo(120), updated_at: daysAgo(30) },
+    { id: uuidv4(), tenant_id: tenantId, name: 'SLA Breach → Development', ticket_type: null, priority: 'high', sla_threshold_pct: 100, target_group_id: devGroupId, escalation_level: 3, is_active: 1, created_at: daysAgo(120), updated_at: daysAgo(30) },
+  ]);
+  logger.info('  ✓ Escalation Rules: 3 rules');
+
+  // ─── Monitoring Sources ───────────────────────────────────
+  await db.insert(monitoringSources).values([
+    { id: uuidv4(), tenant_id: tenantId, name: 'Checkmk Production', type: 'checkmk_v2', config: JSON.stringify({ base_url: 'https://monitoring.internal/demo/check_mk', site: 'prod', username: 'automation', secret: '***' }), webhook_secret: uuidv4(), is_active: 1, created_at: daysAgo(200) },
+    { id: uuidv4(), tenant_id: tenantId, name: 'Prometheus Cluster', type: 'prometheus', config: JSON.stringify({ base_url: 'https://prometheus.internal:9090', scrape_interval: '15s' }), webhook_secret: uuidv4(), is_active: 1, created_at: daysAgo(150) },
+  ]);
+  logger.info('  ✓ Monitoring Sources: 2 sources (Checkmk, Prometheus)');
+
+  // ─── CAB Data on Change Tickets ─────────────────────────
+  // Update extended change tickets with CAB fields
+  const changeTicketUpdates = [
+    { number: 'CHG-2026-00002', risk_level: 'medium', risk_likelihood: 'possible', risk_impact: 'medium', cab_required: 1, cab_decision: 'approved', cab_decision_by: managerId, cab_decision_at: daysAgo(1), cab_notes: 'Rolling Update genehmigt. Rollback-Plan vorhanden.', planned_start: new Date(Date.now() + 5 * 86400000).toISOString(), planned_end: new Date(Date.now() + 5 * 86400000 + 4 * 3600000).toISOString(), implementation: '1. Drain Nodes, 2. Upgrade Control Plane, 3. Upgrade Worker Nodes, 4. Verify', rollback: 'kubectl rollback to v1.29 snapshot' },
+    { number: 'CHG-2026-00003', risk_level: 'high', risk_likelihood: 'possible', risk_impact: 'high', cab_required: 1, cab_decision: null, cab_decision_by: null, cab_decision_at: null, cab_notes: null, planned_start: new Date(Date.now() + 14 * 86400000).toISOString(), planned_end: new Date(Date.now() + 14 * 86400000 + 8 * 3600000).toISOString(), implementation: '1. DC Promotion, 2. FSMO Transfer, 3. DNS Update, 4. Replikation prüfen', rollback: 'FSMO zurück transferieren, alte Gesamtstruktur reaktivieren' },
+    { number: 'CHG-2026-00004', risk_level: 'critical', risk_likelihood: 'likely', risk_impact: 'critical', cab_required: 1, cab_decision: 'approved', cab_decision_by: adminId, cab_decision_at: daysAgo(0), cab_notes: 'Notfall-Change genehmigt. CVE kritisch, sofortiges Patchen erforderlich.', planned_start: now, planned_end: new Date(Date.now() + 4 * 3600000).toISOString(), implementation: 'apt update && apt upgrade elasticsearch', rollback: 'Snapshot restore von vor dem Patch' },
+    { number: 'CHG-2026-00005', risk_level: 'low', risk_likelihood: 'unlikely', risk_impact: 'low', cab_required: 0, cab_decision: null, cab_decision_by: null, cab_decision_at: null, cab_notes: null, planned_start: new Date(Date.now() + 10 * 86400000).toISOString(), planned_end: new Date(Date.now() + 10 * 86400000 + 2 * 3600000).toISOString(), implementation: 'NetApp Shelf hinzufügen, Aggregate erweitern', rollback: 'Shelf entfernen, kein Datenverlust' },
+    { number: 'CHG-2026-00006', risk_level: 'low', risk_likelihood: 'unlikely', risk_impact: 'low', cab_required: 0, cab_decision: null, cab_decision_by: null, cab_decision_at: null, cab_notes: null, planned_start: daysAgo(11), planned_end: daysAgo(10), implementation: 'certbot renew --force-renewal', rollback: 'Backup-Zertifikate einspielen' },
+    { number: 'CHG-2026-00007', risk_level: 'medium', risk_likelihood: 'possible', risk_impact: 'medium', cab_required: 1, cab_decision: 'deferred', cab_decision_by: managerId, cab_decision_at: daysAgo(1), cab_notes: 'Verschoben auf nächste Woche. Erst E2E-Tests im Staging abschließen.', planned_start: new Date(Date.now() + 7 * 86400000).toISOString(), planned_end: new Date(Date.now() + 7 * 86400000 + 6 * 3600000).toISOString(), implementation: '1. Backup, 2. gitlab-ctl upgrade, 3. DB Migrate, 4. Verify', rollback: 'gitlab-ctl restore from backup' },
+  ];
+
+  for (const chg of changeTicketUpdates) {
+    await db.update(tickets)
+      .set({
+        change_risk_level: chg.risk_level,
+        change_risk_likelihood: chg.risk_likelihood,
+        change_risk_impact: chg.risk_impact,
+        change_planned_start: chg.planned_start,
+        change_planned_end: chg.planned_end,
+        change_implementation: chg.implementation,
+        change_rollback_plan: chg.rollback,
+        cab_required: chg.cab_required,
+        cab_decision: chg.cab_decision,
+        cab_decision_by: chg.cab_decision_by,
+        cab_decision_at: chg.cab_decision_at,
+        cab_notes: chg.cab_notes,
+      })
+      .where(eq(tickets.ticket_number, chg.number));
+  }
+  logger.info('  ✓ CAB Data: 7 changes with risk assessment, 3 CAB decisions (2 approved, 1 deferred)');
+
+  // ─── Known Errors (KEDB) ────────────────────────────────
+  // Link to problem tickets: PRB-2026-00001 (DB memory), PRB-2026-00002 (DNS timeout), PRB-2026-00003 (Redis failover)
+  const prbDbMemoryId = sampleTickets[5]!.id; // PRB-2026-00001 (index 5 = last base ticket)
+  const prbDnsId = extendedTickets[13]!.id;   // PRB-2026-00002
+  const prbRedisId = extendedTickets[14]!.id; // PRB-2026-00003
+
+  await db.insert(knownErrors).values([
+    {
+      id: uuidv4(),
+      tenant_id: tenantId,
+      title: 'MySQL InnoDB Buffer Pool erschöpft bei großen Reports',
+      symptom: 'Datenbank-Cluster zeigt >95% Speicherauslastung wenn mehrere große Reports gleichzeitig laufen. Queries werden extrem langsam.',
+      workaround: 'Reports nur nacheinander ausführen oder auf Read-Replica umleiten. innodb_buffer_pool_size temporär erhöhen.',
+      root_cause: 'Der InnoDB Buffer Pool ist für die aktuelle Datenmenge unterdimensioniert. Bei parallelen Report-Queries wird der gesamte Buffer Pool invalidiert.',
+      status: 'workaround_available',
+      problem_id: prbDbMemoryId,
+      created_by: managerId,
+      created_at: daysAgo(15),
+      updated_at: daysAgo(3),
+    },
+    {
+      id: uuidv4(),
+      tenant_id: tenantId,
+      title: 'DNS-Resolver Timeout bei internen .local Domains',
+      symptom: 'Sporadische DNS-Timeouts (2-3x pro Woche) bei Auflösung interner .local Domains. Betrifft alle Dienste die interne Namensauflösung nutzen.',
+      workaround: 'Betroffene Hosts: /etc/hosts mit statischen Einträgen für kritische Services ergänzen. DNS-Cache TTL auf Clients erhöhen.',
+      root_cause: null,
+      status: 'identified',
+      problem_id: prbDnsId,
+      created_by: adminId,
+      created_at: daysAgo(12),
+      updated_at: daysAgo(5),
+    },
+    {
+      id: uuidv4(),
+      tenant_id: tenantId,
+      title: 'Redis Sentinel Failover schlägt bei geplanter Wartung fehl',
+      symptom: 'Bei geplantem Herunterfahren des Redis-Masters übernimmt der Sentinel nicht korrekt. Clients verlieren Verbindung für 30-60 Sekunden.',
+      workaround: 'Vor Wartung manuell: redis-cli -p 26379 SENTINEL FAILOVER mymaster. Danach 10s warten bevor Master gestoppt wird.',
+      root_cause: 'Sentinel-Konfiguration hat down-after-milliseconds auf 30000ms (30s). Bei geplanter Wartung ist das zu lang.',
+      status: 'workaround_available',
+      problem_id: prbRedisId,
+      created_by: managerId,
+      created_at: daysAgo(8),
+      updated_at: daysAgo(2),
+    },
+    {
+      id: uuidv4(),
+      tenant_id: tenantId,
+      title: 'Outlook-Kalender-Sync bricht bei großen Serien ab',
+      symptom: 'Kalender mit wiederkehrenden Terminen (>100 Instanzen) synchronisieren nicht korrekt. Änderungen an Einzelterminen gehen verloren.',
+      workaround: 'Betroffene Serien löschen und neu erstellen mit max. 52 Instanzen (1 Jahr).',
+      root_cause: null,
+      status: 'identified',
+      problem_id: null,
+      created_by: agentId,
+      created_at: daysAgo(20),
+      updated_at: daysAgo(20),
+    },
+    {
+      id: uuidv4(),
+      tenant_id: tenantId,
+      title: 'VPN-Client trennt nach Standby auf macOS',
+      symptom: 'Nach dem Aufwachen aus dem Standby verbindet sich der VPN-Client auf macOS nicht automatisch neu. Manuelle Neuverbindung erforderlich.',
+      workaround: 'VPN-Client nach Standby manuell neu starten oder Auto-Reconnect in den Client-Einstellungen aktivieren (Einstellungen > Netzwerk > Erweitert).',
+      root_cause: 'macOS Sonoma hat das Netzwerk-Handling beim Aufwachen geändert. Der VPN-Client erkennt die Netzwerkänderung nicht.',
+      status: 'resolved',
+      problem_id: null,
+      created_by: agentId,
+      created_at: daysAgo(45),
+      updated_at: daysAgo(10),
+    },
+  ]);
+  logger.info('  ✓ Known Errors: 5 KEDB entries (2 workaround_available, 2 identified, 1 resolved)');
+
+  // ─── Security & Endpoint Assets ─────────────────────────
+  const assetWafId = uuidv4();
+  const assetSiemId = uuidv4();
+  const assetIdsId = uuidv4();
+  const assetDesktop01Id = uuidv4();
+  const assetDesktop02Id = uuidv4();
+  const assetTabletId = uuidv4();
+  const assetMfpId = uuidv4();
+
+  await db.insert(assets).values([
+    { id: assetWafId, tenant_id: tenantId, asset_type: 'network_firewall', name: 'waf-web-01', display_name: 'Web Application Firewall', status: 'active', ip_address: '10.0.0.15', location: 'DMZ Rack 02', environment: 'production', attributes: JSON.stringify({ vendor: 'F5', model: 'BIG-IP ASM', firmware: '17.1.0', function: 'WAF', protected_services: ['web-srv-01', 'web-srv-02', 'erp.internal'] }), created_at: daysAgo(200), updated_at: daysAgo(5), created_by: adminId },
+    { id: assetSiemId, tenant_id: tenantId, asset_type: 'application', name: 'siem-splunk-01', display_name: 'Splunk SIEM', status: 'active', ip_address: '10.0.5.10', location: 'Serverraum A, Rack 03', environment: 'production', attributes: JSON.stringify({ vendor: 'Splunk', version: '9.2.0', function: 'SIEM', daily_ingestion_gb: 50, retention_days: 365, agents: 42 }), created_at: daysAgo(300), updated_at: daysAgo(2), created_by: adminId },
+    { id: assetIdsId, tenant_id: tenantId, asset_type: 'network_firewall', name: 'ids-snort-01', display_name: 'Snort IDS/IPS', status: 'active', ip_address: '10.0.0.16', location: 'DMZ Rack 02', environment: 'production', attributes: JSON.stringify({ vendor: 'Snort', version: '3.1.72', function: 'IDS/IPS', mode: 'inline', rules_updated: daysAgo(1) }), created_at: daysAgo(180), updated_at: daysAgo(1), created_by: adminId },
+    { id: assetDesktop01Id, tenant_id: tenantId, asset_type: 'workstation', name: 'ws-buchhaltung-01', display_name: 'Arbeitsplatz Buchhaltung 1', status: 'active', ip_address: '10.0.10.101', location: 'Büro EG, Platz 1', environment: 'production', attributes: JSON.stringify({ manufacturer: 'Dell', model: 'OptiPlex 7090', os: 'Windows 11 Pro', cpu: 'Intel i7-11700', ram_gb: 32, disk_gb: 512 }), created_at: daysAgo(400), updated_at: daysAgo(30), created_by: agentId },
+    { id: assetDesktop02Id, tenant_id: tenantId, asset_type: 'workstation', name: 'ws-empfang-01', display_name: 'Arbeitsplatz Empfang', status: 'active', ip_address: '10.0.10.102', location: 'Empfang', environment: 'production', attributes: JSON.stringify({ manufacturer: 'HP', model: 'ProDesk 400 G9', os: 'Windows 11 Pro', cpu: 'Intel i5-12500', ram_gb: 16, disk_gb: 256 }), created_at: daysAgo(350), updated_at: daysAgo(60), created_by: agentId },
+    { id: assetTabletId, tenant_id: tenantId, asset_type: 'laptop', name: 'tablet-lager-01', display_name: 'Lager-Tablet (iPad)', status: 'active', ip_address: null, location: 'Lager', environment: 'production', attributes: JSON.stringify({ manufacturer: 'Apple', model: 'iPad Pro 12.9"', os: 'iPadOS 17', serial: 'DMPXXX', mdm: 'Jamf Pro', usage: 'Lagerverwaltung/Inventur' }), created_at: daysAgo(200), updated_at: daysAgo(15), created_by: agentId },
+    { id: assetMfpId, tenant_id: tenantId, asset_type: 'printer', name: 'mfp-og1-01', display_name: 'Multifunktionsdrucker OG1', status: 'active', ip_address: '10.0.10.200', location: 'OG1 Flur', environment: 'production', attributes: JSON.stringify({ manufacturer: 'Ricoh', model: 'IM C3010', type: 'Multifunktion (Druck/Scan/Kopie)', color: true, duplex: true, network: 'Ethernet + WLAN' }), created_at: daysAgo(250), updated_at: daysAgo(45), created_by: agentId },
+  ]);
+  logger.info('  ✓ Security & Endpoint Assets: 7 (WAF, SIEM, IDS, 2 Workstations, Tablet, MFP)');
+
+  // Relations for security assets
+  await db.insert(assetRelations).values([
+    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetWafId, target_asset_id: assetFwId, relation_type: 'connected_to', properties: JSON.stringify({ note: 'WAF hinter Edge-Firewall' }), created_at: now, created_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetIdsId, target_asset_id: assetSwId, relation_type: 'connected_to', properties: JSON.stringify({ note: 'IDS am Mirror-Port des Core-Switch' }), created_at: now, created_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetSiemId, target_asset_id: assetEsxi01Id, relation_type: 'runs_on', properties: '{}', created_at: now, created_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetWeb01Id, target_asset_id: assetWafId, relation_type: 'depends_on', properties: JSON.stringify({ note: 'Web-Traffic läuft durch WAF' }), created_at: now, created_by: adminId },
+  ]);
+  logger.info('  ✓ Security Relations: 4 (WAF, IDS, SIEM connections)');
+
   logger.info('\n✅ Seed completed successfully!');
   logger.info('\n📋 Login credentials:');
   logger.info('   Admin:   admin@opsweave.local / changeme');
@@ -2310,6 +2870,7 @@ export async function seedEvoTypes(): Promise<void> {
     if (existingClassModels.length === 0) {
       const ciaModelId = uuidv4();
       const bcModelId = uuidv4();
+      const sbModelId = uuidv4();
 
       await db.insert(classificationModels).values([
         {
@@ -2326,6 +2887,15 @@ export async function seedEvoTypes(): Promise<void> {
           tenant_id: tenant.id,
           name: 'Business Criticality',
           description: 'Business criticality classification',
+          is_system: 1,
+          is_active: 1,
+          created_at: seedNow,
+        },
+        {
+          id: sbModelId,
+          tenant_id: tenant.id,
+          name: 'Schutzbedarf (BSI)',
+          description: 'BSI IT-Grundschutz Schutzbedarfsfeststellung',
           is_system: 1,
           is_active: 1,
           created_at: seedNow,
@@ -2384,6 +2954,21 @@ export async function seedEvoTypes(): Promise<void> {
           de: lv.value.charAt(0).toUpperCase() + lv.value.slice(1),
           en: lv.value.charAt(0).toUpperCase() + lv.value.slice(1),
         }),
+        color: lv.color,
+        sort_order: idx,
+      })));
+
+      // Schutzbedarf (BSI) values
+      const sbLevels = [
+        { value: 'normal', de: 'Normal', en: 'Normal', color: '#22c55e' },
+        { value: 'hoch', de: 'Hoch', en: 'High', color: '#f59e0b' },
+        { value: 'sehr_hoch', de: 'Sehr hoch', en: 'Very High', color: '#ef4444' },
+      ];
+      await db.insert(classificationValues).values(sbLevels.map((lv, idx) => ({
+        id: uuidv4(),
+        model_id: sbModelId,
+        value: lv.value,
+        label: JSON.stringify({ de: lv.de, en: lv.en }),
         color: lv.color,
         sort_order: idx,
       })));

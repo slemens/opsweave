@@ -10,6 +10,19 @@ import * as evidenceService from './evidence.service.js';
 import type { CreateComplianceEvidenceInput } from '@opsweave/shared';
 
 /**
+ * GET /api/v1/compliance/evidence
+ * List ALL evidence across all controls.
+ */
+export async function listAllEvidence(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const tenantId = requireTenantId(req);
+  const evidence = await evidenceService.listAllEvidence(tenantId);
+  sendSuccess(res, evidence);
+}
+
+/**
  * GET /api/v1/compliance/controls/:id/evidence
  */
 export async function listEvidence(

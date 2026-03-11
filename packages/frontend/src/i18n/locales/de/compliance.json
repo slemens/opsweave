@@ -130,6 +130,11 @@
     "create_success": "Audit erfolgreich erstellt",
     "update_success": "Audit erfolgreich aktualisiert",
     "finding_created": "Feststellung erfolgreich erstellt",
+    "finding_updated": "Feststellung erfolgreich aktualisiert",
+    "edit_finding": "Feststellung bearbeiten",
+    "remediation_plan": "Maßnahmenplan",
+    "remediation_placeholder": "Beschreiben Sie die geplanten Maßnahmen…",
+    "due_date": "Fälligkeitsdatum",
     "save_error": "Fehler beim Speichern",
     "statuses": {
       "planned": "Geplant",

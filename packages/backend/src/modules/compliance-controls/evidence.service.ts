@@ -17,6 +17,18 @@ function db(): TypedDb {
 // Evidence
 // =============================================================================
 
+export async function listAllEvidence(
+  tenantId: string,
+): Promise<unknown[]> {
+  const d = db();
+  const rows = await d
+    .select()
+    .from(complianceEvidence)
+    .where(eq(complianceEvidence.tenant_id, tenantId))
+    .orderBy(complianceEvidence.uploaded_at);
+  return rows;
+}
+
 export async function listEvidence(
   tenantId: string,
   controlId: string,

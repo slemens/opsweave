@@ -20,6 +20,12 @@ import {
   getCrossFrameworkMappings,
 } from './controls.controller.js';
 
+import {
+  listEvidence,
+  createEvidence,
+  deleteEvidence,
+} from './evidence.controller.js';
+
 const controlRouter = Router();
 
 // =============================================================================
@@ -112,6 +118,39 @@ controlRouter.get(
   '/:id/mappings',
   validateParams(idParamSchema),
   getCrossFrameworkMappings,
+);
+
+// =============================================================================
+// Evidence (per control)
+// =============================================================================
+
+/**
+ * GET /api/v1/compliance/controls/:id/evidence
+ * List evidence for a control.
+ */
+controlRouter.get(
+  '/:id/evidence',
+  validateParams(idParamSchema),
+  listEvidence,
+);
+
+/**
+ * POST /api/v1/compliance/controls/:id/evidence
+ * Create evidence for a control.
+ */
+controlRouter.post(
+  '/:id/evidence',
+  validateParams(idParamSchema),
+  createEvidence,
+);
+
+/**
+ * DELETE /api/v1/compliance/controls/:evidenceId/evidence/:evidenceId
+ * Delete evidence.
+ */
+controlRouter.delete(
+  '/:id/evidence/:evidenceId',
+  deleteEvidence,
 );
 
 export { controlRouter };

@@ -130,6 +130,11 @@
     "create_success": "Audit created successfully",
     "update_success": "Audit updated successfully",
     "finding_created": "Finding created successfully",
+    "finding_updated": "Finding updated successfully",
+    "edit_finding": "Edit Finding",
+    "remediation_plan": "Remediation Plan",
+    "remediation_placeholder": "Describe the planned remediation actions…",
+    "due_date": "Due Date",
     "save_error": "Failed to save",
     "statuses": {
       "planned": "Planned",
