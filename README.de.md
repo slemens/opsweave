@@ -1,5 +1,9 @@
 <p align="center">
-  <img src="docs/public/logo.svg" alt="OpsWeave Logo" width="120" />
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/public/logo-dark.svg" />
+    <source media="(prefers-color-scheme: light)" srcset="docs/public/logo.svg" />
+    <img src="docs/public/logo.svg" alt="OpsWeave Logo" width="120" />
+  </picture>
 </p>
 
 <h1 align="center">OpsWeave</h1>
