@@ -11,11 +11,9 @@ import { apiClient } from '@/api/client';
 import type {
   Asset,
   AssetRelation,
-  AssetType,
   AssetStatus,
   SlaTier,
   Environment,
-  RelationType,
 } from '@opsweave/shared';
 import type { PaginationMeta } from '@opsweave/shared';
 
@@ -29,7 +27,7 @@ export interface AssetListParams {
   sort?: string;
   order?: 'asc' | 'desc';
   q?: string;
-  asset_type?: AssetType;
+  asset_type?: string;
   asset_types?: string; // comma-separated types for category filtering
   status?: AssetStatus;
   sla_tier?: SlaTier;
@@ -102,7 +100,7 @@ export interface FullAssetGraph {
 }
 
 export interface CreateAssetPayload {
-  asset_type: AssetType;
+  asset_type: string;
   name: string;
   display_name: string;
   status?: AssetStatus;
@@ -116,7 +114,7 @@ export interface CreateAssetPayload {
 }
 
 export interface UpdateAssetPayload {
-  asset_type?: AssetType;
+  asset_type?: string;
   name?: string;
   display_name?: string;
   status?: AssetStatus;
@@ -132,7 +130,7 @@ export interface UpdateAssetPayload {
 export interface CreateAssetRelationPayload {
   source_asset_id: string;
   target_asset_id: string;
-  relation_type: RelationType;
+  relation_type: string;
   properties?: Record<string, unknown>;
 }
 
@@ -184,11 +182,17 @@ export function useAsset(id: string) {
   });
 }
 
-export function useAssetRelations(assetId: string) {
+export function useAssetRelations(assetId: string, options?: { as_of?: string }) {
   return useQuery({
-    queryKey: assetKeys.relations(assetId),
+    queryKey: [...assetKeys.relations(assetId), options?.as_of ?? 'all'] as const,
     queryFn: async () => {
-      return apiClient.get<AssetRelationWithDetails[]>(`/assets/${assetId}/relations`);
+      const params: Record<string, string> = {};
+      if (options?.as_of) {
+        params.as_of = options.as_of;
+      }
+      return apiClient.get<AssetRelationWithDetails[]>(`/assets/${assetId}/relations`, {
+        params,
+      });
     },
     enabled: !!assetId,
   });

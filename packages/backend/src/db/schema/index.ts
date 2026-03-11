@@ -19,7 +19,17 @@ export {
 export { customers, customerPortalUsers } from './customers.js';
 
 // Assets & Relations (CMDB DAG)
-export { assets, assetRelations } from './assets.js';
+export {
+  assets,
+  assetRelations,
+  assetTypes,
+  relationTypes,
+  classificationModels,
+  classificationValues,
+  assetClassifications,
+  capacityTypes,
+  assetCapacities,
+} from './assets.js';
 
 // Tickets
 export { tickets, ticketCategories, ticketComments, ticketHistory } from './tickets.js';
@@ -48,6 +58,11 @@ export {
   regulatoryRequirements,
   requirementServiceMappings,
   assetRegulatoryFlags,
+  complianceControls,
+  requirementControlMappings,
+  complianceAudits,
+  auditFindings,
+  complianceEvidence,
 } from './compliance.js';
 
 // Monitoring
@@ -69,13 +84,16 @@ export { notificationPreferences } from './notifications.js';
 export { escalationRules } from './escalation.js';
 
 // SLA Definitions & Assignments
-export { slaDefinitions, slaAssignments } from './sla.js';
+export { slaDefinitions, slaAssignments, serviceProfiles, serviceEntitlements } from './sla.js';
 
 // Audit Log
 export { auditLogs } from './audit.js';
 
 // System (global, no tenant_id)
 export { systemSettings } from './system.js';
+
+// Projects (Evo-2C)
+export { projects, projectAssets } from './projects.js';
 
 // Feedback Board (global, no tenant_id, public)
 export { feedbackEntries } from './feedback.js';

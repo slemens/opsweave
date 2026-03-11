@@ -15,6 +15,10 @@ export interface SlaDefinition {
   business_hours_end: string | null;
   business_days: string;
   priority_overrides: string;
+  rpo_minutes: number | null;
+  rto_minutes: number | null;
+  service_window: string;
+  escalation_matrix: string;
   is_default: number;
   is_active: number;
   created_at: string;
@@ -45,6 +49,10 @@ export interface CreateSlaDefinitionPayload {
   business_hours_end?: string | null;
   business_days?: string;
   priority_overrides?: Record<string, unknown>;
+  rpo_minutes?: number | null;
+  rto_minutes?: number | null;
+  service_window?: Record<string, unknown>;
+  escalation_matrix?: unknown[];
   is_default?: boolean;
 }
 

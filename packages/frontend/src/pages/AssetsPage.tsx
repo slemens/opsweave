@@ -22,26 +22,14 @@ import ReactFlow, {
 import 'reactflow/dist/style.css';
 import { useFullAssetGraph } from '@/api/assets';
 import { applyDagreLayout } from '@/lib/graph-layout';
-import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
@@ -56,13 +44,13 @@ import {
 import { cn } from '@/lib/utils';
 import {
   useAssets,
-  useCreateAsset,
 } from '@/api/assets';
 // AUDIT-FIX: M-09 — Import from domain-specific API module
 import { useCustomers } from '@/api/customers';
-import type { AssetListParams, AssetWithRelations, CreateAssetPayload } from '@/api/assets';
-import type { AssetType, AssetStatus } from '@opsweave/shared';
-import { ASSET_TYPES, ASSET_STATUSES, SLA_TIERS, ENVIRONMENTS } from '@opsweave/shared';
+import type { AssetListParams, AssetWithRelations } from '@/api/assets';
+import type { AssetStatus } from '@opsweave/shared';
+import { ASSET_STATUSES, SLA_TIERS, ENVIRONMENTS, ASSET_TYPE_CATEGORIES } from '@opsweave/shared';
+import { useAssetTypes } from '@/api/asset-types';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -83,19 +71,8 @@ const slaColors: Record<string, string> = {
   none: 'bg-gray-100 text-gray-500 dark:bg-gray-800/40 dark:text-gray-400',
 };
 
-/** Grouped asset types for the select dropdown and category buttons */
-const assetTypeGroups: Array<{ category: string; types: AssetType[] }> = [
-  { category: 'compute', types: ['server_physical', 'server_virtual', 'virtualization_host', 'container', 'container_host'] },
-  { category: 'network', types: ['network_switch', 'network_router', 'network_firewall', 'network_load_balancer', 'network_wap'] },
-  { category: 'storage', types: ['storage_san', 'storage_nas', 'storage_backup'] },
-  { category: 'infrastructure', types: ['rack', 'pdu', 'ups'] },
-  { category: 'software', types: ['database', 'application', 'service', 'middleware', 'cluster'] },
-  { category: 'enduser', types: ['workstation', 'laptop', 'printer'] },
-  { category: 'other', types: ['other'] },
-];
-
 /** Category keys for the filter buttons (all + each group) */
-const CATEGORY_KEYS = ['all', ...assetTypeGroups.map((g) => g.category)] as const;
+const CATEGORY_KEYS = ['all', ...ASSET_TYPE_CATEGORIES] as const;
 type CategoryKey = (typeof CATEGORY_KEYS)[number];
 
 // ---------------------------------------------------------------------------
@@ -122,23 +99,44 @@ export function AssetsPage() {
   const [sortField] = useState('created_at');
   const [sortOrder] = useState<'asc' | 'desc'>('desc');
 
-  // ── Create Dialog ─────────────────────────────────────────
-  const [createOpen, setCreateOpen] = useState(false);
-  const [createType, setCreateType] = useState<string>('server_virtual');
-  const [createName, setCreateName] = useState('');
-  const [createDisplayName, setCreateDisplayName] = useState('');
-  const [createIp, setCreateIp] = useState('');
-  const [createLocation, setCreateLocation] = useState('');
-  const [createSla, setCreateSla] = useState('none');
-  const [createEnv, setCreateEnv] = useState('__none__');
-  const [createCustomer, setCreateCustomer] = useState('__none__');
+  // ── Asset Types from API ─────────────────────────────────
+  const { data: assetTypesData } = useAssetTypes();
+  const assetTypeGroups = useMemo(() => {
+    const types = assetTypesData ?? [];
+    const grouped: Record<string, string[]> = {};
+    for (const t of types) {
+      const cat = t.category || 'other';
+      if (!grouped[cat]) grouped[cat] = [];
+      grouped[cat].push(t.slug);
+    }
+    return ASSET_TYPE_CATEGORIES
+      .filter((cat) => grouped[cat]?.length)
+      .map((cat) => ({ category: cat, types: grouped[cat] ?? [] }));
+  }, [assetTypesData]);
+
+  /** Lookup map: slug → name (from API or fallback to i18n) */
+  const typeNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const at of assetTypesData ?? []) {
+      map.set(at.slug, at.name);
+    }
+    return map;
+  }, [assetTypesData]);
+
+  /** Helper to get display name for a type slug */
+  const getTypeName = useCallback((slug: string) => {
+    const i18nKey = `types.${slug}`;
+    const translated = t(i18nKey);
+    if (translated !== i18nKey) return translated;
+    return typeNameMap.get(slug) ?? slug;
+  }, [t, typeNameMap]);
 
   // ── Data ──────────────────────────────────────────────────
   const listParams: AssetListParams = useMemo(() => {
     const params: AssetListParams = { page, limit: 25, sort: sortField, order: sortOrder };
     if (searchQuery) params.q = searchQuery;
     if (typeFilter !== 'all') {
-      params.asset_type = typeFilter as AssetType;
+      params.asset_type = typeFilter as string;
     } else if (categoryFilter !== 'all') {
       const group = assetTypeGroups.find((g) => g.category === categoryFilter);
       if (group) params.asset_types = group.types.join(',');
@@ -151,7 +149,6 @@ export function AssetsPage() {
   }, [page, sortField, sortOrder, searchQuery, categoryFilter, typeFilter, statusFilter, slaFilter, envFilter, customerFilter]);
 
   const { data, isLoading, isError, refetch } = useAssets(listParams);
-  const createAsset = useCreateAsset();
   const { data: customersData } = useCustomers();
   const { data: fullGraph, isLoading: graphLoading } = useFullAssetGraph();
 
@@ -245,41 +242,6 @@ export function AssetsPage() {
     setPage(1);
   }, []);
 
-  const resetCreateForm = useCallback(() => {
-    setCreateType('server_virtual');
-    setCreateName('');
-    setCreateDisplayName('');
-    setCreateIp('');
-    setCreateLocation('');
-    setCreateSla('none');
-    setCreateEnv('');
-    setCreateCustomer('');
-  }, []);
-
-  const handleCreate = useCallback(async () => {
-    if (!createName.trim() || !createDisplayName.trim()) return;
-
-    const payload: CreateAssetPayload = {
-      asset_type: createType as AssetType,
-      name: createName.trim(),
-      display_name: createDisplayName.trim(),
-      sla_tier: createSla as CreateAssetPayload['sla_tier'],
-    };
-    if (createIp.trim()) payload.ip_address = createIp.trim();
-    if (createLocation.trim()) payload.location = createLocation.trim();
-    if (createEnv && createEnv !== '__none__') payload.environment = createEnv as CreateAssetPayload['environment'];
-    if (createCustomer && createCustomer !== '__none__') payload.customer_id = createCustomer;
-
-    try {
-      await createAsset.mutateAsync(payload);
-      toast.success(t('create_success'));
-      setCreateOpen(false);
-      resetCreateForm();
-    } catch {
-      toast.error(t('create_error'));
-    }
-  }, [createType, createName, createDisplayName, createIp, createLocation, createSla, createEnv, createCustomer, createAsset, t, resetCreateForm]);
-
   const handleSearch = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     setPage(1);
@@ -329,12 +291,14 @@ export function AssetsPage() {
   // ── Type / Status / SLA options ───────────────────────────
 
   const typeOptions = useMemo(() => {
+    const allTypes = assetTypesData ?? [];
     if (categoryFilter !== 'all') {
-      const group = assetTypeGroups.find((g) => g.category === categoryFilter);
-      if (group) return group.types.map((at) => ({ value: at, label: t(`types.${at}`) }));
+      return allTypes
+        .filter((at) => at.category === categoryFilter)
+        .map((at) => ({ value: at.slug, label: getTypeName(at.slug) }));
     }
-    return ASSET_TYPES.map((at) => ({ value: at, label: t(`types.${at}`) }));
-  }, [t, categoryFilter]);
+    return allTypes.map((at) => ({ value: at.slug, label: getTypeName(at.slug) }));
+  }, [assetTypesData, categoryFilter, getTypeName]);
 
   const statusOptions = useMemo(() =>
     ASSET_STATUSES.map((s) => ({ value: s, label: t(`statuses.${s}`) })),
@@ -365,7 +329,7 @@ export function AssetsPage() {
             </p>
           )}
         </div>
-        <Button onClick={() => setCreateOpen(true)}>
+        <Button onClick={() => navigate('/assets/new')}>
           <Plus className="mr-2 h-4 w-4" />
           {t('create')}
         </Button>
@@ -464,7 +428,7 @@ export function AssetsPage() {
             </div>
             <p className="text-sm font-medium text-foreground mb-1">{t('list.empty')}</p>
             <p className="text-sm text-muted-foreground mb-4">{t('list.empty_hint')}</p>
-            <Button onClick={() => setCreateOpen(true)}>
+            <Button onClick={() => navigate('/assets/new')}>
               <Plus className="mr-2 h-4 w-4" />
               {t('create')}
             </Button>
@@ -542,7 +506,7 @@ export function AssetsPage() {
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="text-xs font-normal">
-                          {t(`types.${asset.asset_type}`)}
+                          {getTypeName(asset.asset_type)}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -648,144 +612,6 @@ export function AssetsPage() {
         </div>
       )}
 
-      {/* Create Asset Dialog */}
-      <Dialog open={createOpen} onOpenChange={(open) => { setCreateOpen(open); if (!open) resetCreateForm(); }}>
-        <DialogContent className="sm:max-w-[520px]">
-          <DialogHeader>
-            <DialogTitle>{t('create')}</DialogTitle>
-            <DialogDescription>{t('create_description')}</DialogDescription>
-          </DialogHeader>
-
-          <div className="grid gap-4 py-4">
-            {/* Asset Type */}
-            <div className="grid gap-2">
-              <Label>{t('fields.asset_type')}</Label>
-              <Select value={createType} onValueChange={setCreateType}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {assetTypeGroups.map((group) => (
-                    <SelectGroup key={group.category}>
-                      <SelectLabel>{t(`type_categories.${group.category}`)}</SelectLabel>
-                      {group.types.map((at) => (
-                        <SelectItem key={at} value={at}>
-                          {t(`types.${at}`)}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Name + Display Name */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label>{t('fields.name')}</Label>
-                <Input
-                  placeholder={t('placeholder_name')}
-                  value={createName}
-                  onChange={(e) => setCreateName(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label>{t('fields.display_name')}</Label>
-                <Input
-                  placeholder={t('placeholder_display_name')}
-                  value={createDisplayName}
-                  onChange={(e) => setCreateDisplayName(e.target.value)}
-                />
-              </div>
-            </div>
-
-            {/* IP + Location */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label>{t('fields.ip_address')}</Label>
-                <Input
-                  placeholder="10.0.0.1"
-                  value={createIp}
-                  onChange={(e) => setCreateIp(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label>{t('fields.location')}</Label>
-                <Input
-                  placeholder="DC-01 / Rack A3"
-                  value={createLocation}
-                  onChange={(e) => setCreateLocation(e.target.value)}
-                />
-              </div>
-            </div>
-
-            {/* SLA + Environment */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label>{t('fields.sla_tier')}</Label>
-                <Select value={createSla} onValueChange={setCreateSla}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SLA_TIERS.map((s) => (
-                      <SelectItem key={s} value={s}>
-                        {t(`sla_tiers.${s}`)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid gap-2">
-                <Label>{t('fields.environment')}</Label>
-                <Select value={createEnv} onValueChange={setCreateEnv}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="—" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">{'\u2014'}</SelectItem>
-                    {ENVIRONMENTS.map((e) => (
-                      <SelectItem key={e} value={e}>
-                        {t(`environments.${e}`)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* Customer */}
-            <div className="grid gap-2">
-              <Label>{t('fields.customer')}</Label>
-              <Select value={createCustomer} onValueChange={setCreateCustomer}>
-                <SelectTrigger>
-                  <SelectValue placeholder="\u2014" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">{'\u2014'}</SelectItem>
-                  {customerOptions.map((c) => (
-                    <SelectItem key={c.value} value={c.value}>
-                      {c.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateOpen(false)}>
-              {tCommon('actions.cancel')}
-            </Button>
-            <Button
-              onClick={handleCreate}
-              disabled={!createName.trim() || !createDisplayName.trim() || createAsset.isPending}
-            >
-              {createAsset.isPending ? tCommon('status.loading') : t('create')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

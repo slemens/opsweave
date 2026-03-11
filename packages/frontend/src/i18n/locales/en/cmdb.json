@@ -38,7 +38,13 @@
     "workstation": "Workstation",
     "laptop": "Laptop",
     "printer": "Printer",
-    "other": "Other"
+    "other": "Other",
+    "ip_address": "IP Address",
+    "domain": "Domain",
+    "certificate": "Certificate",
+    "port": "Port",
+    "service_endpoint": "Service Endpoint",
+    "software": "Software Package"
   },
   "type_categories": {
     "all": "All Assets",
@@ -47,6 +53,7 @@
     "storage": "Storage",
     "infrastructure": "Infrastructure",
     "software": "Software",
+    "security": "Security",
     "enduser": "End User Devices",
     "other": "Other"
   },
@@ -90,7 +97,16 @@
     "powered_by": "Powered by",
     "member_of": "Member of",
     "depends_on": "Depends on",
-    "backup_of": "Backup of"
+    "backup_of": "Backup of",
+    "exposes": "Exposes",
+    "protects": "Protects",
+    "backs_up": "Backs up",
+    "monitored_by": "Monitored by",
+    "serves": "Serves",
+    "governed_by": "Governed by",
+    "licensed_to": "Licensed to",
+    "encrypts": "Encrypts",
+    "properties": "Properties"
   },
   "fields": {
     "name": "Technical Name",
@@ -129,10 +145,60 @@
   "tabs": {
     "details": "Details",
     "relations": "Relations",
-    "tickets": "Tickets"
+    "tickets": "Tickets",
+    "classifications": "Classifications",
+    "capacity": "Capacity"
   },
   "linked_tickets": {
     "title": "Linked Tickets",
     "no_tickets": "No linked tickets"
+  },
+  "classifications": {
+    "title": "Classifications",
+    "add": "Add Classification",
+    "remove": "Remove Classification",
+    "add_success": "Classification added successfully",
+    "add_error": "Failed to add classification",
+    "remove_success": "Classification removed successfully",
+    "remove_error": "Failed to remove classification",
+    "no_classifications": "No classifications",
+    "model": "Model",
+    "value": "Value",
+    "justification": "Justification",
+    "classified_by": "Classified by",
+    "classified_at": "Classified at",
+    "select_model": "Select model",
+    "select_value": "Select value"
+  },
+  "capacity": {
+    "title": "Capacity",
+    "provides": "Provides",
+    "requires": "Requires",
+    "total": "Total",
+    "allocated": "Allocated",
+    "reserved": "Reserved",
+    "available": "Available",
+    "utilization": "Utilization",
+    "no_capacity": "No capacity data"
+  },
+  "dynamic_fields": {
+    "no_attributes": "No type-specific attributes defined",
+    "attributes": "Type Attributes",
+    "required": "Required"
+  },
+  "context_view": {
+    "label": "View",
+    "all": "All",
+    "operations": "Operations",
+    "security": "Security",
+    "compliance": "Compliance",
+    "architecture": "Architecture"
+  },
+  "temporal": {
+    "valid_from": "Valid from",
+    "valid_until": "Valid until",
+    "as_of": "As of",
+    "current": "Current",
+    "show_all": "Show all (incl. expired)"
   }
 }

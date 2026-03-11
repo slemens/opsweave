@@ -1,7 +1,185 @@
-import { sqliteTable, text, index, unique } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, index, unique } from 'drizzle-orm/sqlite-core';
 import { tenants } from './tenants.js';
 import { assigneeGroups } from './users.js';
 import { customers } from './customers.js';
+
+// =============================================================================
+// asset_types — Extensible Asset Type Registry (Evo-1A)
+// =============================================================================
+
+export const assetTypes = sqliteTable(
+  'asset_types',
+  {
+    id: text('id').primaryKey(),
+    tenant_id: text('tenant_id')
+      .notNull()
+      .references(() => tenants.id),
+    slug: text('slug').notNull(),
+    name: text('name').notNull(),
+    description: text('description'),
+    category: text('category').notNull().default('other'),
+    icon: text('icon'),
+    color: text('color'),
+    is_system: integer('is_system').notNull().default(0),
+    is_active: integer('is_active').notNull().default(1),
+    attribute_schema: text('attribute_schema').notNull().default('[]'),
+    created_at: text('created_at').notNull(),
+    updated_at: text('updated_at').notNull(),
+  },
+  (t) => [
+    unique('uq_asset_type_slug').on(t.tenant_id, t.slug),
+    index('idx_at_tenant').on(t.tenant_id),
+    index('idx_at_tenant_active').on(t.tenant_id, t.is_active),
+    index('idx_at_tenant_category').on(t.tenant_id, t.category),
+  ],
+);
+
+// =============================================================================
+// relation_types — Extensible Relation Type Registry (Evo-3A)
+// =============================================================================
+
+export const relationTypes = sqliteTable(
+  'relation_types',
+  {
+    id: text('id').primaryKey(),
+    tenant_id: text('tenant_id')
+      .notNull()
+      .references(() => tenants.id),
+    slug: text('slug').notNull(),
+    name: text('name').notNull(),
+    description: text('description'),
+    category: text('category'),
+    is_directional: integer('is_directional').notNull().default(1),
+    source_types: text('source_types').notNull().default('[]'),
+    target_types: text('target_types').notNull().default('[]'),
+    properties_schema: text('properties_schema').notNull().default('[]'),
+    is_system: integer('is_system').notNull().default(0),
+    is_active: integer('is_active').notNull().default(1),
+    color: text('color'),
+    created_at: text('created_at').notNull(),
+  },
+  (t) => [
+    unique('uq_relation_type_slug').on(t.tenant_id, t.slug),
+    index('idx_rt_tenant').on(t.tenant_id),
+    index('idx_rt_tenant_active').on(t.tenant_id, t.is_active),
+  ],
+);
+
+// =============================================================================
+// classification_models — Classification System (Evo-1C)
+// =============================================================================
+
+export const classificationModels = sqliteTable(
+  'classification_models',
+  {
+    id: text('id').primaryKey(),
+    tenant_id: text('tenant_id')
+      .notNull()
+      .references(() => tenants.id),
+    name: text('name').notNull(),
+    description: text('description'),
+    is_system: integer('is_system').notNull().default(0),
+    is_active: integer('is_active').notNull().default(1),
+    created_at: text('created_at').notNull(),
+  },
+  (t) => [
+    unique('uq_class_model_name').on(t.tenant_id, t.name),
+    index('idx_cm_tenant').on(t.tenant_id),
+  ],
+);
+
+export const classificationValues = sqliteTable(
+  'classification_values',
+  {
+    id: text('id').primaryKey(),
+    model_id: text('model_id')
+      .notNull()
+      .references(() => classificationModels.id),
+    value: text('value').notNull(),
+    label: text('label').notNull().default('{}'),
+    color: text('color'),
+    sort_order: integer('sort_order').notNull().default(0),
+  },
+  (t) => [
+    unique('uq_class_value').on(t.model_id, t.value),
+    index('idx_cv_model').on(t.model_id),
+  ],
+);
+
+export const assetClassifications = sqliteTable(
+  'asset_classifications',
+  {
+    asset_id: text('asset_id')
+      .notNull()
+      .references(() => assets.id),
+    value_id: text('value_id')
+      .notNull()
+      .references(() => classificationValues.id),
+    tenant_id: text('tenant_id')
+      .notNull()
+      .references(() => tenants.id),
+    justification: text('justification'),
+    classified_by: text('classified_by'),
+    classified_at: text('classified_at').notNull(),
+  },
+  (t) => [
+    unique('uq_asset_class').on(t.asset_id, t.value_id),
+    index('idx_ac_tenant').on(t.tenant_id),
+    index('idx_ac_asset').on(t.asset_id),
+    index('idx_ac_value').on(t.value_id),
+  ],
+);
+
+// =============================================================================
+// capacity_types + asset_capacities — Capacity System (Evo-3C)
+// =============================================================================
+
+export const capacityTypes = sqliteTable(
+  'capacity_types',
+  {
+    id: text('id').primaryKey(),
+    tenant_id: text('tenant_id')
+      .notNull()
+      .references(() => tenants.id),
+    slug: text('slug').notNull(),
+    name: text('name').notNull(),
+    unit: text('unit').notNull(),
+    category: text('category'),
+    is_system: integer('is_system').notNull().default(0),
+    created_at: text('created_at').notNull(),
+  },
+  (t) => [
+    unique('uq_cap_type_slug').on(t.tenant_id, t.slug),
+    index('idx_capt_tenant').on(t.tenant_id),
+  ],
+);
+
+export const assetCapacities = sqliteTable(
+  'asset_capacities',
+  {
+    id: text('id').primaryKey(),
+    asset_id: text('asset_id')
+      .notNull()
+      .references(() => assets.id),
+    capacity_type_id: text('capacity_type_id')
+      .notNull()
+      .references(() => capacityTypes.id),
+    tenant_id: text('tenant_id')
+      .notNull()
+      .references(() => tenants.id),
+    direction: text('direction').notNull(),
+    total: text('total').notNull().default('0'),
+    allocated: text('allocated').notNull().default('0'),
+    reserved: text('reserved').notNull().default('0'),
+    created_at: text('created_at').notNull(),
+    updated_at: text('updated_at').notNull(),
+  },
+  (t) => [
+    unique('uq_asset_cap').on(t.asset_id, t.capacity_type_id, t.direction),
+    index('idx_acap_tenant').on(t.tenant_id),
+    index('idx_acap_asset').on(t.asset_id),
+  ],
+);
 
 // =============================================================================
 // assets — Central CMDB entity
@@ -57,6 +235,9 @@ export const assetRelations = sqliteTable(
       .references(() => assets.id),
     relation_type: text('relation_type').notNull(),
     properties: text('properties').notNull().default('{}'),
+    valid_from: text('valid_from'),
+    valid_until: text('valid_until'),
+    metadata: text('metadata').notNull().default('{}'),
     created_at: text('created_at').notNull(),
     created_by: text('created_by').notNull(),
   },
@@ -65,5 +246,6 @@ export const assetRelations = sqliteTable(
     index('idx_arel_tenant').on(t.tenant_id),
     index('idx_arel_source').on(t.tenant_id, t.source_asset_id),
     index('idx_arel_target').on(t.tenant_id, t.target_asset_id),
+    index('idx_arel_temporal').on(t.tenant_id, t.valid_from, t.valid_until),
   ],
 );

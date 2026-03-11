@@ -77,39 +77,8 @@ export interface UserGroupMembership {
 // Assets & Relations (DAG)
 // ---------------------------------------------------------------------------
 
-export type AssetType =
-  // Compute
-  | 'server_physical'
-  | 'server_virtual'
-  | 'virtualization_host'
-  | 'container'
-  | 'container_host'
-  // Network
-  | 'network_switch'
-  | 'network_router'
-  | 'network_firewall'
-  | 'network_load_balancer'
-  | 'network_wap'
-  // Storage
-  | 'storage_san'
-  | 'storage_nas'
-  | 'storage_backup'
-  // Infrastructure
-  | 'rack'
-  | 'pdu'
-  | 'ups'
-  // Software
-  | 'database'
-  | 'application'
-  | 'service'
-  | 'middleware'
-  | 'cluster'
-  // End User
-  | 'workstation'
-  | 'laptop'
-  | 'printer'
-  // Other
-  | 'other';
+/** Asset type is now a dynamic string loaded from the asset_types registry */
+export type AssetType = string;
 
 export type AssetStatus = 'active' | 'inactive' | 'maintenance' | 'decommissioned';
 
@@ -120,7 +89,7 @@ export type Environment = 'production' | 'staging' | 'development' | 'test' | 'd
 export interface Asset {
   id: string;
   tenant_id: string;
-  asset_type: AssetType;
+  asset_type: string;
   name: string;
   display_name: string;
   status: AssetStatus;
@@ -136,24 +105,130 @@ export interface Asset {
   created_by: string;
 }
 
-export type RelationType =
-  | 'runs_on'
-  | 'connected_to'
-  | 'stored_on'
-  | 'powered_by'
-  | 'member_of'
-  | 'depends_on'
-  | 'backup_of';
+/** Relation type is now a dynamic string loaded from the relation_types registry */
+export type RelationType = string;
 
 export interface AssetRelation {
   id: string;
   tenant_id: string;
   source_asset_id: string;
   target_asset_id: string;
-  relation_type: RelationType;
+  relation_type: string;
   properties: Record<string, unknown>;
+  valid_from: string | null;
+  valid_until: string | null;
+  metadata: Record<string, unknown>;
   created_at: string;
   created_by: string;
+}
+
+// ---------------------------------------------------------------------------
+// Extensible Type Registries (Evo-1A / Evo-3A)
+// ---------------------------------------------------------------------------
+
+export interface AttributeDefinition {
+  key: string;
+  label: { de: string; en: string };
+  type: 'text' | 'number' | 'boolean' | 'date' | 'select' | 'multiselect' | 'url' | 'ip_address';
+  required: boolean;
+  default_value?: unknown;
+  options?: Array<{ value: string; label: { de: string; en: string } }>;
+  validation?: { min?: number; max?: number; pattern?: string };
+  group?: string;
+  sort_order: number;
+}
+
+export interface AssetTypeDefinition {
+  id: string;
+  tenant_id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  category: string;
+  icon: string | null;
+  color: string | null;
+  is_system: number;
+  is_active: number;
+  attribute_schema: AttributeDefinition[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RelationTypeDefinition {
+  id: string;
+  tenant_id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  category: string | null;
+  is_directional: number;
+  source_types: string[];
+  target_types: string[];
+  properties_schema: AttributeDefinition[];
+  is_system: number;
+  is_active: number;
+  color: string | null;
+  created_at: string;
+}
+
+// ---------------------------------------------------------------------------
+// Classification System (Evo-1C)
+// ---------------------------------------------------------------------------
+
+export interface ClassificationModel {
+  id: string;
+  tenant_id: string;
+  name: string;
+  description: string | null;
+  is_system: number;
+  is_active: number;
+  created_at: string;
+}
+
+export interface ClassificationValue {
+  id: string;
+  model_id: string;
+  value: string;
+  label: { de: string; en: string };
+  color: string | null;
+  sort_order: number;
+}
+
+export interface AssetClassification {
+  asset_id: string;
+  value_id: string;
+  tenant_id: string;
+  justification: string | null;
+  classified_by: string | null;
+  classified_at: string;
+}
+
+// ---------------------------------------------------------------------------
+// Capacity System (Evo-3C)
+// ---------------------------------------------------------------------------
+
+export interface CapacityType {
+  id: string;
+  tenant_id: string;
+  slug: string;
+  name: string;
+  unit: string;
+  category: string | null;
+  is_system: number;
+  created_at: string;
+}
+
+export interface AssetCapacity {
+  id: string;
+  asset_id: string;
+  capacity_type_id: string;
+  tenant_id: string;
+  direction: 'provides' | 'requires';
+  total: number;
+  allocated: number;
+  reserved: number;
+  created_at: string;
+  updated_at: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -202,6 +277,7 @@ export interface Ticket {
   sla_tier: SlaTier | null;
   sla_response_due: string | null;
   sla_resolve_due: string | null;
+  project_id: string | null;
   parent_ticket_id: string | null;
   sla_breached: number; // 0 | 1
   sla_paused_at: string | null;
@@ -452,6 +528,98 @@ export interface AssetRegulatoryFlag {
 }
 
 // ---------------------------------------------------------------------------
+// Compliance Controls (Evo-4A)
+// ---------------------------------------------------------------------------
+
+export type ControlType = 'preventive' | 'detective' | 'corrective';
+export type ControlStatus = 'planned' | 'implemented' | 'verified' | 'not_applicable';
+export type ControlCoverage = 'full' | 'partial' | 'planned';
+
+export interface ComplianceControl {
+  id: string;
+  tenant_id: string;
+  code: string;
+  title: string;
+  description: string | null;
+  category: string | null;
+  control_type: ControlType;
+  status: ControlStatus;
+  owner_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RequirementControlMapping {
+  requirement_id: string;
+  control_id: string;
+  tenant_id: string;
+  coverage: ControlCoverage;
+  notes: string | null;
+}
+
+// ---------------------------------------------------------------------------
+// Compliance Audits (Evo-4B)
+// ---------------------------------------------------------------------------
+
+export type AuditType = 'internal' | 'external' | 'certification';
+export type AuditStatus = 'planned' | 'in_progress' | 'completed' | 'cancelled';
+export type FindingSeverity = 'critical' | 'major' | 'minor' | 'observation';
+export type FindingStatus = 'open' | 'in_remediation' | 'resolved' | 'accepted_risk';
+
+export interface ComplianceAudit {
+  id: string;
+  tenant_id: string;
+  name: string;
+  framework_id: string | null;
+  audit_type: AuditType;
+  status: AuditStatus;
+  auditor: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  scope: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AuditFinding {
+  id: string;
+  audit_id: string;
+  tenant_id: string;
+  control_id: string | null;
+  requirement_id: string | null;
+  severity: FindingSeverity;
+  title: string;
+  description: string | null;
+  status: FindingStatus;
+  remediation_plan: string | null;
+  due_date: string | null;
+  resolved_at: string | null;
+  resolved_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// ---------------------------------------------------------------------------
+// Compliance Evidence (Evo-4C)
+// ---------------------------------------------------------------------------
+
+export type EvidenceType = 'document' | 'screenshot' | 'log' | 'report' | 'test_result';
+export type MaturityLevel = 'initial' | 'managed' | 'defined' | 'measured' | 'optimizing';
+
+export interface ComplianceEvidence {
+  id: string;
+  tenant_id: string;
+  control_id: string;
+  evidence_type: EvidenceType;
+  title: string;
+  url: string | null;
+  description: string | null;
+  uploaded_at: string;
+  uploaded_by: string | null;
+}
+
+// ---------------------------------------------------------------------------
 // Monitoring
 // ---------------------------------------------------------------------------
 
@@ -580,6 +748,32 @@ export interface KnownError {
 }
 
 // ---------------------------------------------------------------------------
+// Projects (Evo-2C)
+// ---------------------------------------------------------------------------
+
+export interface Project {
+  id: string;
+  tenant_id: string;
+  customer_id: string | null;
+  name: string;
+  code: string;
+  description: string | null;
+  status: string;
+  start_date: string | null;
+  end_date: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProjectAsset {
+  project_id: string;
+  asset_id: string;
+  tenant_id: string;
+  role: string | null;
+  added_at: string;
+}
+
+// ---------------------------------------------------------------------------
 // Customers & Portal
 // ---------------------------------------------------------------------------
 
@@ -616,4 +810,58 @@ export interface SystemSetting {
   value: unknown;
   updated_at: string | null;
   updated_by: string | null;
+}
+
+// ---------------------------------------------------------------------------
+// Service Profiles & Entitlements (Evo-2A)
+// ---------------------------------------------------------------------------
+
+export interface ServiceProfile {
+  id: string;
+  tenant_id: string;
+  name: string;
+  description: string | null;
+  dimensions: Record<string, unknown>;
+  sla_definition_id: string | null;
+  is_active: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ServiceEntitlement {
+  id: string;
+  tenant_id: string;
+  customer_id: string;
+  service_id: string;
+  profile_id: string | null;
+  scope: Record<string, unknown>;
+  effective_from: string;
+  effective_until: string | null;
+  created_at: string;
+}
+
+// ---------------------------------------------------------------------------
+// Projects (Evo-2C)
+// ---------------------------------------------------------------------------
+
+export interface Project {
+  id: string;
+  tenant_id: string;
+  customer_id: string | null;
+  name: string;
+  code: string;
+  description: string | null;
+  status: string;
+  start_date: string | null;
+  end_date: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProjectAsset {
+  project_id: string;
+  asset_id: string;
+  tenant_id: string;
+  role: string | null;
+  added_at: string;
 }

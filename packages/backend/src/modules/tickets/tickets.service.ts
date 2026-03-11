@@ -150,7 +150,7 @@ export async function listTickets(
   params: TicketFilterParams,
 ): Promise<{ tickets: unknown[]; total: number }> {
   const d = db();
-  const { page, limit, sort, order, q, status, ticket_type, priority, assignee_id, assignee_group_id, asset_id, customer_id, category_id } = params;
+  const { page, limit, sort, order, q, status, ticket_type, priority, assignee_id, assignee_group_id, asset_id, customer_id, category_id, project_id } = params;
   const offset = (page - 1) * limit;
 
   const conditions = [eq(tickets.tenant_id, tenantId)];
@@ -170,6 +170,7 @@ export async function listTickets(
   if (asset_id) conditions.push(eq(tickets.asset_id, asset_id));
   if (customer_id) conditions.push(eq(tickets.customer_id, customer_id));
   if (category_id) conditions.push(eq(tickets.category_id, category_id));
+  if (project_id) conditions.push(eq(tickets.project_id, project_id));
 
   if (q) {
     conditions.push(
@@ -246,6 +247,7 @@ export async function listTickets(
       major_declared_at: tickets.major_declared_at,
       major_declared_by: tickets.major_declared_by,
       bridge_call_url: tickets.bridge_call_url,
+      project_id: tickets.project_id,
       parent_ticket_id: tickets.parent_ticket_id,
       source: tickets.source,
       created_at: tickets.created_at,
@@ -319,6 +321,7 @@ export async function listTickets(
     major_declared_at: row.major_declared_at,
     major_declared_by: row.major_declared_by,
     bridge_call_url: row.bridge_call_url,
+    project_id: row.project_id,
     parent_ticket_id: row.parent_ticket_id,
     source: row.source,
     created_at: row.created_at,
@@ -394,6 +397,7 @@ export async function getTicket(
       major_declared_at: tickets.major_declared_at,
       major_declared_by: tickets.major_declared_by,
       bridge_call_url: tickets.bridge_call_url,
+      project_id: tickets.project_id,
       parent_ticket_id: tickets.parent_ticket_id,
       source: tickets.source,
       created_at: tickets.created_at,
@@ -511,6 +515,7 @@ export async function getTicket(
     major_declared_at: row.major_declared_at,
     major_declared_by: row.major_declared_by,
     bridge_call_url: row.bridge_call_url,
+    project_id: row.project_id,
     parent_ticket_id: row.parent_ticket_id,
     source: row.source,
     created_at: row.created_at,
@@ -645,6 +650,7 @@ export async function createTicket(
       reporter_id: creatorId,
       customer_id: data.customer_id ?? null,
       category_id: data.category_id ?? null,
+      project_id: data.project_id ?? null,
       parent_ticket_id: data.parent_ticket_id ?? null,
       root_cause: data.ticket_type === 'problem' ? (data.root_cause ?? null) : null,
       // Change-specific RFC fields
@@ -744,6 +750,7 @@ export async function updateTicket(
     { key: 'change_actual_start', dbKey: 'change_actual_start' },
     { key: 'change_actual_end', dbKey: 'change_actual_end' },
     { key: 'cab_required', dbKey: 'cab_required' },
+    { key: 'project_id', dbKey: 'project_id' },
     { key: 'incident_commander_id', dbKey: 'incident_commander_id' },
     { key: 'bridge_call_url', dbKey: 'bridge_call_url' },
   ];

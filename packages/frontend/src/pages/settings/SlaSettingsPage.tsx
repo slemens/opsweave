@@ -92,6 +92,8 @@ export default function SlaSettingsPage() {
   const [defBhStart, setDefBhStart] = useState('08:00');
   const [defBhEnd, setDefBhEnd] = useState('18:00');
   const [defIsDefault, setDefIsDefault] = useState(false);
+  const [defRpoMin, setDefRpoMin] = useState<string>('');
+  const [defRtoMin, setDefRtoMin] = useState<string>('');
 
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [assignDefId, setAssignDefId] = useState('');
@@ -124,6 +126,8 @@ export default function SlaSettingsPage() {
     setDefBhStart('08:00');
     setDefBhEnd('18:00');
     setDefIsDefault(false);
+    setDefRpoMin('');
+    setDefRtoMin('');
     setEditingDef(null);
   }
 
@@ -137,6 +141,8 @@ export default function SlaSettingsPage() {
     setDefBhStart(def.business_hours_start ?? '08:00');
     setDefBhEnd(def.business_hours_end ?? '18:00');
     setDefIsDefault(!!def.is_default);
+    setDefRpoMin(def.rpo_minutes != null ? String(def.rpo_minutes) : '');
+    setDefRtoMin(def.rto_minutes != null ? String(def.rto_minutes) : '');
     setDefDialogOpen(true);
   }
 
@@ -150,6 +156,8 @@ export default function SlaSettingsPage() {
       business_hours: defBusinessHours,
       business_hours_start: defBusinessHours !== '24/7' ? defBhStart : null,
       business_hours_end: defBusinessHours !== '24/7' ? defBhEnd : null,
+      rpo_minutes: defRpoMin ? Number(defRpoMin) : null,
+      rto_minutes: defRtoMin ? Number(defRtoMin) : null,
       is_default: defIsDefault,
     };
     try {
@@ -254,6 +262,8 @@ export default function SlaSettingsPage() {
                     <TableHead>{t('settings:sla.response_time')}</TableHead>
                     <TableHead>{t('settings:sla.resolution_time')}</TableHead>
                     <TableHead>{t('settings:sla.business_hours')}</TableHead>
+                    <TableHead>{t('settings:sla.rpo')}</TableHead>
+                    <TableHead>{t('settings:sla.rto')}</TableHead>
                     <TableHead className="w-[80px]" />
                   </TableRow>
                 </TableHeader>
@@ -296,6 +306,24 @@ export default function SlaSettingsPage() {
                           <span className="text-xs text-muted-foreground ml-1">
                             ({def.business_hours_start}–{def.business_hours_end})
                           </span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {def.rpo_minutes != null ? (
+                          <Badge variant="outline" className="font-mono text-xs">
+                            {formatMinutes(def.rpo_minutes)}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">{'\u2014'}</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {def.rto_minutes != null ? (
+                          <Badge variant="outline" className="font-mono text-xs">
+                            {formatMinutes(def.rto_minutes)}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">{'\u2014'}</span>
                         )}
                       </TableCell>
                       <TableCell>
@@ -457,6 +485,16 @@ export default function SlaSettingsPage() {
               <div className="grid gap-2">
                 <Label>{t('settings:sla.resolution_time')} ({t('settings:sla.minutes')})</Label>
                 <Input type="number" min={1} value={defResolutionMin} onChange={(e) => setDefResolutionMin(Number(e.target.value))} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label>{t('settings:sla.rpo')} ({t('settings:sla.minutes')})</Label>
+                <Input type="number" min={0} value={defRpoMin} onChange={(e) => setDefRpoMin(e.target.value)} placeholder={t('settings:sla.optional')} />
+              </div>
+              <div className="grid gap-2">
+                <Label>{t('settings:sla.rto')} ({t('settings:sla.minutes')})</Label>
+                <Input type="number" min={0} value={defRtoMin} onChange={(e) => setDefRtoMin(e.target.value)} placeholder={t('settings:sla.optional')} />
               </div>
             </div>
             <div className="grid gap-2">

@@ -135,6 +135,19 @@ export const ASSET_TYPES = [
 ] as const;
 export type AssetTypeConst = (typeof ASSET_TYPES)[number];
 
+/** Categories for asset type grouping */
+export const ASSET_TYPE_CATEGORIES = [
+  'compute',
+  'network',
+  'storage',
+  'infrastructure',
+  'software',
+  'security',
+  'enduser',
+  'other',
+] as const;
+export type AssetTypeCategoryConst = (typeof ASSET_TYPE_CATEGORIES)[number];
+
 export const ASSET_STATUSES = [
   'active',
   'inactive',
@@ -263,6 +276,41 @@ export const COVERAGE_LEVELS = [
   'not_applicable',
 ] as const;
 export type CoverageLevelConst = (typeof COVERAGE_LEVELS)[number];
+
+// ---------------------------------------------------------------------------
+// Compliance Control Constants (Evo-4A)
+// ---------------------------------------------------------------------------
+
+export const CONTROL_TYPES = ['preventive', 'detective', 'corrective'] as const;
+export type ControlTypeConst = (typeof CONTROL_TYPES)[number];
+
+export const CONTROL_STATUSES = ['planned', 'implemented', 'verified', 'not_applicable'] as const;
+export type ControlStatusConst = (typeof CONTROL_STATUSES)[number];
+
+export const CONTROL_COVERAGES = ['full', 'partial', 'planned'] as const;
+export type ControlCoverageConst = (typeof CONTROL_COVERAGES)[number];
+
+// ---------------------------------------------------------------------------
+// Compliance Audit & Evidence Constants (Evo-4B / Evo-4C)
+// ---------------------------------------------------------------------------
+
+export const AUDIT_TYPES = ['internal', 'external', 'certification'] as const;
+export type AuditTypeConst = (typeof AUDIT_TYPES)[number];
+
+export const AUDIT_STATUSES = ['planned', 'in_progress', 'completed', 'cancelled'] as const;
+export type AuditStatusConst = (typeof AUDIT_STATUSES)[number];
+
+export const FINDING_SEVERITIES = ['critical', 'major', 'minor', 'observation'] as const;
+export type FindingSeverityConst = (typeof FINDING_SEVERITIES)[number];
+
+export const FINDING_STATUSES = ['open', 'in_remediation', 'resolved', 'accepted_risk'] as const;
+export type FindingStatusConst = (typeof FINDING_STATUSES)[number];
+
+export const EVIDENCE_TYPES = ['document', 'screenshot', 'log', 'report', 'test_result'] as const;
+export type EvidenceTypeConst = (typeof EVIDENCE_TYPES)[number];
+
+export const MATURITY_LEVELS = ['initial', 'managed', 'defined', 'measured', 'optimizing'] as const;
+export type MaturityLevelConst = (typeof MATURITY_LEVELS)[number];
 
 // ---------------------------------------------------------------------------
 // Monitoring Constants

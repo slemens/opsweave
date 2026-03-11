@@ -11,6 +11,11 @@ import {
   TrendingUp,
   Shield,
   Server,
+  Box,
+  GitBranch,
+  Tags,
+  Gauge,
+  Layers,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -24,6 +29,11 @@ const settingsNav = [
   { to: '/settings/notifications', icon: Bell, labelKey: 'settings:tabs.notifications' },
   { to: '/settings/escalation', icon: TrendingUp, labelKey: 'settings:tabs.escalation' },
   { to: '/settings/audit', icon: Shield, labelKey: 'settings:tabs.audit' },
+  { to: '/settings/asset-types', icon: Box, labelKey: 'settings:tabs.asset_types' },
+  { to: '/settings/relation-types', icon: GitBranch, labelKey: 'settings:tabs.relation_types' },
+  { to: '/settings/classifications', icon: Tags, labelKey: 'settings:tabs.classifications' },
+  { to: '/settings/capacity-types', icon: Gauge, labelKey: 'settings:tabs.capacity_types' },
+  { to: '/settings/service-profiles', icon: Layers, labelKey: 'settings:tabs.service_profiles' },
   { to: '/settings/system', icon: Server, labelKey: 'settings:tabs.system' },
 ] as const;
 

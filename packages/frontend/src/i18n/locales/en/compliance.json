@@ -80,5 +80,91 @@
       "description": "Set the coverage level for this requirement."
     },
     "delete_confirm": "Are you sure? This action cannot be undone."
+  },
+  "controls": {
+    "title": "Controls",
+    "create": "Create Control",
+    "edit": "Edit Control",
+    "code": "Code",
+    "title_col": "Title",
+    "description": "Description",
+    "category": "Category",
+    "type": "Type",
+    "status_col": "Status",
+    "empty": "No controls found",
+    "empty_hint": "Create the first compliance control.",
+    "delete_confirm": "Are you sure you want to delete this control?",
+    "create_success": "Control created successfully",
+    "update_success": "Control updated successfully",
+    "delete_success": "Control deleted successfully",
+    "save_error": "Failed to save",
+    "types": {
+      "preventive": "Preventive",
+      "detective": "Detective",
+      "corrective": "Corrective"
+    },
+    "statuses": {
+      "planned": "Planned",
+      "implemented": "Implemented",
+      "verified": "Verified",
+      "not_applicable": "Not Applicable"
+    }
+  },
+  "audits": {
+    "title": "Audits",
+    "create": "Create Audit",
+    "edit": "Edit Audit",
+    "name": "Name",
+    "audit_type": "Audit Type",
+    "auditor_field": "Auditor",
+    "status_col": "Status",
+    "notes": "Notes",
+    "findings": "Findings",
+    "add_finding": "Add Finding",
+    "finding_title": "Title",
+    "finding_severity": "Severity",
+    "finding_status": "Status",
+    "finding_description": "Description",
+    "empty": "No audits found",
+    "empty_hint": "Create the first compliance audit.",
+    "create_success": "Audit created successfully",
+    "update_success": "Audit updated successfully",
+    "finding_created": "Finding created successfully",
+    "save_error": "Failed to save",
+    "statuses": {
+      "planned": "Planned",
+      "in_progress": "In Progress",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    },
+    "finding_statuses": {
+      "open": "Open",
+      "in_remediation": "In Remediation",
+      "resolved": "Resolved",
+      "accepted_risk": "Accepted Risk"
+    }
+  },
+  "evidence": {
+    "title": "Evidence",
+    "create": "Create Evidence",
+    "title_col": "Title",
+    "description": "Description",
+    "type": "Type",
+    "url_col": "URL",
+    "uploaded": "Uploaded",
+    "empty": "No evidence found",
+    "empty_hint": "Create the first compliance evidence.",
+    "delete_confirm": "Are you sure you want to delete this evidence?",
+    "create_success": "Evidence created successfully",
+    "delete_success": "Evidence deleted successfully",
+    "save_error": "Failed to save",
+    "types": {
+      "document": "Document",
+      "screenshot": "Screenshot",
+      "log": "Log",
+      "report": "Report",
+      "certificate": "Certificate",
+      "other": "Other"
+    }
   }
 }

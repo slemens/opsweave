@@ -28,6 +28,11 @@ import {
   customerPortalUsers,
   assets,
   assetRelations,
+  assetTypes,
+  relationTypes,
+  classificationModels,
+  classificationValues,
+  capacityTypes,
   workflowTemplates,
   workflowSteps,
   workflowInstances,
@@ -271,6 +276,162 @@ async function doSeed(): Promise<void> {
     { id: catSonstigesId, tenant_id: tenantId, name: 'Sonstiges', applies_to: 'all', is_active: 1, created_at: now },
   ]);
   logger.info('  ✓ Categories: Netzwerk, Server, Applikation, Datenbank, Security, Arbeitsplatz, Sonstiges');
+
+  // ─── Asset Type Registry (Evo-1A) ─────────────────────
+  const systemAssetTypes: Array<{ slug: string; name: string; category: string; attribute_schema?: string }> = [
+    // Compute
+    { slug: 'server_physical', name: 'Physical Server', category: 'compute', attribute_schema: JSON.stringify([
+      { key: 'cpu_cores', label: { de: 'CPU-Kerne', en: 'CPU Cores' }, type: 'number', required: false, sort_order: 0 },
+      { key: 'ram_gb', label: { de: 'RAM (GB)', en: 'RAM (GB)' }, type: 'number', required: false, sort_order: 1 },
+      { key: 'vendor', label: { de: 'Hersteller', en: 'Vendor' }, type: 'text', required: false, sort_order: 2 },
+      { key: 'model', label: { de: 'Modell', en: 'Model' }, type: 'text', required: false, sort_order: 3 },
+      { key: 'serial_number', label: { de: 'Seriennummer', en: 'Serial Number' }, type: 'text', required: false, sort_order: 4 },
+    ]) },
+    { slug: 'server_virtual', name: 'Virtual Machine', category: 'compute', attribute_schema: JSON.stringify([
+      { key: 'cpu_cores', label: { de: 'vCPUs', en: 'vCPUs' }, type: 'number', required: false, sort_order: 0 },
+      { key: 'ram_gb', label: { de: 'RAM (GB)', en: 'RAM (GB)' }, type: 'number', required: false, sort_order: 1 },
+      { key: 'os', label: { de: 'Betriebssystem', en: 'Operating System' }, type: 'text', required: false, sort_order: 2 },
+    ]) },
+    { slug: 'virtualization_host', name: 'Virtualization Host', category: 'compute' },
+    { slug: 'container', name: 'Container', category: 'compute' },
+    { slug: 'container_host', name: 'Container Host', category: 'compute' },
+    // Network
+    { slug: 'network_switch', name: 'Switch', category: 'network' },
+    { slug: 'network_router', name: 'Router', category: 'network' },
+    { slug: 'network_firewall', name: 'Firewall', category: 'network' },
+    { slug: 'network_load_balancer', name: 'Load Balancer', category: 'network' },
+    { slug: 'network_wap', name: 'Wireless Access Point', category: 'network' },
+    // Storage
+    { slug: 'storage_san', name: 'SAN Storage', category: 'storage' },
+    { slug: 'storage_nas', name: 'NAS Storage', category: 'storage' },
+    { slug: 'storage_backup', name: 'Backup System', category: 'storage' },
+    // Infrastructure
+    { slug: 'rack', name: 'Rack', category: 'infrastructure' },
+    { slug: 'pdu', name: 'Power Distribution Unit', category: 'infrastructure' },
+    { slug: 'ups', name: 'UPS', category: 'infrastructure' },
+    // Software
+    { slug: 'database', name: 'Database', category: 'software' },
+    { slug: 'application', name: 'Application', category: 'software' },
+    { slug: 'service', name: 'Service', category: 'software' },
+    { slug: 'middleware', name: 'Middleware', category: 'software' },
+    { slug: 'cluster', name: 'Cluster', category: 'software' },
+    // End User
+    { slug: 'workstation', name: 'Workstation', category: 'enduser' },
+    { slug: 'laptop', name: 'Laptop', category: 'enduser' },
+    { slug: 'printer', name: 'Printer', category: 'enduser' },
+    // Security (Evo-1B)
+    { slug: 'ip_address', name: 'IP Address', category: 'security', attribute_schema: JSON.stringify([
+      { key: 'address', label: { de: 'Adresse', en: 'Address' }, type: 'ip_address', required: true, sort_order: 0 },
+      { key: 'subnet', label: { de: 'Subnetz', en: 'Subnet' }, type: 'text', required: false, sort_order: 1 },
+      { key: 'vlan', label: { de: 'VLAN', en: 'VLAN' }, type: 'number', required: false, sort_order: 2 },
+      { key: 'allocation_status', label: { de: 'Zuweisungsstatus', en: 'Allocation Status' }, type: 'select', required: false, sort_order: 3, options: [
+        { value: 'allocated', label: { de: 'Zugewiesen', en: 'Allocated' } },
+        { value: 'available', label: { de: 'Verfügbar', en: 'Available' } },
+        { value: 'reserved', label: { de: 'Reserviert', en: 'Reserved' } },
+      ] },
+      { key: 'reverse_dns', label: { de: 'Reverse DNS', en: 'Reverse DNS' }, type: 'text', required: false, sort_order: 4 },
+    ]) },
+    { slug: 'domain', name: 'Domain', category: 'security', attribute_schema: JSON.stringify([
+      { key: 'fqdn', label: { de: 'FQDN', en: 'FQDN' }, type: 'text', required: true, sort_order: 0 },
+      { key: 'registrar', label: { de: 'Registrar', en: 'Registrar' }, type: 'text', required: false, sort_order: 1 },
+      { key: 'dns_provider', label: { de: 'DNS-Anbieter', en: 'DNS Provider' }, type: 'text', required: false, sort_order: 2 },
+      { key: 'expiry_date', label: { de: 'Ablaufdatum', en: 'Expiry Date' }, type: 'date', required: false, sort_order: 3 },
+      { key: 'ssl_enabled', label: { de: 'SSL aktiv', en: 'SSL Enabled' }, type: 'boolean', required: false, sort_order: 4 },
+    ]) },
+    { slug: 'certificate', name: 'Certificate', category: 'security', attribute_schema: JSON.stringify([
+      { key: 'issuer', label: { de: 'Aussteller', en: 'Issuer' }, type: 'text', required: false, sort_order: 0 },
+      { key: 'subject', label: { de: 'Subjekt', en: 'Subject' }, type: 'text', required: false, sort_order: 1 },
+      { key: 'valid_from', label: { de: 'Gültig ab', en: 'Valid From' }, type: 'date', required: false, sort_order: 2 },
+      { key: 'valid_until', label: { de: 'Gültig bis', en: 'Valid Until' }, type: 'date', required: false, sort_order: 3 },
+      { key: 'key_algorithm', label: { de: 'Schlüsselalgorithmus', en: 'Key Algorithm' }, type: 'text', required: false, sort_order: 4 },
+      { key: 'san_entries', label: { de: 'SAN-Einträge', en: 'SAN Entries' }, type: 'text', required: false, sort_order: 5 },
+    ]) },
+    { slug: 'port', name: 'Port', category: 'security', attribute_schema: JSON.stringify([
+      { key: 'protocol', label: { de: 'Protokoll', en: 'Protocol' }, type: 'select', required: false, sort_order: 0, options: [
+        { value: 'tcp', label: { de: 'TCP', en: 'TCP' } },
+        { value: 'udp', label: { de: 'UDP', en: 'UDP' } },
+      ] },
+      { key: 'port_number', label: { de: 'Portnummer', en: 'Port Number' }, type: 'number', required: true, sort_order: 1 },
+      { key: 'state', label: { de: 'Status', en: 'State' }, type: 'select', required: false, sort_order: 2, options: [
+        { value: 'open', label: { de: 'Offen', en: 'Open' } },
+        { value: 'closed', label: { de: 'Geschlossen', en: 'Closed' } },
+        { value: 'filtered', label: { de: 'Gefiltert', en: 'Filtered' } },
+      ] },
+    ]) },
+    { slug: 'service_endpoint', name: 'Service Endpoint', category: 'security', attribute_schema: JSON.stringify([
+      { key: 'url', label: { de: 'URL', en: 'URL' }, type: 'url', required: true, sort_order: 0 },
+      { key: 'protocol', label: { de: 'Protokoll', en: 'Protocol' }, type: 'text', required: false, sort_order: 1 },
+      { key: 'auth_type', label: { de: 'Auth-Typ', en: 'Auth Type' }, type: 'text', required: false, sort_order: 2 },
+    ]) },
+    { slug: 'software', name: 'Software', category: 'software', attribute_schema: JSON.stringify([
+      { key: 'vendor', label: { de: 'Hersteller', en: 'Vendor' }, type: 'text', required: false, sort_order: 0 },
+      { key: 'product', label: { de: 'Produkt', en: 'Product' }, type: 'text', required: false, sort_order: 1 },
+      { key: 'version', label: { de: 'Version', en: 'Version' }, type: 'text', required: false, sort_order: 2 },
+      { key: 'edition', label: { de: 'Edition', en: 'Edition' }, type: 'text', required: false, sort_order: 3 },
+      { key: 'license_type', label: { de: 'Lizenztyp', en: 'License Type' }, type: 'text', required: false, sort_order: 4 },
+      { key: 'support_status', label: { de: 'Supportstatus', en: 'Support Status' }, type: 'select', required: false, sort_order: 5, options: [
+        { value: 'supported', label: { de: 'Unterstützt', en: 'Supported' } },
+        { value: 'eol', label: { de: 'End of Life', en: 'End of Life' } },
+        { value: 'eos', label: { de: 'End of Support', en: 'End of Support' } },
+      ] },
+      { key: 'cve_link', label: { de: 'CVE-Link', en: 'CVE Link' }, type: 'url', required: false, sort_order: 6 },
+    ]) },
+    // Other
+    { slug: 'other', name: 'Other', category: 'other' },
+  ];
+
+  const assetTypeInserts = systemAssetTypes.map((at) => ({
+    id: uuidv4(),
+    tenant_id: tenantId,
+    slug: at.slug,
+    name: at.name,
+    category: at.category,
+    is_system: 1,
+    is_active: 1,
+    attribute_schema: at.attribute_schema ?? '[]',
+    created_at: now,
+    updated_at: now,
+  }));
+
+  await db.insert(assetTypes).values(assetTypeInserts);
+  logger.info(`  ✓ Asset Types: ${systemAssetTypes.length} system types registered`);
+
+  // ─── Relation Type Registry (Evo-3A) ──────────────────
+  const systemRelationTypes = [
+    { slug: 'runs_on', name: 'Runs on', category: 'dependency' },
+    { slug: 'connected_to', name: 'Connected to', category: 'network' },
+    { slug: 'stored_on', name: 'Stored on', category: 'storage' },
+    { slug: 'powered_by', name: 'Powered by', category: 'infrastructure' },
+    { slug: 'member_of', name: 'Member of', category: 'grouping' },
+    { slug: 'depends_on', name: 'Depends on', category: 'dependency' },
+    { slug: 'backup_of', name: 'Backup of', category: 'storage' },
+    { slug: 'exposes', name: 'Exposes', category: 'network' },
+    { slug: 'protects', name: 'Protects', category: 'security' },
+    { slug: 'backs_up', name: 'Backs up', category: 'storage' },
+    { slug: 'monitored_by', name: 'Monitored by', category: 'monitoring' },
+    { slug: 'serves', name: 'Serves', category: 'service' },
+    { slug: 'governed_by', name: 'Governed by', category: 'compliance' },
+    { slug: 'licensed_to', name: 'Licensed to', category: 'licensing' },
+    { slug: 'encrypts', name: 'Encrypts', category: 'security' },
+  ];
+
+  const relationTypeInserts = systemRelationTypes.map((rt) => ({
+    id: uuidv4(),
+    tenant_id: tenantId,
+    slug: rt.slug,
+    name: rt.name,
+    category: rt.category,
+    is_directional: 1,
+    source_types: '[]',
+    target_types: '[]',
+    properties_schema: '[]',
+    is_system: 1,
+    is_active: 1,
+    created_at: now,
+  }));
+
+  await db.insert(relationTypes).values(relationTypeInserts);
+  logger.info(`  ✓ Relation Types: ${systemRelationTypes.length} system types registered`);
 
   // ─── Assets (CMDB) ─────────────────────────────────────
   const assetRackId = uuidv4();
@@ -1657,12 +1818,12 @@ async function doSeed(): Promise<void> {
     { id: assetErpId, tenant_id: tenantId, asset_type: 'application', name: 'erp-sap-prod', display_name: 'SAP ERP Production', status: 'active', ip_address: '10.0.4.10', location: 'ESXi Host 01', sla_tier: 'platinum', environment: 'production', owner_group_id: devGroupId, customer_id: customerBankId, attributes: '{"version": "SAP S/4HANA 2023", "modules": ["FI", "CO", "MM", "SD"]}', created_at: now, updated_at: now, created_by: adminId },
     { id: assetCrmId, tenant_id: tenantId, asset_type: 'application', name: 'crm-salesforce', display_name: 'Salesforce CRM', status: 'active', ip_address: null, location: 'Cloud (SaaS)', sla_tier: 'silver', environment: 'production', owner_group_id: devGroupId, customer_id: null, attributes: '{"edition": "Enterprise", "users": 85, "integrations": ["ERP", "Email"]}', created_at: now, updated_at: now, created_by: adminId },
     { id: assetJiraId, tenant_id: tenantId, asset_type: 'application', name: 'jira-cloud', display_name: 'Jira Cloud', status: 'active', ip_address: null, location: 'Cloud (SaaS)', sla_tier: 'silver', environment: 'production', owner_group_id: devGroupId, customer_id: null, attributes: '{"edition": "Premium", "projects": 12}', created_at: now, updated_at: now, created_by: managerId },
-    { id: assetGitlabId, tenant_id: tenantId, asset_type: 'application', name: 'gitlab-prod', display_name: 'GitLab CE', status: 'active', ip_address: '10.0.4.60', location: 'ESXi Host 02', sla_tier: 'gold', environment: 'production', owner_group_id: devGroupId, customer_id: null, attributes: '{"version": "16.8", "runners": 4, "repos": 67}', created_at: now, updated_at: now, created_by: adminId },
+    { id: assetGitlabId, tenant_id: tenantId, asset_type: 'application', name: 'gitlab-prod', display_name: 'GitLab CE', status: 'active', ip_address: '10.0.4.70', location: 'ESXi Host 02', sla_tier: 'gold', environment: 'production', owner_group_id: devGroupId, customer_id: null, attributes: '{"version": "16.8", "runners": 4, "repos": 67}', created_at: now, updated_at: now, created_by: adminId },
     { id: assetPrometheusId, tenant_id: tenantId, asset_type: 'application', name: 'prometheus-prod', display_name: 'Prometheus Monitoring', status: 'active', ip_address: '10.0.5.20', location: 'ESXi Host 02', sla_tier: 'gold', environment: 'production', owner_group_id: opsGroupId, customer_id: null, attributes: '{"version": "2.49", "targets": 142, "retention_days": 30}', created_at: now, updated_at: now, created_by: adminId },
     { id: assetK8sClusterId, tenant_id: tenantId, asset_type: 'container_platform', name: 'k8s-prod-01', display_name: 'Kubernetes Production Cluster', status: 'active', ip_address: '10.0.6.1', location: 'RZ Frankfurt', sla_tier: 'platinum', environment: 'production', owner_group_id: opsGroupId, customer_id: null, attributes: '{"version": "1.29", "nodes": 6, "pods": 87, "distribution": "RKE2"}', created_at: now, updated_at: now, created_by: adminId },
     { id: assetRedisId, tenant_id: tenantId, asset_type: 'database', name: 'redis-cache-01', display_name: 'Redis Cache Cluster', status: 'active', ip_address: '10.0.3.20', location: 'ESXi Host 01', sla_tier: 'gold', environment: 'production', owner_group_id: devGroupId, customer_id: null, attributes: '{"version": "7.2", "mode": "cluster", "nodes": 3, "memory_gb": 32}', created_at: now, updated_at: now, created_by: adminId },
     { id: assetElasticId, tenant_id: tenantId, asset_type: 'database', name: 'elastic-prod-01', display_name: 'Elasticsearch Cluster', status: 'active', ip_address: '10.0.3.30', location: 'ESXi Host 02', sla_tier: 'silver', environment: 'production', owner_group_id: devGroupId, customer_id: null, attributes: '{"version": "8.12", "nodes": 3, "indices": 45, "size_gb": 120}', created_at: now, updated_at: now, created_by: adminId },
-    { id: assetCiCdId, tenant_id: tenantId, asset_type: 'application', name: 'jenkins-prod', display_name: 'Jenkins CI/CD', status: 'active', ip_address: '10.0.4.60', location: 'ESXi Host 02', sla_tier: 'silver', environment: 'production', owner_group_id: devGroupId, customer_id: null, attributes: '{"version": "2.440", "agents": 8, "pipelines": 34}', created_at: now, updated_at: now, created_by: managerId },
+    { id: assetCiCdId, tenant_id: tenantId, asset_type: 'application', name: 'jenkins-prod', display_name: 'Jenkins CI/CD', status: 'active', ip_address: '10.0.4.70', location: 'ESXi Host 02', sla_tier: 'silver', environment: 'production', owner_group_id: devGroupId, customer_id: null, attributes: '{"version": "2.440", "agents": 8, "pipelines": 34}', created_at: now, updated_at: now, created_by: managerId },
     { id: assetDnsId, tenant_id: tenantId, asset_type: 'server_virtual', name: 'dns-ns-01', display_name: 'DNS Server 01', status: 'active', ip_address: '10.0.1.2', location: 'ESXi Host 01', sla_tier: 'platinum', environment: 'production', owner_group_id: opsGroupId, customer_id: null, attributes: '{"os": "Ubuntu 22.04", "software": "BIND 9.18", "zones": 23}', created_at: now, updated_at: now, created_by: adminId },
     { id: assetProxyId, tenant_id: tenantId, asset_type: 'server_virtual', name: 'proxy-squid-01', display_name: 'Web Proxy', status: 'active', ip_address: '10.0.1.3', location: 'ESXi Host 02', sla_tier: 'silver', environment: 'production', owner_group_id: opsGroupId, customer_id: null, attributes: '{"os": "Ubuntu 22.04", "software": "Squid 5.7", "users": 200}', created_at: now, updated_at: now, created_by: adminId },
     { id: assetTestVmId, tenant_id: tenantId, asset_type: 'server_virtual', name: 'test-vm-01', display_name: 'Test VM 01', status: 'active', ip_address: '10.0.100.10', location: 'ESXi Host 02', sla_tier: 'none', environment: 'test', owner_group_id: devGroupId, customer_id: null, attributes: '{"vcpu": 2, "ram_gb": 4, "os": "Ubuntu 22.04"}', created_at: now, updated_at: now, created_by: agentId },
@@ -2031,6 +2192,237 @@ async function doSeed(): Promise<void> {
   logger.info('   Viewer:  viewer@opsweave.local / password123');
   logger.info('\n🌐 Customer Portal credentials:');
   logger.info('   Acme Portal User: portal@acme.example.com / changeme');
+}
+
+/**
+ * Seed Evo type registries for existing databases.
+ * Checks each tenant and seeds system types if not already present.
+ * Safe to call multiple times — skips tenants that already have types.
+ */
+export async function seedEvoTypes(): Promise<void> {
+  const db = getDb() as TypedDb;
+  const seedNow = new Date().toISOString();
+
+  // Get all tenants
+  const allTenants = await db.select({ id: tenants.id }).from(tenants);
+
+  for (const tenant of allTenants) {
+    // Check if asset types already exist for this tenant
+    const existingTypes = await db.select({ id: assetTypes.id }).from(assetTypes)
+      .where(eq(assetTypes.tenant_id, tenant.id))
+      .limit(1);
+
+    if (existingTypes.length === 0) {
+    // Seed system asset types
+    const systemAssetTypeSlugs = [
+      { slug: 'server_physical', name: 'Physical Server', category: 'compute' },
+      { slug: 'server_virtual', name: 'Virtual Machine', category: 'compute' },
+      { slug: 'virtualization_host', name: 'Virtualization Host', category: 'compute' },
+      { slug: 'container', name: 'Container', category: 'compute' },
+      { slug: 'container_host', name: 'Container Host', category: 'compute' },
+      { slug: 'network_switch', name: 'Switch', category: 'network' },
+      { slug: 'network_router', name: 'Router', category: 'network' },
+      { slug: 'network_firewall', name: 'Firewall', category: 'network' },
+      { slug: 'network_load_balancer', name: 'Load Balancer', category: 'network' },
+      { slug: 'network_wap', name: 'Wireless Access Point', category: 'network' },
+      { slug: 'storage_san', name: 'SAN Storage', category: 'storage' },
+      { slug: 'storage_nas', name: 'NAS Storage', category: 'storage' },
+      { slug: 'storage_backup', name: 'Backup System', category: 'storage' },
+      { slug: 'rack', name: 'Rack', category: 'infrastructure' },
+      { slug: 'pdu', name: 'Power Distribution Unit', category: 'infrastructure' },
+      { slug: 'ups', name: 'UPS', category: 'infrastructure' },
+      { slug: 'database', name: 'Database', category: 'software' },
+      { slug: 'application', name: 'Application', category: 'software' },
+      { slug: 'service', name: 'Service', category: 'software' },
+      { slug: 'middleware', name: 'Middleware', category: 'software' },
+      { slug: 'cluster', name: 'Cluster', category: 'software' },
+      { slug: 'workstation', name: 'Workstation', category: 'enduser' },
+      { slug: 'laptop', name: 'Laptop', category: 'enduser' },
+      { slug: 'printer', name: 'Printer', category: 'enduser' },
+      { slug: 'ip_address', name: 'IP Address', category: 'security' },
+      { slug: 'domain', name: 'Domain', category: 'security' },
+      { slug: 'certificate', name: 'Certificate', category: 'security' },
+      { slug: 'port', name: 'Port', category: 'security' },
+      { slug: 'service_endpoint', name: 'Service Endpoint', category: 'security' },
+      { slug: 'software', name: 'Software Package', category: 'software' },
+      { slug: 'other', name: 'Other', category: 'other' },
+    ];
+
+    await db.insert(assetTypes).values(systemAssetTypeSlugs.map((at) => ({
+      id: uuidv4(),
+      tenant_id: tenant.id,
+      slug: at.slug,
+      name: at.name,
+      category: at.category,
+      is_system: 1,
+      is_active: 1,
+      attribute_schema: '[]',
+      created_at: seedNow,
+      updated_at: seedNow,
+    })));
+
+    // Check if relation types already exist
+    const existingRelTypes = await db.select({ id: relationTypes.id }).from(relationTypes)
+      .where(eq(relationTypes.tenant_id, tenant.id))
+      .limit(1);
+
+    if (existingRelTypes.length === 0) {
+      const systemRelTypeSlugs = [
+        { slug: 'runs_on', name: 'Runs on', category: 'dependency' },
+        { slug: 'connected_to', name: 'Connected to', category: 'network' },
+        { slug: 'stored_on', name: 'Stored on', category: 'storage' },
+        { slug: 'powered_by', name: 'Powered by', category: 'infrastructure' },
+        { slug: 'member_of', name: 'Member of', category: 'grouping' },
+        { slug: 'depends_on', name: 'Depends on', category: 'dependency' },
+        { slug: 'backup_of', name: 'Backup of', category: 'storage' },
+        { slug: 'exposes', name: 'Exposes', category: 'network' },
+        { slug: 'protects', name: 'Protects', category: 'security' },
+        { slug: 'backs_up', name: 'Backs up', category: 'storage' },
+        { slug: 'monitored_by', name: 'Monitored by', category: 'monitoring' },
+        { slug: 'serves', name: 'Serves', category: 'service' },
+        { slug: 'governed_by', name: 'Governed by', category: 'compliance' },
+        { slug: 'licensed_to', name: 'Licensed to', category: 'licensing' },
+        { slug: 'encrypts', name: 'Encrypts', category: 'security' },
+      ];
+
+      await db.insert(relationTypes).values(systemRelTypeSlugs.map((rt) => ({
+        id: uuidv4(),
+        tenant_id: tenant.id,
+        slug: rt.slug,
+        name: rt.name,
+        category: rt.category,
+        is_directional: 1,
+        source_types: '[]',
+        target_types: '[]',
+        properties_schema: '[]',
+        is_system: 1,
+        is_active: 1,
+        created_at: seedNow,
+      })));
+    }
+    } // end asset types check
+
+    // ── Classification Models (Evo-1C) ──────────────────────────────
+    const existingClassModels = await db.select({ id: classificationModels.id }).from(classificationModels)
+      .where(eq(classificationModels.tenant_id, tenant.id))
+      .limit(1);
+
+    if (existingClassModels.length === 0) {
+      const ciaModelId = uuidv4();
+      const bcModelId = uuidv4();
+
+      await db.insert(classificationModels).values([
+        {
+          id: ciaModelId,
+          tenant_id: tenant.id,
+          name: 'CIA+A',
+          description: 'CIA+A Classification (BSI-aligned)',
+          is_system: 1,
+          is_active: 1,
+          created_at: seedNow,
+        },
+        {
+          id: bcModelId,
+          tenant_id: tenant.id,
+          name: 'Business Criticality',
+          description: 'Business criticality classification',
+          is_system: 1,
+          is_active: 1,
+          created_at: seedNow,
+        },
+      ]);
+
+      // CIA+A dimension values
+      const ciaDimensions = ['confidentiality', 'integrity', 'availability', 'authenticity'] as const;
+      const ciaLevels = ['none', 'low', 'normal', 'high', 'very_high'] as const;
+      const ciaColors: Record<typeof ciaLevels[number], string> = {
+        none: '#94a3b8',
+        low: '#22c55e',
+        normal: '#3b82f6',
+        high: '#f59e0b',
+        very_high: '#ef4444',
+      };
+
+      const ciaValues: Array<{
+        id: string;
+        model_id: string;
+        value: string;
+        label: string;
+        color: string;
+        sort_order: number;
+      }> = [];
+      let sortOrder = 0;
+      for (const dim of ciaDimensions) {
+        for (const level of ciaLevels) {
+          ciaValues.push({
+            id: uuidv4(),
+            model_id: ciaModelId,
+            value: `${dim}_${level}`,
+            label: JSON.stringify({
+              de: `${dim.charAt(0).toUpperCase() + dim.slice(1)}: ${level.replace('_', ' ')}`,
+              en: `${dim.charAt(0).toUpperCase() + dim.slice(1)}: ${level.replace('_', ' ')}`,
+            }),
+            color: ciaColors[level],
+            sort_order: sortOrder++,
+          });
+        }
+      }
+      await db.insert(classificationValues).values(ciaValues);
+
+      // Business Criticality values
+      const bcLevels = [
+        { value: 'low', color: '#22c55e' },
+        { value: 'medium', color: '#3b82f6' },
+        { value: 'high', color: '#f59e0b' },
+        { value: 'critical', color: '#ef4444' },
+      ];
+      await db.insert(classificationValues).values(bcLevels.map((lv, idx) => ({
+        id: uuidv4(),
+        model_id: bcModelId,
+        value: lv.value,
+        label: JSON.stringify({
+          de: lv.value.charAt(0).toUpperCase() + lv.value.slice(1),
+          en: lv.value.charAt(0).toUpperCase() + lv.value.slice(1),
+        }),
+        color: lv.color,
+        sort_order: idx,
+      })));
+    }
+
+    // ── Capacity Types (Evo-3C) ──────────────────────────────────
+    const existingCapTypes = await db.select({ id: capacityTypes.id }).from(capacityTypes)
+      .where(eq(capacityTypes.tenant_id, tenant.id))
+      .limit(1);
+
+    if (existingCapTypes.length === 0) {
+      const systemCapTypes = [
+        { slug: 'cpu_cores', name: 'CPU Cores', unit: 'cores', category: 'compute' },
+        { slug: 'cpu_threads', name: 'CPU Threads', unit: 'threads', category: 'compute' },
+        { slug: 'ram_gb', name: 'RAM', unit: 'GB', category: 'memory' },
+        { slug: 'storage_gb', name: 'Storage', unit: 'GB', category: 'storage' },
+        { slug: 'iops', name: 'IOPS', unit: 'IOPS', category: 'storage' },
+        { slug: 'bandwidth_mbps', name: 'Bandwidth', unit: 'Mbps', category: 'network' },
+        { slug: 'ip_addresses', name: 'IP Addresses', unit: 'addresses', category: 'network' },
+        { slug: 'ports', name: 'Ports', unit: 'ports', category: 'network' },
+        { slug: 'power_watts', name: 'Power', unit: 'W', category: 'infrastructure' },
+        { slug: 'rack_units', name: 'Rack Units', unit: 'U', category: 'infrastructure' },
+        { slug: 'license_count', name: 'Licenses', unit: 'licenses', category: 'licensing' },
+      ];
+
+      await db.insert(capacityTypes).values(systemCapTypes.map((ct) => ({
+        id: uuidv4(),
+        tenant_id: tenant.id,
+        slug: ct.slug,
+        name: ct.name,
+        unit: ct.unit,
+        category: ct.category,
+        is_system: 1,
+        created_at: seedNow,
+      })));
+    }
+
+    logger.info({ tenantId: tenant.id }, 'Evo: seeded system asset types + relation types + classification models + capacity types');
+  }
 }
 
 // CLI entry point: only runs when executed directly (not when imported)

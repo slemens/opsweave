@@ -40,7 +40,15 @@ const AuditLogPage = lazy(() => import('@/pages/settings/AuditLogPage'));
 const SlaReportsPage = lazy(() => import('@/pages/SlaReportsPage'));
 const CabBoardPage = lazy(() => import('@/pages/CabBoardPage'));
 const CreateTicketPage = lazy(() => import('@/pages/CreateTicketPage'));
+const CreateAssetPage = lazy(() => import('@/pages/CreateAssetPage'));
 const SystemSettingsPage = lazy(() => import('@/pages/settings/SystemSettingsPage'));
+const AssetTypesSettingsPage = lazy(() => import('@/pages/settings/AssetTypesSettingsPage'));
+const RelationTypesSettingsPage = lazy(() => import('@/pages/settings/RelationTypesSettingsPage'));
+const ClassificationSettingsPage = lazy(() => import('@/pages/settings/ClassificationSettingsPage'));
+const CapacityTypesSettingsPage = lazy(() => import('@/pages/settings/CapacityTypesSettingsPage'));
+const ServiceProfilesSettingsPage = lazy(() => import('@/pages/settings/ServiceProfilesSettingsPage'));
+const ProjectsPage = lazy(() => import('@/pages/ProjectsPage'));
+const ProjectDetailPage = lazy(() => import('@/pages/ProjectDetailPage'));
 
 function SettingsFallback() {
   return (
@@ -67,12 +75,15 @@ export function App() {
             <Route path="/tickets/new" element={<Suspense fallback={<SettingsFallback />}><CreateTicketPage /></Suspense>} />
             <Route path="/tickets/:id" element={<TicketDetailPage />} />
             <Route path="/assets" element={<AssetsPage />} />
+            <Route path="/assets/new" element={<Suspense fallback={<SettingsFallback />}><CreateAssetPage /></Suspense>} />
             <Route path="/assets/:id" element={<AssetDetailPage />} />
             <Route path="/workflows" element={<WorkflowsPage />} />
             <Route path="/workflows/:id" element={<WorkflowDetailPage />} />
             <Route path="/customers" element={<CustomersPage />} />
             <Route path="/customers/:id" element={<CustomerDetailPage />} />
             <Route path="/services" element={<ServiceCatalogPage />} />
+            <Route path="/projects" element={<Suspense fallback={<SettingsFallback />}><ProjectsPage /></Suspense>} />
+            <Route path="/projects/:id" element={<Suspense fallback={<SettingsFallback />}><ProjectDetailPage /></Suspense>} />
             <Route path="/compliance" element={<CompliancePage />} />
             <Route path="/knowledge-base" element={<KnowledgeBasePage />} />
             <Route path="/known-errors" element={<KnownErrorsPage />} />
@@ -90,6 +101,11 @@ export function App() {
               <Route path="notifications" element={<Suspense fallback={<SettingsFallback />}><NotificationSettingsPage /></Suspense>} />
               <Route path="escalation" element={<Suspense fallback={<SettingsFallback />}><EscalationSettingsPage /></Suspense>} />
               <Route path="audit" element={<Suspense fallback={<SettingsFallback />}><AuditLogPage /></Suspense>} />
+              <Route path="asset-types" element={<Suspense fallback={<SettingsFallback />}><AssetTypesSettingsPage /></Suspense>} />
+              <Route path="relation-types" element={<Suspense fallback={<SettingsFallback />}><RelationTypesSettingsPage /></Suspense>} />
+              <Route path="classifications" element={<Suspense fallback={<SettingsFallback />}><ClassificationSettingsPage /></Suspense>} />
+              <Route path="capacity-types" element={<Suspense fallback={<SettingsFallback />}><CapacityTypesSettingsPage /></Suspense>} />
+              <Route path="service-profiles" element={<Suspense fallback={<SettingsFallback />}><ServiceProfilesSettingsPage /></Suspense>} />
               <Route path="system" element={<Suspense fallback={<SettingsFallback />}><SystemSettingsPage /></Suspense>} />
             </Route>
           </Route>

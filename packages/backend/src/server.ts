@@ -104,6 +104,67 @@ async function autoSetupIfNeeded(): Promise<void> {
     await runSeed();
     logger.info('Auto-setup: demo data seeded');
   }
+
+  // Run Evo migrations (safe for both fresh and existing DBs)
+  await runEvoMigrations(db);
+}
+
+async function runEvoMigrations(db: TypedDb): Promise<void> {
+  const { TABLES_SQL, EVO_MIGRATIONS_SQL } = await import('./db/setup.js');
+
+  // Create new tables (IF NOT EXISTS — safe for existing DBs)
+  const newTableStatements = TABLES_SQL
+    .split(';')
+    .map((s: string) => s.trim())
+    .filter((s: string) => s.startsWith('CREATE TABLE IF NOT EXISTS asset_types')
+      || s.startsWith('CREATE TABLE IF NOT EXISTS relation_types')
+      || s.startsWith('CREATE TABLE IF NOT EXISTS classification_models')
+      || s.startsWith('CREATE TABLE IF NOT EXISTS classification_values')
+      || s.startsWith('CREATE TABLE IF NOT EXISTS asset_classifications')
+      || s.startsWith('CREATE TABLE IF NOT EXISTS capacity_types')
+      || s.startsWith('CREATE TABLE IF NOT EXISTS asset_capacities')
+      || s.startsWith('CREATE INDEX IF NOT EXISTS idx_asset_types')
+      || s.startsWith('CREATE INDEX IF NOT EXISTS idx_relation_types')
+      || s.startsWith('CREATE INDEX IF NOT EXISTS idx_classification')
+      || s.startsWith('CREATE INDEX IF NOT EXISTS idx_asset_classifications')
+      || s.startsWith('CREATE INDEX IF NOT EXISTS idx_capacity_types')
+      || s.startsWith('CREATE INDEX IF NOT EXISTS idx_asset_capacities')
+      || s.startsWith('CREATE INDEX IF NOT EXISTS idx_asset_relations_temporal'));
+
+  for (const stmt of newTableStatements) {
+    if (config.dbDriver === 'sqlite') {
+      const dbRecord = db as unknown as Record<string, unknown>;
+      (dbRecord.run as (query: ReturnType<typeof sql.raw>) => void)(sql.raw(stmt));
+    } else {
+      const dbRecord = db as unknown as Record<string, unknown>;
+      await (dbRecord.execute as (query: ReturnType<typeof sql.raw>) => Promise<unknown>)(sql.raw(stmt));
+    }
+  }
+
+  // ALTER TABLE migrations (may fail if columns already exist — that's OK)
+  for (const stmt of EVO_MIGRATIONS_SQL) {
+    try {
+      if (config.dbDriver === 'sqlite') {
+        const dbRecord = db as unknown as Record<string, unknown>;
+        (dbRecord.run as (query: ReturnType<typeof sql.raw>) => void)(sql.raw(stmt));
+      } else {
+        const dbRecord = db as unknown as Record<string, unknown>;
+        await (dbRecord.execute as (query: ReturnType<typeof sql.raw>) => Promise<unknown>)(sql.raw(stmt));
+      }
+    } catch {
+      // Column already exists — ignore
+    }
+  }
+
+  // Seed system asset types + relation types if not present
+  try {
+    const { seedEvoTypes } = await import('./db/seed/index.js');
+    await seedEvoTypes();
+  } catch {
+    // Already seeded or seed function not available
+  }
+
+  logger.debug('Evo migrations applied');
 }
 
 // ─── Bootstrap ─────────────────────────────────────────────
@@ -222,7 +283,7 @@ async function bootstrap(): Promise<void> {
         language: config.defaultLanguage,
         serveStatic: config.serveStatic,
       },
-      'OpsWeave Backend v0.4.6 started',
+      'OpsWeave Backend v0.4.7 started',
     );
 
     startEmailPollingWorker().catch((err: unknown) => {

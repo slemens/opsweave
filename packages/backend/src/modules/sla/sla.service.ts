@@ -32,6 +32,10 @@ export interface SlaDefinitionRow {
   business_hours_end: string | null;
   business_days: string;
   priority_overrides: string;
+  rpo_minutes: number | null;
+  rto_minutes: number | null;
+  service_window: string | null;
+  escalation_matrix: string | null;
   is_default: number;
   is_active: number;
   created_at: string;
@@ -83,6 +87,10 @@ export interface CreateSlaDefinitionInput {
   business_hours_end?: string | null;
   business_days?: string;
   priority_overrides?: Record<string, unknown>;
+  rpo_minutes?: number | null;
+  rto_minutes?: number | null;
+  service_window?: Record<string, unknown>;
+  escalation_matrix?: unknown[];
   is_default?: boolean;
 }
 
@@ -115,6 +123,10 @@ export async function createSlaDefinition(
       business_hours_end: data.business_hours_end ?? null,
       business_days: data.business_days ?? '1,2,3,4,5',
       priority_overrides: JSON.stringify(data.priority_overrides ?? {}),
+      rpo_minutes: data.rpo_minutes ?? null,
+      rto_minutes: data.rto_minutes ?? null,
+      service_window: JSON.stringify(data.service_window ?? {}),
+      escalation_matrix: JSON.stringify(data.escalation_matrix ?? []),
       is_default: data.is_default ? 1 : 0,
       is_active: 1,
       created_at: now,
@@ -134,6 +146,10 @@ export interface UpdateSlaDefinitionInput {
   business_hours_end?: string | null;
   business_days?: string;
   priority_overrides?: Record<string, unknown>;
+  rpo_minutes?: number | null;
+  rto_minutes?: number | null;
+  service_window?: Record<string, unknown>;
+  escalation_matrix?: unknown[];
   is_default?: boolean;
   is_active?: boolean;
 }
@@ -164,6 +180,10 @@ export async function updateSlaDefinition(
   if (data.business_hours_end !== undefined) updateData.business_hours_end = data.business_hours_end;
   if (data.business_days !== undefined) updateData.business_days = data.business_days;
   if (data.priority_overrides !== undefined) updateData.priority_overrides = JSON.stringify(data.priority_overrides);
+  if (data.rpo_minutes !== undefined) updateData.rpo_minutes = data.rpo_minutes;
+  if (data.rto_minutes !== undefined) updateData.rto_minutes = data.rto_minutes;
+  if (data.service_window !== undefined) updateData.service_window = JSON.stringify(data.service_window);
+  if (data.escalation_matrix !== undefined) updateData.escalation_matrix = JSON.stringify(data.escalation_matrix);
   if (data.is_default !== undefined) updateData.is_default = data.is_default ? 1 : 0;
   if (data.is_active !== undefined) updateData.is_active = data.is_active ? 1 : 0;
 
