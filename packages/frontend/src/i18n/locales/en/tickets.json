@@ -266,6 +266,7 @@
     }
   },
   "major_incident": {
+    "label": "Major Incident",
     "banner": "MAJOR INCIDENT",
     "commander": "Incident Commander",
     "no_commander": "No Incident Commander",

@@ -5,6 +5,7 @@ import {
   Plus,
   Search,
   AlertCircle,
+  AlertOctagon,
   RefreshCw,
   Clock,
   User,
@@ -173,7 +174,12 @@ function TicketCard({ ticket, locale }: TicketCardProps) {
 
   return (
     <Card
-      className="cursor-pointer transition-all duration-200 hover:shadow-md hover:border-primary/30 active:scale-[0.98] group"
+      className={cn(
+        'cursor-pointer transition-all duration-200 hover:shadow-md active:scale-[0.98] group',
+        ticket.is_major_incident === 1
+          ? 'border-red-500 dark:border-red-600 bg-red-50/50 dark:bg-red-950/20 hover:border-red-600 shadow-sm shadow-red-200/50 dark:shadow-red-900/30'
+          : 'hover:border-primary/30',
+      )}
       onClick={() => navigate(`/tickets/${ticket.id}`)}
       role="button"
       tabIndex={0}
@@ -185,6 +191,13 @@ function TicketCard({ ticket, locale }: TicketCardProps) {
       }}
     >
       <CardContent className="p-3.5 space-y-2.5">
+        {/* Major Incident Banner */}
+        {ticket.is_major_incident === 1 && (
+          <div className="flex items-center gap-1.5 text-red-700 dark:text-red-400">
+            <AlertOctagon className="h-3.5 w-3.5 animate-pulse" />
+            <span className="text-[11px] font-bold uppercase tracking-wide">{t('major_incident.label')}</span>
+          </div>
+        )}
         {/* Top row: Ticket number + SLA indicator */}
         <div className="flex items-center justify-between gap-2">
           <Badge
@@ -779,7 +792,11 @@ function TicketListView({
               return (
                 <TableRow
                   key={ticket.id}
-                  className={cn('cursor-pointer', isSelected && 'bg-primary/5')}
+                  className={cn(
+                    'cursor-pointer',
+                    isSelected && 'bg-primary/5',
+                    ticket.is_major_incident === 1 && 'bg-red-50/60 dark:bg-red-950/20 border-l-2 border-l-red-500',
+                  )}
                   onClick={() => navigate(`/tickets/${ticket.id}`)}
                 >
                   <TableCell className="px-3" onClick={(e) => e.stopPropagation()}>
@@ -791,6 +808,18 @@ function TicketListView({
                   </TableCell>
                   <TableCell className="font-mono text-xs whitespace-nowrap">
                     <div className="flex items-center gap-2">
+                      {ticket.is_major_incident === 1 && (
+                        <TooltipProvider delayDuration={200}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <AlertOctagon className="h-4 w-4 text-red-600 dark:text-red-400 animate-pulse shrink-0" />
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="text-xs font-bold text-red-700">
+                              {t('major_incident.label')}
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
                       <Badge
                         variant="outline"
                         className={cn('text-[11px] font-mono font-medium px-1.5 py-0', ticketTypeBadgeColors[ticket.ticket_type])}

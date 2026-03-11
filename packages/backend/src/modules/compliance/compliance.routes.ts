@@ -51,6 +51,7 @@ import {
 } from '../compliance-controls/audits.controller.js';
 
 import {
+  listAllEvidence,
   listEvidence,
   createEvidence,
   deleteEvidence,
@@ -339,6 +340,15 @@ complianceRouter.delete(
 // =============================================================================
 // Compliance Evidence (Evo-4C)
 // =============================================================================
+
+/**
+ * GET /api/v1/compliance/evidence
+ * List ALL evidence across all controls.
+ */
+complianceRouter.get(
+  '/evidence',
+  listAllEvidence,
+);
 
 /**
  * GET /api/v1/compliance/controls/:id/evidence

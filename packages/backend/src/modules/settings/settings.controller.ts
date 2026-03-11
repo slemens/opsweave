@@ -85,12 +85,12 @@ export function deleteSettingByKey(
  * GET /api/v1/license
  * Return license info for the current tenant.
  */
-export function getLicense(
+export async function getLicense(
   req: Request,
   res: Response,
-): void {
+): Promise<void> {
   const tenantId = requireTenantId(req);
-  const info = settingsService.getLicenseInfo(tenantId);
+  const info = await settingsService.getLicenseInfo(tenantId);
   sendSuccess(res, info);
 }
 

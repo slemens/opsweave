@@ -122,6 +122,15 @@ function useCreateFinding() {
   });
 }
 
+function useUpdateFinding() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, auditId: _auditId, ...data }: Partial<AuditFinding> & { id: string; auditId: string }) =>
+      apiClient.put<AuditFinding>(`/compliance/findings/${id}`, data),
+    onSuccess: (_d, vars) => { void qc.invalidateQueries({ queryKey: auditKeys.findings(vars.auditId) }); },
+  });
+}
+
 const AUDIT_STATUSES = ['planned', 'in_progress', 'completed', 'cancelled'] as const;
 const FINDING_SEVERITIES = ['critical', 'major', 'minor', 'observation'] as const;
 const FINDING_STATUSES = ['open', 'in_remediation', 'resolved', 'accepted_risk'] as const;
@@ -148,33 +157,75 @@ function FindingsPanel({ auditId }: { auditId: string }) {
   const { t } = useTranslation(['compliance', 'common']);
   const { data: findings } = useAuditFindings(auditId);
   const createFinding = useCreateFinding();
+  const updateFinding = useUpdateFinding();
 
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingFinding, setEditingFinding] = useState<AuditFinding | null>(null);
   const [title, setTitle] = useState('');
   const [severity, setSeverity] = useState<string>('minor');
   const [description, setDescription] = useState('');
   const [findingStatus, setFindingStatus] = useState<string>('open');
+  const [remediationPlan, setRemediationPlan] = useState('');
+  const [dueDate, setDueDate] = useState('');
 
   const findingList = findings ?? [];
 
-  async function handleCreate() {
+  function resetFindingForm() {
+    setTitle('');
+    setSeverity('minor');
+    setDescription('');
+    setFindingStatus('open');
+    setRemediationPlan('');
+    setDueDate('');
+    setEditingFinding(null);
+  }
+
+  function openEditFinding(f: AuditFinding) {
+    setEditingFinding(f);
+    setTitle(f.title);
+    setSeverity(f.severity);
+    setDescription(f.description ?? '');
+    setFindingStatus(f.status);
+    setRemediationPlan(f.remediation_plan ?? '');
+    setDueDate(f.due_date ?? '');
+    setDialogOpen(true);
+  }
+
+  async function handleSaveFinding() {
     if (!title.trim()) return;
     try {
-      await createFinding.mutateAsync({
-        auditId,
-        title: title.trim(),
-        severity,
-        description: description.trim() || null,
-        status: findingStatus,
-      });
-      toast.success(t('compliance:audits.finding_created'));
+      if (editingFinding) {
+        await updateFinding.mutateAsync({
+          id: editingFinding.id,
+          auditId,
+          title: title.trim(),
+          severity,
+          description: description.trim() || null,
+          status: findingStatus,
+          remediation_plan: remediationPlan.trim() || null,
+          due_date: dueDate || null,
+        });
+        toast.success(t('compliance:audits.finding_updated'));
+      } else {
+        await createFinding.mutateAsync({
+          auditId,
+          title: title.trim(),
+          severity,
+          description: description.trim() || null,
+          status: findingStatus,
+          remediation_plan: remediationPlan.trim() || null,
+          due_date: dueDate || null,
+        });
+        toast.success(t('compliance:audits.finding_created'));
+      }
       setDialogOpen(false);
-      setTitle('');
-      setDescription('');
+      resetFindingForm();
     } catch {
       toast.error(t('compliance:audits.save_error'));
     }
   }
+
+  const isSaving = createFinding.isPending || updateFinding.isPending;
 
   return (
     <div className="ml-6 mt-1 space-y-2 pb-2">
@@ -182,27 +233,39 @@ function FindingsPanel({ auditId }: { auditId: string }) {
         <span className="text-xs font-medium text-muted-foreground">
           {findingList.length} {t('compliance:audits.findings')}
         </span>
-        <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setDialogOpen(true)}>
+        <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => { resetFindingForm(); setDialogOpen(true); }}>
           <Plus className="mr-1 h-3 w-3" />
           {t('compliance:audits.add_finding')}
         </Button>
       </div>
       {findingList.map((f) => (
-        <div key={f.id} className="flex items-center justify-between rounded-md border px-3 py-1.5 text-sm">
+        <div
+          key={f.id}
+          className="flex items-center justify-between rounded-md border px-3 py-1.5 text-sm cursor-pointer hover:bg-muted/50 transition-colors"
+          onClick={() => openEditFinding(f)}
+        >
           <div className="flex items-center gap-2">
             <Badge className={`text-[9px] ${SEVERITY_COLORS[f.severity] ?? ''}`}>{f.severity}</Badge>
             <span>{f.title}</span>
           </div>
-          <Badge variant="outline" className="text-[9px]">
-            {t(`compliance:audits.finding_statuses.${f.status}`)}
-          </Badge>
+          <div className="flex items-center gap-2">
+            {f.due_date && (
+              <span className="text-[10px] text-muted-foreground">{new Date(f.due_date).toLocaleDateString()}</span>
+            )}
+            <Badge variant="outline" className="text-[9px]">
+              {t(`compliance:audits.finding_statuses.${f.status}`)}
+            </Badge>
+            <Pencil className="h-3 w-3 text-muted-foreground" />
+          </div>
         </div>
       ))}
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-[450px]">
+      <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetFindingForm(); }}>
+        <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>{t('compliance:audits.add_finding')}</DialogTitle>
+            <DialogTitle>
+              {editingFinding ? t('compliance:audits.edit_finding') : t('compliance:audits.add_finding')}
+            </DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
@@ -237,13 +300,21 @@ function FindingsPanel({ auditId }: { auditId: string }) {
               <Label>{t('compliance:audits.finding_description')}</Label>
               <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} />
             </div>
+            <div className="grid gap-2">
+              <Label>{t('compliance:audits.remediation_plan')}</Label>
+              <Textarea value={remediationPlan} onChange={(e) => setRemediationPlan(e.target.value)} rows={2} placeholder={t('compliance:audits.remediation_placeholder')} />
+            </div>
+            <div className="grid gap-2">
+              <Label>{t('compliance:audits.due_date')}</Label>
+              <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
               {t('common:actions.cancel')}
             </Button>
-            <Button onClick={() => void handleCreate()} disabled={!title.trim() || createFinding.isPending}>
-              {createFinding.isPending ? t('common:status.loading') : t('common:actions.save')}
+            <Button onClick={() => void handleSaveFinding()} disabled={!title.trim() || isSaving}>
+              {isSaving ? t('common:status.loading') : t('common:actions.save')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -272,7 +343,10 @@ export function AuditsTab() {
   const [notes, setNotes] = useState('');
   const [expandedAudits, setExpandedAudits] = useState<Set<string>>(new Set());
 
-  const auditList = useMemo(() => audits ?? [], [audits]);
+  const auditList = useMemo(() => {
+    const raw = audits as unknown;
+    return Array.isArray(raw) ? raw : (raw as { data?: ComplianceAudit[] })?.data ?? [];
+  }, [audits]);
 
   function toggleExpand(id: string) {
     setExpandedAudits((prev) => {

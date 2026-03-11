@@ -22,7 +22,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/license-AGPL--3.0-blue?style=flat-square" alt="License" />
-  <img src="https://img.shields.io/badge/release-v0.4.7-orange?style=flat-square" alt="Release" />
+  <img src="https://img.shields.io/badge/release-v0.5.0-orange?style=flat-square" alt="Release" />
   <img src="https://github.com/slemens/opsweave/actions/workflows/ci.yml/badge.svg" alt="CI" />
   <img src="https://img.shields.io/badge/i18n-de%20%7C%20en-blue?style=flat-square" alt="Languages" />
 </p>

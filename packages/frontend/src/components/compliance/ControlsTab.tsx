@@ -141,7 +141,10 @@ export function ControlsTab() {
   const [controlType, setControlType] = useState<string>('preventive');
   const [status, setStatus] = useState<string>('planned');
 
-  const controlList = useMemo(() => controls ?? [], [controls]);
+  const controlList = useMemo(() => {
+    const raw = controls as unknown;
+    return Array.isArray(raw) ? raw : (raw as { data?: ComplianceControl[] })?.data ?? [];
+  }, [controls]);
 
   function resetForm() {
     setCode('');
@@ -238,7 +241,7 @@ export function ControlsTab() {
                 </TableHeader>
                 <TableBody>
                   {controlList.map((c) => (
-                    <TableRow key={c.id}>
+                    <TableRow key={c.id} className="cursor-pointer hover:bg-muted/50" onClick={() => openEdit(c)}>
                       <TableCell className="font-mono text-xs font-medium">{c.code}</TableCell>
                       <TableCell>
                         <div className="font-medium">{c.title}</div>
@@ -256,7 +259,7 @@ export function ControlsTab() {
                           {t(`compliance:controls.statuses.${c.status}`)}
                         </Badge>
                       </TableCell>
-                      <TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-7 w-7">

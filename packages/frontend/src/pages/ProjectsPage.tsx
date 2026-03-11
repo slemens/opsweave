@@ -99,7 +99,7 @@ export default function ProjectsPage() {
   const { t } = useTranslation(['projects', 'common']);
   const navigate = useNavigate();
 
-  const { data: projects, isLoading } = useProjects();
+  const { data: projectsRaw, isLoading } = useProjects();
   const { data: customersData } = useCustomers();
   const createProject = useCreateProject();
 
@@ -113,13 +113,14 @@ export default function ProjectsPage() {
 
   const customerList = useMemo(() => customersData?.data ?? [], [customersData]);
   const projectList = useMemo(() => {
-    const list = projects ?? [];
+    const raw = projectsRaw as unknown;
+    const list: Project[] = Array.isArray(raw) ? raw : (raw as { data?: Project[] })?.data ?? [];
     if (!search.trim()) return list;
     const q = search.toLowerCase();
     return list.filter((p) =>
       p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q),
     );
-  }, [projects, search]);
+  }, [projectsRaw, search]);
 
   function resetForm() {
     setName('');
