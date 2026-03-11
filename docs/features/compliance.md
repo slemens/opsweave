@@ -3,6 +3,8 @@
 Das Compliance-Modul verwaltet regulatorische Anforderungen und deren Abdeckung
 durch IT-Services.
 
+![Compliance Management](/screenshots/compliance.png)
+
 ## Frameworks
 
 Compliance-Frameworks sind Regelwerke mit Anforderungskatalogen:

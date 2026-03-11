@@ -2,6 +2,8 @@
 
 OpsWeave bietet ein vollstaendiges SLA-Management mit automatischer Fristberechnung, Vererbung ueber die CMDB und visuellen Indikatoren im gesamten System.
 
+![SLA Reports](/screenshots/sla-reports.png)
+
 ## SLA-Stufen
 
 Das SLA-System basiert auf vier Stufen (Tiers):

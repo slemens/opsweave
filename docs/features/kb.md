@@ -3,6 +3,8 @@
 Die Wissensdatenbank (KB) speichert strukturiertes Wissen in Markdown-Artikeln
 und verknüpft es mit Tickets.
 
+![Wissensdatenbank](/screenshots/knowledge-base.png)
+
 ## Artikel
 
 Jeder Artikel hat:

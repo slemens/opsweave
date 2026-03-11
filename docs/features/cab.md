@@ -2,6 +2,8 @@
 
 Das Change Advisory Board (CAB) ist die zentrale Instanz zur Bewertung und Genehmigung von Change Requests in OpsWeave. Es stellt sicher, dass Aenderungen an der IT-Infrastruktur strukturiert geprueft und dokumentiert werden.
 
+![CAB Board](/screenshots/cab-board.png)
+
 ## CAB-Board
 
 Die CAB-Seite bietet eine uebersichtliche Darstellung aller Change Requests, die eine CAB-Bewertung erfordern.
