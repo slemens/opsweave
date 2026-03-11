@@ -33,8 +33,9 @@ jobs:
           node-version: '22'
 
       - name: Install and build docs
-        working-directory: docs
         run: |
+          rm -f package.json package-lock.json
+          cd docs
           npm install
           npx vitepress build
 
