@@ -98,12 +98,12 @@ export function getLicense(
  * GET /api/v1/license/usage
  * Return current resource usage vs. license limits.
  */
-export function getLicenseUsageHandler(
+export async function getLicenseUsageHandler(
   req: Request,
   res: Response,
-): void {
+): Promise<void> {
   const tenantId = requireTenantId(req);
-  const usage = settingsService.getLicenseUsage(tenantId);
+  const usage = await settingsService.getLicenseUsage(tenantId);
   sendSuccess(res, usage);
 }
 
