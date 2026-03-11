@@ -8,6 +8,7 @@ import {
   createAssetSchema,
   updateAssetSchema,
   createAssetRelationSchema,
+  classifyAssetSchema,
 } from '@opsweave/shared';
 
 import {
@@ -27,6 +28,11 @@ import {
   getAssetServices,
   getAssetCompliance,
 } from './assets.controller.js';
+import {
+  getAssetClassifications,
+  classifyAsset,
+  removeAssetClassification,
+} from '../classifications/classifications.controller.js';
 
 const assetRouter = Router();
 
@@ -34,6 +40,11 @@ const assetRouter = Router();
 const assetRelationParamsSchema = z.object({
   id: z.string().uuid(),
   rid: z.string().uuid(),
+});
+
+const assetClassificationParamsSchema = z.object({
+  id: z.string().uuid(),
+  vid: z.string().uuid(),
 });
 
 // ─── Routes ─────────────────────────────────────────────
@@ -192,6 +203,39 @@ assetRouter.get(
   '/:id/compliance',
   validateParams(idParamSchema),
   getAssetCompliance,
+);
+
+// ─── Asset Classifications (Evo-1C) ─────────────────────
+
+/**
+ * GET /api/v1/assets/:id/classifications
+ * Get all classifications for an asset.
+ */
+assetRouter.get(
+  '/:id/classifications',
+  validateParams(idParamSchema),
+  getAssetClassifications,
+);
+
+/**
+ * POST /api/v1/assets/:id/classifications
+ * Classify an asset.
+ */
+assetRouter.post(
+  '/:id/classifications',
+  validateParams(idParamSchema),
+  validate(classifyAssetSchema),
+  classifyAsset,
+);
+
+/**
+ * DELETE /api/v1/assets/:id/classifications/:vid
+ * Remove a classification from an asset.
+ */
+assetRouter.delete(
+  '/:id/classifications/:vid',
+  validateParams(assetClassificationParamsSchema),
+  removeAssetClassification,
 );
 
 export { assetRouter };

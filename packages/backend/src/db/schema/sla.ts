@@ -27,6 +27,11 @@ export const slaDefinitions = sqliteTable(
     business_days: text('business_days').notNull().default('1,2,3,4,5'), // comma-separated: 1=Mon ... 7=Sun
     // Priority overrides (JSON): { "critical": { "response": 15, "resolution": 60 }, ... }
     priority_overrides: text('priority_overrides').notNull().default('{}'),
+    // Evo-2A: Extended SLA fields
+    rpo_minutes: integer('rpo_minutes'), // Recovery Point Objective
+    rto_minutes: integer('rto_minutes'), // Recovery Time Objective
+    service_window: text('service_window').default('{}'), // JSON: { maintenance_window, change_window }
+    escalation_matrix: text('escalation_matrix').default('[]'), // JSON: escalation levels with contacts/timeouts
     is_default: integer('is_default').notNull().default(0), // 0|1 — tenant-wide default SLA
     is_active: integer('is_active').notNull().default(1),
     created_at: text('created_at').notNull(),
@@ -73,5 +78,60 @@ export const slaAssignments = sqliteTable(
     index('idx_slaassign_tenant_customer').on(t.tenant_id, t.customer_id),
     index('idx_slaassign_tenant_service').on(t.tenant_id, t.service_id),
     unique('uq_sla_assignment').on(t.tenant_id, t.sla_definition_id, t.service_id, t.customer_id, t.asset_id),
+  ],
+);
+
+// =============================================================================
+// service_profiles (Evo-2A) — Reusable service tier definitions
+// =============================================================================
+
+export const serviceProfiles = sqliteTable(
+  'service_profiles',
+  {
+    id: text('id').primaryKey(),
+    tenant_id: text('tenant_id')
+      .notNull()
+      .references(() => tenants.id),
+    name: text('name').notNull(),
+    description: text('description'),
+    dimensions: text('dimensions').notNull().default('{}'), // JSON: service dimensions/features
+    sla_definition_id: text('sla_definition_id').references(() => slaDefinitions.id),
+    is_active: integer('is_active').notNull().default(1),
+    created_at: text('created_at').notNull(),
+    updated_at: text('updated_at').notNull(),
+  },
+  (t) => [
+    index('idx_svcprofile_tenant').on(t.tenant_id),
+    unique('uq_svcprofile_name').on(t.tenant_id, t.name),
+  ],
+);
+
+// =============================================================================
+// service_entitlements (Evo-2A) — Customer-specific service entitlements
+// =============================================================================
+
+export const serviceEntitlements = sqliteTable(
+  'service_entitlements',
+  {
+    id: text('id').primaryKey(),
+    tenant_id: text('tenant_id')
+      .notNull()
+      .references(() => tenants.id),
+    customer_id: text('customer_id')
+      .notNull()
+      .references(() => customers.id),
+    service_id: text('service_id')
+      .notNull()
+      .references(() => serviceDescriptions.id),
+    profile_id: text('profile_id').references(() => serviceProfiles.id),
+    scope: text('scope').notNull().default('{}'), // JSON: { included, excluded, addon }
+    effective_from: text('effective_from').notNull(),
+    effective_until: text('effective_until'),
+    created_at: text('created_at').notNull(),
+  },
+  (t) => [
+    index('idx_svcent_tenant').on(t.tenant_id),
+    index('idx_svcent_customer').on(t.tenant_id, t.customer_id),
+    index('idx_svcent_service').on(t.tenant_id, t.service_id),
   ],
 );

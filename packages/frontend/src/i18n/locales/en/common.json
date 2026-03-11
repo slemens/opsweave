@@ -16,7 +16,8 @@
     "settings": "Settings",
     "monitoring": "Monitoring",
     "sla_reports": "SLA Reports",
-    "cab": "CAB Board"
+    "cab": "CAB Board",
+    "projects": "Projects"
   },
   "actions": {
     "save": "Save",

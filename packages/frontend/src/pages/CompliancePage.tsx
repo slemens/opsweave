@@ -1,5 +1,8 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ControlsTab } from '@/components/compliance/ControlsTab';
+import { AuditsTab } from '@/components/compliance/AuditsTab';
+import { EvidenceTab } from '@/components/compliance/EvidenceTab';
 import {
   AlertTriangle,
   CheckCircle2,
@@ -1384,6 +1387,24 @@ export function CompliancePage() {
           >
             {t('matrix.title')}
           </TabsTrigger>
+          <TabsTrigger
+            value="controls"
+            className="dark:data-[state=active]:bg-slate-700 dark:text-slate-300 dark:data-[state=active]:text-white"
+          >
+            {t('controls.title')}
+          </TabsTrigger>
+          <TabsTrigger
+            value="audits"
+            className="dark:data-[state=active]:bg-slate-700 dark:text-slate-300 dark:data-[state=active]:text-white"
+          >
+            {t('audits.title')}
+          </TabsTrigger>
+          <TabsTrigger
+            value="evidence"
+            className="dark:data-[state=active]:bg-slate-700 dark:text-slate-300 dark:data-[state=active]:text-white"
+          >
+            {t('evidence.title')}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="frameworks" className="space-y-0 mt-0">
@@ -1404,6 +1425,18 @@ export function CompliancePage() {
             selectedFrameworkId={selectedFrameworkId}
             onFrameworkChange={setSelectedFrameworkId}
           />
+        </TabsContent>
+
+        <TabsContent value="controls" className="space-y-0 mt-0">
+          <ControlsTab />
+        </TabsContent>
+
+        <TabsContent value="audits" className="space-y-0 mt-0">
+          <AuditsTab />
+        </TabsContent>
+
+        <TabsContent value="evidence" className="space-y-0 mt-0">
+          <EvidenceTab />
         </TabsContent>
       </Tabs>
     </div>

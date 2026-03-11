@@ -17,6 +17,7 @@ import {
   Bug,
   BarChart3,
   Gavel,
+  FolderKanban,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -41,6 +42,7 @@ const navItems: NavItem[] = [
   { labelKey: 'nav.tickets', href: '/tickets', icon: Ticket },
   { labelKey: 'nav.assets', href: '/assets', icon: Server },
   { labelKey: 'nav.customers', href: '/customers', icon: Building2 },
+  { labelKey: 'nav.projects', href: '/projects', icon: FolderKanban },
   { labelKey: 'nav.workflows', href: '/workflows', icon: GitBranch },
   { labelKey: 'nav.services', href: '/services', icon: BookOpen },
   { labelKey: 'nav.compliance', href: '/compliance', icon: Shield },

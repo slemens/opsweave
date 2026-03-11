@@ -111,7 +111,8 @@ export async function getAssetRelations(
   const tenantId = requireTenantId(req);
   const { id } = req.params as { id: string };
 
-  const relations = await assetsService.getAssetRelations(tenantId, id);
+  const asOf = req.query.as_of as string | undefined;
+  const relations = await assetsService.getAssetRelations(tenantId, id, { asOf });
   sendSuccess(res, relations);
 }
 

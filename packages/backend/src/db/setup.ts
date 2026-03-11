@@ -126,7 +126,109 @@ CREATE TABLE IF NOT EXISTS asset_relations (
   properties TEXT NOT NULL DEFAULT '{}',
   created_at TEXT NOT NULL,
   created_by TEXT NOT NULL,
+  valid_from TEXT,
+  valid_until TEXT,
+  metadata TEXT NOT NULL DEFAULT '{}',
   UNIQUE(tenant_id, source_asset_id, target_asset_id, relation_type)
+);
+
+-- asset_types (Evo-1A: Extensible Asset Type Registry)
+CREATE TABLE IF NOT EXISTS asset_types (
+  id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  slug TEXT NOT NULL,
+  name TEXT NOT NULL,
+  description TEXT,
+  category TEXT NOT NULL DEFAULT 'other',
+  icon TEXT,
+  color TEXT,
+  is_system INTEGER NOT NULL DEFAULT 0,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  attribute_schema TEXT NOT NULL DEFAULT '[]',
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  UNIQUE(tenant_id, slug)
+);
+
+-- relation_types (Evo-3A: Extensible Relation Type Registry)
+CREATE TABLE IF NOT EXISTS relation_types (
+  id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  slug TEXT NOT NULL,
+  name TEXT NOT NULL DEFAULT '{}',
+  description TEXT,
+  category TEXT,
+  is_directional INTEGER NOT NULL DEFAULT 1,
+  source_types TEXT NOT NULL DEFAULT '[]',
+  target_types TEXT NOT NULL DEFAULT '[]',
+  properties_schema TEXT NOT NULL DEFAULT '[]',
+  is_system INTEGER NOT NULL DEFAULT 0,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  color TEXT,
+  created_at TEXT NOT NULL,
+  UNIQUE(tenant_id, slug)
+);
+
+-- classification_models (Evo-1C: Classification System)
+CREATE TABLE IF NOT EXISTS classification_models (
+  id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  name TEXT NOT NULL,
+  description TEXT,
+  is_system INTEGER NOT NULL DEFAULT 0,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL,
+  UNIQUE(tenant_id, name)
+);
+
+-- classification_values (Evo-1C)
+CREATE TABLE IF NOT EXISTS classification_values (
+  id TEXT PRIMARY KEY,
+  model_id TEXT NOT NULL REFERENCES classification_models(id),
+  value TEXT NOT NULL,
+  label TEXT NOT NULL DEFAULT '{}',
+  color TEXT,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  UNIQUE(model_id, value)
+);
+
+-- asset_classifications (Evo-1C)
+CREATE TABLE IF NOT EXISTS asset_classifications (
+  asset_id TEXT NOT NULL REFERENCES assets(id),
+  value_id TEXT NOT NULL REFERENCES classification_values(id),
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  justification TEXT,
+  classified_by TEXT,
+  classified_at TEXT NOT NULL,
+  UNIQUE(asset_id, value_id)
+);
+
+-- capacity_types (Evo-3C: Capacity System)
+CREATE TABLE IF NOT EXISTS capacity_types (
+  id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  slug TEXT NOT NULL,
+  name TEXT NOT NULL DEFAULT '{}',
+  unit TEXT NOT NULL,
+  category TEXT,
+  is_system INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL,
+  UNIQUE(tenant_id, slug)
+);
+
+-- asset_capacities (Evo-3C)
+CREATE TABLE IF NOT EXISTS asset_capacities (
+  id TEXT PRIMARY KEY,
+  asset_id TEXT NOT NULL REFERENCES assets(id),
+  capacity_type_id TEXT NOT NULL REFERENCES capacity_types(id),
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  direction TEXT NOT NULL DEFAULT 'provides',
+  total REAL NOT NULL DEFAULT 0,
+  allocated REAL NOT NULL DEFAULT 0,
+  reserved REAL NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  UNIQUE(asset_id, capacity_type_id, direction)
 );
 
 -- ticket_categories
@@ -192,6 +294,7 @@ CREATE TABLE IF NOT EXISTS tickets (
   major_declared_at TEXT,
   major_declared_by TEXT,
   bridge_call_url TEXT,
+  project_id TEXT REFERENCES projects(id),
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   resolved_at TEXT,
@@ -373,6 +476,9 @@ CREATE TABLE IF NOT EXISTS requirement_service_mappings (
   evidence_notes TEXT,
   reviewed_at TEXT,
   reviewed_by TEXT,
+  maturity_level TEXT,
+  last_verified TEXT,
+  verified_by TEXT,
   PRIMARY KEY (requirement_id, service_desc_id)
 );
 
@@ -489,6 +595,10 @@ CREATE TABLE IF NOT EXISTS sla_definitions (
   business_hours_end TEXT,
   business_days TEXT NOT NULL DEFAULT '1,2,3,4,5',
   priority_overrides TEXT NOT NULL DEFAULT '{}',
+  rpo_minutes INTEGER,
+  rto_minutes INTEGER,
+  service_window TEXT DEFAULT '{}',
+  escalation_matrix TEXT DEFAULT '[]',
   is_default INTEGER NOT NULL DEFAULT 0,
   is_active INTEGER NOT NULL DEFAULT 1,
   created_at TEXT NOT NULL,
@@ -506,6 +616,33 @@ CREATE TABLE IF NOT EXISTS sla_assignments (
   priority INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL,
   UNIQUE(tenant_id, sla_definition_id, service_id, customer_id, asset_id)
+);
+
+-- service_profiles (Evo-2A)
+CREATE TABLE IF NOT EXISTS service_profiles (
+  id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  name TEXT NOT NULL,
+  description TEXT,
+  dimensions TEXT NOT NULL DEFAULT '{}',
+  sla_definition_id TEXT REFERENCES sla_definitions(id),
+  is_active INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  UNIQUE(tenant_id, name)
+);
+
+-- service_entitlements (Evo-2A)
+CREATE TABLE IF NOT EXISTS service_entitlements (
+  id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  customer_id TEXT NOT NULL REFERENCES customers(id),
+  service_id TEXT NOT NULL REFERENCES service_descriptions(id),
+  profile_id TEXT REFERENCES service_profiles(id),
+  scope TEXT NOT NULL DEFAULT '{}',
+  effective_from TEXT NOT NULL,
+  effective_until TEXT,
+  created_at TEXT NOT NULL
 );
 
 -- known_errors (KEDB)
@@ -602,6 +739,120 @@ CREATE INDEX IF NOT EXISTS idx_audit_tenant_resource ON audit_logs(tenant_id, re
 CREATE INDEX IF NOT EXISTS idx_audit_tenant_actor ON audit_logs(tenant_id, actor_id);
 CREATE INDEX IF NOT EXISTS idx_audit_tenant_created ON audit_logs(tenant_id, created_at);
 
+-- Evo indexes
+CREATE INDEX IF NOT EXISTS idx_asset_types_tenant ON asset_types(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_asset_types_tenant_category ON asset_types(tenant_id, category);
+CREATE INDEX IF NOT EXISTS idx_relation_types_tenant ON relation_types(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_classification_models_tenant ON classification_models(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_classification_values_model ON classification_values(model_id);
+CREATE INDEX IF NOT EXISTS idx_asset_classifications_asset ON asset_classifications(asset_id);
+CREATE INDEX IF NOT EXISTS idx_asset_classifications_tenant ON asset_classifications(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_capacity_types_tenant ON capacity_types(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_asset_capacities_asset ON asset_capacities(asset_id);
+CREATE INDEX IF NOT EXISTS idx_asset_capacities_tenant ON asset_capacities(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_asset_relations_temporal ON asset_relations(tenant_id, valid_from, valid_until);
+
+-- projects (Evo-2C: Project Structures)
+CREATE TABLE IF NOT EXISTS projects (
+  id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  customer_id TEXT REFERENCES customers(id),
+  name TEXT NOT NULL,
+  code TEXT NOT NULL,
+  description TEXT,
+  status TEXT NOT NULL DEFAULT 'active',
+  start_date TEXT,
+  end_date TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  UNIQUE(tenant_id, code)
+);
+
+-- project_assets (Evo-2C)
+CREATE TABLE IF NOT EXISTS project_assets (
+  project_id TEXT NOT NULL REFERENCES projects(id),
+  asset_id TEXT NOT NULL REFERENCES assets(id),
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  role TEXT,
+  added_at TEXT NOT NULL,
+  UNIQUE(project_id, asset_id)
+);
+
+-- compliance_controls (Evo-4A: Compliance Controls)
+CREATE TABLE IF NOT EXISTS compliance_controls (
+  id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  code TEXT NOT NULL,
+  title TEXT NOT NULL,
+  description TEXT,
+  category TEXT,
+  control_type TEXT NOT NULL DEFAULT 'preventive',
+  status TEXT NOT NULL DEFAULT 'planned',
+  owner_id TEXT REFERENCES users(id),
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  UNIQUE(tenant_id, code)
+);
+
+-- requirement_control_mappings (Evo-4A: Cross-Framework Mapping)
+CREATE TABLE IF NOT EXISTS requirement_control_mappings (
+  requirement_id TEXT NOT NULL REFERENCES regulatory_requirements(id),
+  control_id TEXT NOT NULL REFERENCES compliance_controls(id),
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  coverage TEXT NOT NULL DEFAULT 'full',
+  notes TEXT,
+  UNIQUE(requirement_id, control_id)
+);
+
+-- compliance_audits (Evo-4B: Audit Tracking)
+CREATE TABLE IF NOT EXISTS compliance_audits (
+  id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  name TEXT NOT NULL,
+  framework_id TEXT REFERENCES regulatory_frameworks(id),
+  audit_type TEXT NOT NULL DEFAULT 'internal',
+  status TEXT NOT NULL DEFAULT 'planned',
+  auditor TEXT,
+  start_date TEXT,
+  end_date TEXT,
+  scope TEXT,
+  notes TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+-- audit_findings (Evo-4B: Audit Tracking)
+CREATE TABLE IF NOT EXISTS audit_findings (
+  id TEXT PRIMARY KEY,
+  audit_id TEXT NOT NULL REFERENCES compliance_audits(id),
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  control_id TEXT REFERENCES compliance_controls(id),
+  requirement_id TEXT REFERENCES regulatory_requirements(id),
+  severity TEXT NOT NULL DEFAULT 'minor',
+  title TEXT NOT NULL,
+  description TEXT,
+  status TEXT NOT NULL DEFAULT 'open',
+  remediation_plan TEXT,
+  due_date TEXT,
+  resolved_at TEXT,
+  resolved_by TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+-- compliance_evidence (Evo-4C: Granular Coverage & Evidence)
+CREATE TABLE IF NOT EXISTS compliance_evidence (
+  id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  control_id TEXT NOT NULL REFERENCES compliance_controls(id),
+  evidence_type TEXT NOT NULL DEFAULT 'document',
+  title TEXT NOT NULL,
+  url TEXT,
+  description TEXT,
+  uploaded_at TEXT NOT NULL,
+  uploaded_by TEXT
+);
+
 -- ─── Feedback Board (global, no tenant_id) ────────────────────
 CREATE TABLE IF NOT EXISTS feedback_entries (
   id TEXT PRIMARY KEY,
@@ -613,9 +864,54 @@ CREATE TABLE IF NOT EXISTS feedback_entries (
   votes INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL
 );
+CREATE INDEX IF NOT EXISTS idx_cc_tenant ON compliance_controls(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_cc_tenant_status ON compliance_controls(tenant_id, status);
+CREATE INDEX IF NOT EXISTS idx_cc_tenant_category ON compliance_controls(tenant_id, category);
+CREATE INDEX IF NOT EXISTS idx_rcm_tenant ON requirement_control_mappings(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_rcm_control ON requirement_control_mappings(control_id);
+CREATE INDEX IF NOT EXISTS idx_rcm_requirement ON requirement_control_mappings(requirement_id);
+CREATE INDEX IF NOT EXISTS idx_projects_tenant ON projects(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_projects_tenant_status ON projects(tenant_id, status);
+CREATE INDEX IF NOT EXISTS idx_projects_tenant_customer ON projects(tenant_id, customer_id);
+CREATE INDEX IF NOT EXISTS idx_project_assets_project ON project_assets(project_id);
+CREATE INDEX IF NOT EXISTS idx_project_assets_asset ON project_assets(asset_id);
+CREATE INDEX IF NOT EXISTS idx_project_assets_tenant ON project_assets(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_tickets_tenant_project ON tickets(tenant_id, project_id);
+CREATE INDEX IF NOT EXISTS idx_svcprofile_tenant ON service_profiles(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_svcent_tenant ON service_entitlements(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_svcent_customer ON service_entitlements(tenant_id, customer_id);
+CREATE INDEX IF NOT EXISTS idx_svcent_service ON service_entitlements(tenant_id, service_id);
+CREATE INDEX IF NOT EXISTS idx_ca_tenant ON compliance_audits(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_ca_tenant_status ON compliance_audits(tenant_id, status);
+CREATE INDEX IF NOT EXISTS idx_ca_tenant_framework ON compliance_audits(tenant_id, framework_id);
+CREATE INDEX IF NOT EXISTS idx_af_tenant ON audit_findings(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_af_audit ON audit_findings(audit_id);
+CREATE INDEX IF NOT EXISTS idx_af_tenant_status ON audit_findings(tenant_id, status);
+CREATE INDEX IF NOT EXISTS idx_af_tenant_severity ON audit_findings(tenant_id, severity);
+CREATE INDEX IF NOT EXISTS idx_ce_tenant ON compliance_evidence(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_ce_control ON compliance_evidence(control_id);
+CREATE INDEX IF NOT EXISTS idx_ce_tenant_type ON compliance_evidence(tenant_id, evidence_type);
 CREATE INDEX IF NOT EXISTS idx_feedback_type ON feedback_entries(entry_type);
 CREATE INDEX IF NOT EXISTS idx_feedback_created ON feedback_entries(created_at);
 `;
+
+/**
+ * Evo migration SQL — safe ALTER TABLE statements for existing databases.
+ * Each statement is wrapped in a try/catch so duplicate columns don't fail.
+ */
+export const EVO_MIGRATIONS_SQL = [
+  `ALTER TABLE asset_relations ADD COLUMN valid_from TEXT`,
+  `ALTER TABLE asset_relations ADD COLUMN valid_until TEXT`,
+  `ALTER TABLE asset_relations ADD COLUMN metadata TEXT NOT NULL DEFAULT '{}'`,
+  `ALTER TABLE tickets ADD COLUMN project_id TEXT REFERENCES projects(id)`,
+  `ALTER TABLE sla_definitions ADD COLUMN rpo_minutes INTEGER`,
+  `ALTER TABLE sla_definitions ADD COLUMN rto_minutes INTEGER`,
+  `ALTER TABLE sla_definitions ADD COLUMN service_window TEXT DEFAULT '{}'`,
+  `ALTER TABLE sla_definitions ADD COLUMN escalation_matrix TEXT DEFAULT '[]'`,
+  `ALTER TABLE requirement_service_mappings ADD COLUMN maturity_level TEXT`,
+  `ALTER TABLE requirement_service_mappings ADD COLUMN last_verified TEXT`,
+  `ALTER TABLE requirement_service_mappings ADD COLUMN verified_by TEXT`,
+];
 
 // CLI entry point: only runs when executed directly (not when imported)
 const isDirectExecution = process.argv[1]?.includes('setup');

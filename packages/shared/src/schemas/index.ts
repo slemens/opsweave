@@ -14,11 +14,9 @@ import {
   TICKET_URGENCIES,
   TICKET_SOURCES,
   TICKET_SUBTYPES,
-  ASSET_TYPES,
   ASSET_STATUSES,
   SLA_TIERS,
   ENVIRONMENTS,
-  RELATION_TYPES,
   USER_ROLES,
   GROUP_TYPES,
   SUPPORTED_LANGUAGES,
@@ -30,12 +28,22 @@ import {
   CATALOG_STATUSES,
   OVERRIDE_TYPES,
   COVERAGE_LEVELS,
+  CONTROL_TYPES,
+  CONTROL_STATUSES,
+  CONTROL_COVERAGES,
   EMAIL_PROVIDERS,
   KB_VISIBILITIES,
   KB_ARTICLE_STATUSES,
   CHANGE_RISK_LEVELS,
   CHANGE_RISK_LIKELIHOODS,
   CHANGE_RISK_IMPACTS,
+  ASSET_TYPE_CATEGORIES,
+  AUDIT_TYPES,
+  AUDIT_STATUSES,
+  FINDING_SEVERITIES,
+  FINDING_STATUSES,
+  EVIDENCE_TYPES,
+  MATURITY_LEVELS,
 } from '../constants/index.js';
 
 // ---------------------------------------------------------------------------
@@ -218,6 +226,7 @@ export const createTicketSchema = z.object({
   assignee_group_id: uuidSchema.nullable().default(null),
   customer_id: uuidSchema.nullable().default(null),
   category_id: uuidSchema.nullable().default(null),
+  project_id: uuidSchema.nullable().default(null),
   parent_ticket_id: uuidSchema.nullable().default(null),
   source: z.enum(TICKET_SOURCES).default('manual'),
   root_cause: z.string().max(50000).nullable().default(null),
@@ -248,6 +257,7 @@ export const updateTicketSchema = z.object({
   assignee_group_id: uuidSchema.nullable().optional(),
   customer_id: uuidSchema.nullable().optional(),
   category_id: uuidSchema.nullable().optional(),
+  project_id: uuidSchema.nullable().optional(),
   parent_ticket_id: uuidSchema.nullable().optional(),
   sla_tier: z.enum(SLA_TIERS).nullable().optional(),
   root_cause: z.string().max(50000).nullable().optional(),
@@ -300,7 +310,7 @@ export type CreateCommentInput = z.infer<typeof createCommentSchema>;
 // ---------------------------------------------------------------------------
 
 export const createAssetSchema = z.object({
-  asset_type: z.enum(ASSET_TYPES),
+  asset_type: z.string().min(1, 'Asset type is required'),
   name: z
     .string()
     .min(1, 'Name is required')
@@ -327,7 +337,7 @@ export const createAssetSchema = z.object({
 export type CreateAssetInput = z.infer<typeof createAssetSchema>;
 
 export const updateAssetSchema = z.object({
-  asset_type: z.enum(ASSET_TYPES).optional(),
+  asset_type: z.string().min(1).optional(),
   name: z
     .string()
     .min(1)
@@ -355,8 +365,11 @@ export const createAssetRelationSchema = z
   .object({
     source_asset_id: uuidSchema,
     target_asset_id: uuidSchema,
-    relation_type: z.enum(RELATION_TYPES),
+    relation_type: z.string().min(1, 'Relation type is required'),
     properties: z.record(z.unknown()).default({}),
+    valid_from: z.string().nullable().optional(),
+    valid_until: z.string().nullable().optional(),
+    metadata: z.record(z.unknown()).default({}),
   })
   .refine((data) => data.source_asset_id !== data.target_asset_id, {
     message: 'Source and target asset must be different',
@@ -378,6 +391,7 @@ export const ticketFilterSchema = paginationSchema.extend({
   asset_id: uuidSchema.optional(),
   customer_id: uuidSchema.optional(),
   category_id: uuidSchema.optional(),
+  project_id: uuidSchema.optional(),
 });
 
 export type TicketFilterParams = z.infer<typeof ticketFilterSchema>;
@@ -387,7 +401,7 @@ export type TicketFilterParams = z.infer<typeof ticketFilterSchema>;
 // ---------------------------------------------------------------------------
 
 export const assetFilterSchema = paginationSchema.extend({
-  asset_type: z.enum(ASSET_TYPES).optional(),
+  asset_type: z.string().optional(),
   asset_types: z.string().optional(), // comma-separated asset types for category filtering
   status: z.enum(ASSET_STATUSES).optional(),
   sla_tier: z.enum(SLA_TIERS).optional(),
@@ -554,6 +568,39 @@ export const complianceFilterSchema = paginationSchema.extend({
 export type ComplianceFilterParams = z.infer<typeof complianceFilterSchema>;
 
 // ---------------------------------------------------------------------------
+// Compliance Controls Schemas (Evo-4A)
+// ---------------------------------------------------------------------------
+
+export const createComplianceControlSchema = z.object({
+  code: z.string().min(1).max(100),
+  title: z.string().min(1).max(500),
+  description: z.string().max(10000).nullable().optional(),
+  category: z.string().max(100).nullable().optional(),
+  control_type: z.enum(CONTROL_TYPES).default('preventive'),
+  status: z.enum(CONTROL_STATUSES).default('planned'),
+  owner_id: uuidSchema.nullable().optional(),
+});
+export type CreateComplianceControlInput = z.infer<typeof createComplianceControlSchema>;
+
+export const updateComplianceControlSchema = createComplianceControlSchema.partial();
+export type UpdateComplianceControlInput = z.infer<typeof updateComplianceControlSchema>;
+
+export const mapRequirementControlSchema = z.object({
+  requirement_id: uuidSchema,
+  control_id: uuidSchema,
+  coverage: z.enum(CONTROL_COVERAGES).default('full'),
+  notes: z.string().max(10000).nullable().optional(),
+});
+export type MapRequirementControlInput = z.infer<typeof mapRequirementControlSchema>;
+
+export const controlFilterSchema = paginationSchema.extend({
+  status: z.enum(CONTROL_STATUSES).optional(),
+  category: z.string().optional(),
+  q: z.string().optional(),
+});
+export type ControlFilterParams = z.infer<typeof controlFilterSchema>;
+
+// ---------------------------------------------------------------------------
 // Knowledge Base Schemas
 // ---------------------------------------------------------------------------
 
@@ -579,6 +626,36 @@ export const kbFilterSchema = paginationSchema.extend({
   linked_ticket_id: z.string().uuid().optional(),
 });
 export type KbFilterParams = z.infer<typeof kbFilterSchema>;
+
+// ---------------------------------------------------------------------------
+// Project Schemas (Evo-2C)
+// ---------------------------------------------------------------------------
+
+export const createProjectSchema = z.object({
+  name: z.string().min(1, 'Name is required').max(255),
+  code: z.string().min(1).max(20).regex(/^[A-Z0-9_-]+$/, 'Code must be uppercase alphanumeric with hyphens/underscores'),
+  customer_id: uuidSchema.nullable().optional(),
+  description: z.string().max(10000).nullable().optional(),
+  status: z.string().max(50).optional(),
+  start_date: z.string().nullable().optional(),
+  end_date: z.string().nullable().optional(),
+});
+export type CreateProjectInput = z.infer<typeof createProjectSchema>;
+
+export const updateProjectSchema = createProjectSchema.partial();
+export type UpdateProjectInput = z.infer<typeof updateProjectSchema>;
+
+export const addProjectAssetSchema = z.object({
+  asset_id: uuidSchema,
+  role: z.string().max(100).nullable().optional(),
+});
+export type AddProjectAssetInput = z.infer<typeof addProjectAssetSchema>;
+
+export const projectFilterSchema = paginationSchema.extend({
+  status: z.string().optional(),
+  customer_id: uuidSchema.optional(),
+});
+export type ProjectFilterParams = z.infer<typeof projectFilterSchema>;
 
 // ---------------------------------------------------------------------------
 // Email Inbound Schemas
@@ -627,3 +704,216 @@ export const createPortalCommentSchema = z.object({
   content: z.string().min(1).max(50000),
 });
 export type CreatePortalCommentInput = z.infer<typeof createPortalCommentSchema>;
+
+// ---------------------------------------------------------------------------
+// Asset Type Registry Schemas (Evo-1A)
+// ---------------------------------------------------------------------------
+
+const attributeDefinitionSchema = z.object({
+  key: z.string().min(1).max(100).regex(/^[a-z][a-z0-9_]*$/, 'Key must be lowercase snake_case'),
+  label: z.object({ de: z.string().min(1), en: z.string().min(1) }),
+  type: z.enum(['text', 'number', 'boolean', 'date', 'select', 'multiselect', 'url', 'ip_address']),
+  required: z.boolean().default(false),
+  default_value: z.unknown().optional(),
+  options: z.array(z.object({
+    value: z.string().min(1),
+    label: z.object({ de: z.string().min(1), en: z.string().min(1) }),
+  })).optional(),
+  validation: z.object({
+    min: z.number().optional(),
+    max: z.number().optional(),
+    pattern: z.string().optional(),
+  }).optional(),
+  group: z.string().optional(),
+  sort_order: z.number().int().default(0),
+});
+
+export const createAssetTypeSchema = z.object({
+  slug: z.string().min(1).max(100).regex(/^[a-z][a-z0-9_]*$/, 'Slug must be lowercase snake_case'),
+  name: z.string().min(1).max(255),
+  description: z.string().max(1000).nullable().default(null),
+  category: z.enum(ASSET_TYPE_CATEGORIES).default('other'),
+  icon: z.string().max(100).nullable().default(null),
+  color: z.string().max(50).nullable().default(null),
+  attribute_schema: z.array(attributeDefinitionSchema).default([]),
+});
+export type CreateAssetTypeInput = z.infer<typeof createAssetTypeSchema>;
+
+export const updateAssetTypeSchema = z.object({
+  name: z.string().min(1).max(255).optional(),
+  description: z.string().max(1000).nullable().optional(),
+  category: z.enum(ASSET_TYPE_CATEGORIES).optional(),
+  icon: z.string().max(100).nullable().optional(),
+  color: z.string().max(50).nullable().optional(),
+  is_active: z.boolean().optional(),
+  attribute_schema: z.array(attributeDefinitionSchema).optional(),
+});
+export type UpdateAssetTypeInput = z.infer<typeof updateAssetTypeSchema>;
+
+// ---------------------------------------------------------------------------
+// Relation Type Registry Schemas (Evo-3A)
+// ---------------------------------------------------------------------------
+
+export const createRelationTypeSchema = z.object({
+  slug: z.string().min(1).max(100).regex(/^[a-z][a-z0-9_]*$/, 'Slug must be lowercase snake_case'),
+  name: z.string().min(1).max(255),
+  description: z.string().max(1000).nullable().default(null),
+  category: z.string().max(100).nullable().default(null),
+  is_directional: z.boolean().default(true),
+  source_types: z.array(z.string()).default([]),
+  target_types: z.array(z.string()).default([]),
+  properties_schema: z.array(attributeDefinitionSchema).default([]),
+  color: z.string().max(50).nullable().default(null),
+});
+export type CreateRelationTypeInput = z.infer<typeof createRelationTypeSchema>;
+
+export const updateRelationTypeSchema = z.object({
+  name: z.string().min(1).max(255).optional(),
+  description: z.string().max(1000).nullable().optional(),
+  category: z.string().max(100).nullable().optional(),
+  is_directional: z.boolean().optional(),
+  source_types: z.array(z.string()).optional(),
+  target_types: z.array(z.string()).optional(),
+  properties_schema: z.array(attributeDefinitionSchema).optional(),
+  is_active: z.boolean().optional(),
+  color: z.string().max(50).nullable().optional(),
+});
+export type UpdateRelationTypeInput = z.infer<typeof updateRelationTypeSchema>;
+
+// ---------------------------------------------------------------------------
+// Classification Schemas (Evo-1C)
+// ---------------------------------------------------------------------------
+
+export const createClassificationModelSchema = z.object({
+  name: z.string().min(1).max(255),
+  description: z.string().max(1000).nullable().default(null),
+});
+export type CreateClassificationModelInput = z.infer<typeof createClassificationModelSchema>;
+
+export const updateClassificationModelSchema = z.object({
+  name: z.string().min(1).max(255).optional(),
+  description: z.string().max(1000).nullable().optional(),
+  is_active: z.boolean().optional(),
+});
+export type UpdateClassificationModelInput = z.infer<typeof updateClassificationModelSchema>;
+
+export const createClassificationValueSchema = z.object({
+  value: z.string().min(1).max(100),
+  label: z.object({ de: z.string().min(1), en: z.string().min(1) }),
+  color: z.string().max(50).nullable().default(null),
+  sort_order: z.number().int().default(0),
+});
+export type CreateClassificationValueInput = z.infer<typeof createClassificationValueSchema>;
+
+export const classifyAssetSchema = z.object({
+  value_id: uuidSchema,
+  justification: z.string().max(1000).nullable().default(null),
+});
+export type ClassifyAssetInput = z.infer<typeof classifyAssetSchema>;
+
+// ---------------------------------------------------------------------------
+// Capacity Schemas (Evo-3C)
+// ---------------------------------------------------------------------------
+
+export const createCapacityTypeSchema = z.object({
+  slug: z.string().min(1).max(100).regex(/^[a-z][a-z0-9_]*$/),
+  name: z.string().min(1).max(255),
+  unit: z.string().min(1).max(50),
+  category: z.string().max(100).nullable().default(null),
+});
+export type CreateCapacityTypeInput = z.infer<typeof createCapacityTypeSchema>;
+
+export const setAssetCapacitySchema = z.object({
+  capacity_type_id: uuidSchema,
+  direction: z.enum(['provides', 'requires']),
+  total: z.number().min(0),
+});
+export type SetAssetCapacityInput = z.infer<typeof setAssetCapacitySchema>;
+
+// ---------------------------------------------------------------------------
+// Compliance Audit Schemas (Evo-4B)
+// ---------------------------------------------------------------------------
+
+export const createComplianceAuditSchema = z.object({
+  name: z.string().min(1).max(500),
+  framework_id: uuidSchema.nullable().optional(),
+  audit_type: z.enum(AUDIT_TYPES).default('internal'),
+  status: z.enum(AUDIT_STATUSES).default('planned'),
+  auditor: z.string().max(255).nullable().optional(),
+  start_date: z.string().nullable().optional(),
+  end_date: z.string().nullable().optional(),
+  scope: z.string().max(10000).nullable().optional(),
+  notes: z.string().max(10000).nullable().optional(),
+});
+export type CreateComplianceAuditInput = z.infer<typeof createComplianceAuditSchema>;
+
+export const updateComplianceAuditSchema = createComplianceAuditSchema.partial();
+export type UpdateComplianceAuditInput = z.infer<typeof updateComplianceAuditSchema>;
+
+export const auditFilterSchema = paginationSchema.extend({
+  status: z.enum(AUDIT_STATUSES).optional(),
+  audit_type: z.enum(AUDIT_TYPES).optional(),
+  framework_id: uuidSchema.optional(),
+  q: z.string().optional(),
+});
+export type AuditFilterParams = z.infer<typeof auditFilterSchema>;
+
+export const createAuditFindingSchema = z.object({
+  control_id: uuidSchema.nullable().optional(),
+  requirement_id: uuidSchema.nullable().optional(),
+  severity: z.enum(FINDING_SEVERITIES).default('minor'),
+  title: z.string().min(1).max(500),
+  description: z.string().max(10000).nullable().optional(),
+  status: z.enum(FINDING_STATUSES).default('open'),
+  remediation_plan: z.string().max(10000).nullable().optional(),
+  due_date: z.string().nullable().optional(),
+});
+export type CreateAuditFindingInput = z.infer<typeof createAuditFindingSchema>;
+
+export const updateAuditFindingSchema = createAuditFindingSchema.partial();
+export type UpdateAuditFindingInput = z.infer<typeof updateAuditFindingSchema>;
+
+// ---------------------------------------------------------------------------
+// Compliance Evidence Schemas (Evo-4C)
+// ---------------------------------------------------------------------------
+
+export const createComplianceEvidenceSchema = z.object({
+  evidence_type: z.enum(EVIDENCE_TYPES).default('document'),
+  title: z.string().min(1).max(500),
+  url: z.string().max(2000).nullable().optional(),
+  description: z.string().max(10000).nullable().optional(),
+});
+export type CreateComplianceEvidenceInput = z.infer<typeof createComplianceEvidenceSchema>;
+
+export const updateMappingGranularSchema = z.object({
+  maturity_level: z.enum(MATURITY_LEVELS).nullable().optional(),
+  last_verified: z.string().nullable().optional(),
+  verified_by: z.string().max(255).nullable().optional(),
+});
+export type UpdateMappingGranularInput = z.infer<typeof updateMappingGranularSchema>;
+
+// ---------------------------------------------------------------------------
+// Service Profiles & Entitlements Schemas (Evo-2A)
+// ---------------------------------------------------------------------------
+
+export const createServiceProfileSchema = z.object({
+  name: z.string().min(1, 'Name is required').max(255),
+  description: z.string().max(10000).nullable().default(null),
+  dimensions: z.record(z.unknown()).default({}),
+  sla_definition_id: uuidSchema.nullable().default(null),
+  is_active: z.boolean().default(true),
+});
+export type CreateServiceProfileInput = z.infer<typeof createServiceProfileSchema>;
+
+export const updateServiceProfileSchema = createServiceProfileSchema.partial();
+export type UpdateServiceProfileInput = z.infer<typeof updateServiceProfileSchema>;
+
+export const createServiceEntitlementSchema = z.object({
+  customer_id: uuidSchema,
+  service_id: uuidSchema,
+  profile_id: uuidSchema.nullable().default(null),
+  scope: z.record(z.unknown()).default({}),
+  effective_from: z.string().min(1, 'Effective from date is required'),
+  effective_until: z.string().nullable().default(null),
+});
+export type CreateServiceEntitlementInput = z.infer<typeof createServiceEntitlementSchema>;

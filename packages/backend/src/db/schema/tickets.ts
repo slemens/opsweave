@@ -3,6 +3,7 @@ import { tenants } from './tenants.js';
 import { users, assigneeGroups } from './users.js';
 import { assets } from './assets.js';
 import { customers } from './customers.js';
+import { projects } from './projects.js';
 
 // =============================================================================
 // ticket_categories
@@ -89,6 +90,7 @@ export const tickets = sqliteTable(
     major_declared_at: text('major_declared_at'),
     major_declared_by: text('major_declared_by'),
     bridge_call_url: text('bridge_call_url'),
+    project_id: text('project_id').references(() => projects.id),
     parent_ticket_id: text('parent_ticket_id'),
     source: text('source').notNull().default('manual'),
     created_at: text('created_at').notNull(),
@@ -110,6 +112,7 @@ export const tickets = sqliteTable(
     index('idx_ticket_sla_breached').on(t.tenant_id, t.sla_breached),
     index('idx_ticket_parent').on(t.tenant_id, t.parent_ticket_id),
     index('idx_ticket_tenant_category').on(t.tenant_id, t.category_id),
+    index('idx_ticket_tenant_project').on(t.tenant_id, t.project_id),
   ],
 );
 

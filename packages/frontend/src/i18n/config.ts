@@ -26,6 +26,8 @@ import monitoringDe from './locales/de/monitoring.json';
 import monitoringEn from './locales/en/monitoring.json';
 import slaDe from './locales/de/sla.json';
 import slaEn from './locales/en/sla.json';
+import projectsDe from './locales/de/projects.json';
+import projectsEn from './locales/en/projects.json';
 
 const resources = {
   de: {
@@ -41,6 +43,7 @@ const resources = {
     portal: portalDe,
     monitoring: monitoringDe,
     sla: slaDe,
+    projects: projectsDe,
   },
   en: {
     common: commonEn,
@@ -55,6 +58,7 @@ const resources = {
     portal: portalEn,
     monitoring: monitoringEn,
     sla: slaEn,
+    projects: projectsEn,
   },
 };
 
@@ -65,7 +69,7 @@ i18n
     resources,
     fallbackLng: 'de',
     defaultNS: 'common',
-    ns: ['common', 'tickets', 'settings', 'cmdb', 'workflows', 'catalog', 'compliance', 'kb', 'email', 'portal', 'monitoring', 'sla'],
+    ns: ['common', 'tickets', 'settings', 'cmdb', 'workflows', 'catalog', 'compliance', 'kb', 'email', 'portal', 'monitoring', 'sla', 'projects'],
     interpolation: {
       escapeValue: false,
     },

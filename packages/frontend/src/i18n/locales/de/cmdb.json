@@ -38,7 +38,13 @@
     "workstation": "Arbeitsplatz",
     "laptop": "Laptop",
     "printer": "Drucker",
-    "other": "Sonstige"
+    "other": "Sonstige",
+    "ip_address": "IP-Adresse",
+    "domain": "Domain",
+    "certificate": "Zertifikat",
+    "port": "Port",
+    "service_endpoint": "Service-Endpunkt",
+    "software": "Software-Paket"
   },
   "type_categories": {
     "all": "Alle Assets",
@@ -47,6 +53,7 @@
     "storage": "Speicher",
     "infrastructure": "Infrastruktur",
     "software": "Software",
+    "security": "Security",
     "enduser": "Endgeräte",
     "other": "Sonstige"
   },
@@ -90,7 +97,16 @@
     "powered_by": "Versorgt durch",
     "member_of": "Mitglied von",
     "depends_on": "Abhängig von",
-    "backup_of": "Backup von"
+    "backup_of": "Backup von",
+    "exposes": "Exponiert",
+    "protects": "Schützt",
+    "backs_up": "Sichert",
+    "monitored_by": "Überwacht durch",
+    "serves": "Bedient",
+    "governed_by": "Reguliert durch",
+    "licensed_to": "Lizenziert für",
+    "encrypts": "Verschlüsselt",
+    "properties": "Eigenschaften"
   },
   "fields": {
     "name": "Technischer Name",
@@ -129,10 +145,60 @@
   "tabs": {
     "details": "Details",
     "relations": "Relationen",
-    "tickets": "Tickets"
+    "tickets": "Tickets",
+    "classifications": "Klassifizierungen",
+    "capacity": "Kapazität"
   },
   "linked_tickets": {
     "title": "Verknüpfte Tickets",
     "no_tickets": "Keine verknüpften Tickets"
+  },
+  "classifications": {
+    "title": "Klassifizierungen",
+    "add": "Klassifizierung hinzufügen",
+    "remove": "Klassifizierung entfernen",
+    "add_success": "Klassifizierung erfolgreich hinzugefügt",
+    "add_error": "Fehler beim Hinzufügen der Klassifizierung",
+    "remove_success": "Klassifizierung erfolgreich entfernt",
+    "remove_error": "Fehler beim Entfernen der Klassifizierung",
+    "no_classifications": "Keine Klassifizierungen",
+    "model": "Modell",
+    "value": "Wert",
+    "justification": "Begründung",
+    "classified_by": "Klassifiziert von",
+    "classified_at": "Klassifiziert am",
+    "select_model": "Modell auswählen",
+    "select_value": "Wert auswählen"
+  },
+  "capacity": {
+    "title": "Kapazität",
+    "provides": "Stellt bereit",
+    "requires": "Benötigt",
+    "total": "Gesamt",
+    "allocated": "Zugewiesen",
+    "reserved": "Reserviert",
+    "available": "Verfügbar",
+    "utilization": "Auslastung",
+    "no_capacity": "Keine Kapazitätsdaten"
+  },
+  "dynamic_fields": {
+    "no_attributes": "Keine typspezifischen Attribute definiert",
+    "attributes": "Typ-Attribute",
+    "required": "Pflichtfeld"
+  },
+  "context_view": {
+    "label": "Ansicht",
+    "all": "Alle",
+    "operations": "Betrieb",
+    "security": "Sicherheit",
+    "compliance": "Compliance",
+    "architecture": "Architektur"
+  },
+  "temporal": {
+    "valid_from": "Gültig ab",
+    "valid_until": "Gültig bis",
+    "as_of": "Stichtag",
+    "current": "Aktuell",
+    "show_all": "Alle anzeigen (inkl. abgelaufen)"
   }
 }

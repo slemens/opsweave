@@ -24,6 +24,12 @@ import { escalationRouter } from '../modules/escalation/escalation.routes.js';
 import { auditRouter } from '../modules/audit/audit.routes.js';
 import { monitoringRouter, monitoringWebhookRouter } from '../modules/monitoring/monitoring.routes.js';
 import { feedbackRouter } from '../modules/feedback/feedback.routes.js';
+import { assetTypeRouter } from '../modules/asset-types/asset-types.routes.js';
+import { relationTypeRouter } from '../modules/relation-types/relation-types.routes.js';
+import { classificationRouter } from '../modules/classifications/classifications.routes.js';
+import { capacityRouter } from '../modules/capacity/capacity.routes.js';
+import { projectRouter } from '../modules/projects/projects.routes.js';
+import { serviceProfileRouter } from '../modules/service-profiles/service-profiles.routes.js';
 
 // ─── Central API Router ────────────────────────────────────
 const apiRouter = Router();
@@ -53,6 +59,12 @@ protectedRouter.use('/tickets', ticketRouter);
 protectedRouter.use('/customers', customerRouter);
 
 protectedRouter.use('/assets', assetRouter);
+protectedRouter.use('/asset-types', assetTypeRouter);
+protectedRouter.use('/relation-types', relationTypeRouter);
+protectedRouter.use('/classifications', classificationRouter);
+protectedRouter.use('/capacity', capacityRouter);
+protectedRouter.use('/projects', projectRouter);
+protectedRouter.use('/service-profiles', serviceProfileRouter);
 protectedRouter.use('/workflows', workflowRouter);
 protectedRouter.use('/services', serviceCatalogRouter);
 protectedRouter.use('/compliance', complianceRouter);

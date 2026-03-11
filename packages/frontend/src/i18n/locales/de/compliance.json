@@ -80,5 +80,91 @@
       "description": "Legen Sie den Abdeckungsgrad für diese Anforderung fest."
     },
     "delete_confirm": "Sind Sie sicher? Diese Aktion kann nicht rückgängig gemacht werden."
+  },
+  "controls": {
+    "title": "Controls",
+    "create": "Control erstellen",
+    "edit": "Control bearbeiten",
+    "code": "Code",
+    "title_col": "Titel",
+    "description": "Beschreibung",
+    "category": "Kategorie",
+    "type": "Typ",
+    "status_col": "Status",
+    "empty": "Keine Controls vorhanden",
+    "empty_hint": "Erstellen Sie das erste Compliance-Control.",
+    "delete_confirm": "Möchten Sie dieses Control wirklich löschen?",
+    "create_success": "Control erfolgreich erstellt",
+    "update_success": "Control erfolgreich aktualisiert",
+    "delete_success": "Control erfolgreich gelöscht",
+    "save_error": "Fehler beim Speichern",
+    "types": {
+      "preventive": "Präventiv",
+      "detective": "Detektiv",
+      "corrective": "Korrektiv"
+    },
+    "statuses": {
+      "planned": "Geplant",
+      "implemented": "Implementiert",
+      "verified": "Verifiziert",
+      "not_applicable": "Nicht anwendbar"
+    }
+  },
+  "audits": {
+    "title": "Audits",
+    "create": "Audit erstellen",
+    "edit": "Audit bearbeiten",
+    "name": "Name",
+    "audit_type": "Audit-Typ",
+    "auditor_field": "Auditor",
+    "status_col": "Status",
+    "notes": "Notizen",
+    "findings": "Feststellungen",
+    "add_finding": "Feststellung hinzufügen",
+    "finding_title": "Titel",
+    "finding_severity": "Schweregrad",
+    "finding_status": "Status",
+    "finding_description": "Beschreibung",
+    "empty": "Keine Audits vorhanden",
+    "empty_hint": "Erstellen Sie das erste Compliance-Audit.",
+    "create_success": "Audit erfolgreich erstellt",
+    "update_success": "Audit erfolgreich aktualisiert",
+    "finding_created": "Feststellung erfolgreich erstellt",
+    "save_error": "Fehler beim Speichern",
+    "statuses": {
+      "planned": "Geplant",
+      "in_progress": "In Bearbeitung",
+      "completed": "Abgeschlossen",
+      "cancelled": "Abgebrochen"
+    },
+    "finding_statuses": {
+      "open": "Offen",
+      "in_remediation": "In Behebung",
+      "resolved": "Behoben",
+      "accepted_risk": "Akzeptiertes Risiko"
+    }
+  },
+  "evidence": {
+    "title": "Nachweise",
+    "create": "Nachweis erstellen",
+    "title_col": "Titel",
+    "description": "Beschreibung",
+    "type": "Typ",
+    "url_col": "URL",
+    "uploaded": "Hochgeladen",
+    "empty": "Keine Nachweise vorhanden",
+    "empty_hint": "Erstellen Sie den ersten Compliance-Nachweis.",
+    "delete_confirm": "Möchten Sie diesen Nachweis wirklich löschen?",
+    "create_success": "Nachweis erfolgreich erstellt",
+    "delete_success": "Nachweis erfolgreich gelöscht",
+    "save_error": "Fehler beim Speichern",
+    "types": {
+      "document": "Dokument",
+      "screenshot": "Screenshot",
+      "log": "Log",
+      "report": "Bericht",
+      "certificate": "Zertifikat",
+      "other": "Sonstiges"
+    }
   }
 }

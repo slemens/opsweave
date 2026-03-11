@@ -1,4 +1,4 @@
-import { eq, and, count, like, or, asc, desc, inArray } from 'drizzle-orm';
+import { eq, and, count, like, or, asc, desc, inArray, lte, gt, isNull } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 
 import { getDb, type TypedDb } from '../../config/database.js';
@@ -10,6 +10,7 @@ import {
   assigneeGroups,
   customers,
   regulatoryFrameworks,
+  relationTypes,
   tickets,
   users,
   verticalCatalogs,
@@ -356,12 +357,17 @@ export async function deleteAsset(
 export async function getAssetRelations(
   tenantId: string,
   assetId: string,
+  options?: { asOf?: string },
 ): Promise<unknown[]> {
   const d = db();
 
-  // We need two separate queries: one for source, one for target,
-  // then merge them. Drizzle doesn't support self-join aliases easily
-  // so we use a raw approach with separate queries.
+  // Build temporal filter conditions if asOf is provided
+  const temporalConditions = options?.asOf
+    ? [
+        or(isNull(assetRelations.valid_from), lte(assetRelations.valid_from, options.asOf)),
+        or(isNull(assetRelations.valid_until), gt(assetRelations.valid_until, options.asOf)),
+      ]
+    : [];
 
   // Relations where this asset is the source
   const sourceRows = await d
@@ -372,6 +378,9 @@ export async function getAssetRelations(
       target_asset_id: assetRelations.target_asset_id,
       relation_type: assetRelations.relation_type,
       properties: assetRelations.properties,
+      valid_from: assetRelations.valid_from,
+      valid_until: assetRelations.valid_until,
+      metadata: assetRelations.metadata,
       created_at: assetRelations.created_at,
       created_by: assetRelations.created_by,
       target_name: assets.display_name,
@@ -383,11 +392,11 @@ export async function getAssetRelations(
       and(
         eq(assetRelations.tenant_id, tenantId),
         eq(assetRelations.source_asset_id, assetId),
+        ...temporalConditions,
       ),
     );
 
-  // Relations where this asset is the target — need source info
-  // Use a subquery approach: fetch relations, then fetch source names
+  // Relations where this asset is the target
   const targetRelRows = await d
     .select({
       id: assetRelations.id,
@@ -396,6 +405,9 @@ export async function getAssetRelations(
       target_asset_id: assetRelations.target_asset_id,
       relation_type: assetRelations.relation_type,
       properties: assetRelations.properties,
+      valid_from: assetRelations.valid_from,
+      valid_until: assetRelations.valid_until,
+      metadata: assetRelations.metadata,
       created_at: assetRelations.created_at,
       created_by: assetRelations.created_by,
     })
@@ -404,6 +416,7 @@ export async function getAssetRelations(
       and(
         eq(assetRelations.tenant_id, tenantId),
         eq(assetRelations.target_asset_id, assetId),
+        ...temporalConditions,
       ),
     );
 
@@ -423,6 +436,11 @@ export async function getAssetRelations(
     }
   }
 
+  const parseJson = (val: string | null | undefined) => {
+    if (!val) return {};
+    try { return JSON.parse(val); } catch { return {}; }
+  };
+
   const outgoing = sourceRows.map((row) => ({
     id: row.id,
     tenant_id: row.tenant_id,
@@ -430,6 +448,9 @@ export async function getAssetRelations(
     target_asset_id: row.target_asset_id,
     relation_type: row.relation_type,
     properties: typeof row.properties === 'string' ? JSON.parse(row.properties) : row.properties,
+    valid_from: row.valid_from ?? null,
+    valid_until: row.valid_until ?? null,
+    metadata: parseJson(row.metadata),
     created_at: row.created_at,
     created_by: row.created_by,
     direction: 'outgoing' as const,
@@ -449,6 +470,9 @@ export async function getAssetRelations(
       target_asset_id: row.target_asset_id,
       relation_type: row.relation_type,
       properties: typeof row.properties === 'string' ? JSON.parse(row.properties) : row.properties,
+      valid_from: row.valid_from ?? null,
+      valid_until: row.valid_until ?? null,
+      metadata: parseJson(row.metadata),
       created_at: row.created_at,
       created_by: row.created_by,
       direction: 'incoming' as const,
@@ -468,14 +492,14 @@ export async function getAssetRelations(
  */
 export async function createAssetRelation(
   tenantId: string,
-  data: { source_asset_id: string; target_asset_id: string; relation_type: string; properties?: Record<string, unknown> },
+  data: { source_asset_id: string; target_asset_id: string; relation_type: string; properties?: Record<string, unknown>; valid_from?: string | null; valid_until?: string | null; metadata?: Record<string, unknown> },
   userId: string,
 ): Promise<unknown> {
   const d = db();
 
   // Verify both assets exist in the same tenant
   const [source] = await d
-    .select({ id: assets.id })
+    .select({ id: assets.id, asset_type: assets.asset_type })
     .from(assets)
     .where(and(eq(assets.tenant_id, tenantId), eq(assets.id, data.source_asset_id)))
     .limit(1);
@@ -485,13 +509,36 @@ export async function createAssetRelation(
   }
 
   const [target] = await d
-    .select({ id: assets.id })
+    .select({ id: assets.id, asset_type: assets.asset_type })
     .from(assets)
     .where(and(eq(assets.tenant_id, tenantId), eq(assets.id, data.target_asset_id)))
     .limit(1);
 
   if (!target) {
     throw new NotFoundError('Target asset not found');
+  }
+
+  // Evo-3D: Validate source/target type constraints from relation type registry
+  const [relType] = await d
+    .select({ source_types: relationTypes.source_types, target_types: relationTypes.target_types })
+    .from(relationTypes)
+    .where(and(eq(relationTypes.tenant_id, tenantId), eq(relationTypes.slug, data.relation_type)))
+    .limit(1);
+
+  if (relType) {
+    const parseTypes = (json: string | null): string[] => {
+      if (!json) return [];
+      try { const arr = JSON.parse(json); return Array.isArray(arr) ? arr : []; } catch { return []; }
+    };
+    const allowedSource = parseTypes(relType.source_types);
+    const allowedTarget = parseTypes(relType.target_types);
+
+    if (allowedSource.length > 0 && !allowedSource.includes(source.asset_type)) {
+      throw new ConflictError(`Source asset type '${source.asset_type}' is not allowed for relation type '${data.relation_type}'`);
+    }
+    if (allowedTarget.length > 0 && !allowedTarget.includes(target.asset_type)) {
+      throw new ConflictError(`Target asset type '${target.asset_type}' is not allowed for relation type '${data.relation_type}'`);
+    }
   }
 
   const id = uuidv4();
@@ -505,6 +552,9 @@ export async function createAssetRelation(
       target_asset_id: data.target_asset_id,
       relation_type: data.relation_type,
       properties: JSON.stringify(data.properties ?? {}),
+      valid_from: data.valid_from ?? null,
+      valid_until: data.valid_until ?? null,
+      metadata: JSON.stringify(data.metadata ?? {}),
       created_at: now,
       created_by: userId,
     });
@@ -522,6 +572,9 @@ export async function createAssetRelation(
     target_asset_id: data.target_asset_id,
     relation_type: data.relation_type,
     properties: data.properties ?? {},
+    valid_from: data.valid_from ?? null,
+    valid_until: data.valid_until ?? null,
+    metadata: data.metadata ?? {},
     created_at: now,
     created_by: userId,
   };

@@ -11,6 +11,10 @@ import {
   ExternalLink,
   List,
   GitGraph,
+  Shield,
+  Activity,
+  Calendar,
+  Eye,
 } from 'lucide-react';
 import ReactFlow, {
   Controls,
@@ -59,6 +63,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Progress } from '@/components/ui/progress';
 import { cn, formatDate } from '@/lib/utils';
 import {
   useAsset,
@@ -75,8 +83,26 @@ import {
 import { useGroups } from '@/api/groups';
 import { useCustomers } from '@/api/customers';
 import type { AssetRelationWithDetails, AssetTicketSummary } from '@/api/assets';
-import type { AssetType, RelationType } from '@opsweave/shared';
-import { ASSET_STATUSES, SLA_TIERS, ENVIRONMENTS, RELATION_TYPES } from '@opsweave/shared';
+import {
+  useClassificationModels,
+  useAssetClassifications,
+  useClassifyAsset,
+  useRemoveAssetClassification,
+} from '@/api/classifications';
+import {
+  useAssetCapacityUtilization,
+} from '@/api/capacity';
+import { ASSET_STATUSES, SLA_TIERS, ENVIRONMENTS } from '@opsweave/shared';
+import { useAssetTypes, useRelationTypes } from '@/api/asset-types';
+import { DynamicFieldDisplay } from '@/components/cmdb/DynamicFieldDisplay';
+import { DynamicFormRenderer } from '@/components/cmdb/DynamicFormRenderer';
+import { getLocalizedLabel } from '@/lib/attribute-schema';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { Info } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -105,15 +131,7 @@ const ticketStatusColors: Record<string, string> = {
   closed: 'bg-slate-100 text-slate-600 dark:bg-slate-800/60 dark:text-slate-300',
 };
 
-const assetTypeGroups: Array<{ category: string; types: AssetType[] }> = [
-  { category: 'compute', types: ['server_physical', 'server_virtual', 'virtualization_host', 'container', 'container_host'] },
-  { category: 'network', types: ['network_switch', 'network_router', 'network_firewall', 'network_load_balancer', 'network_wap'] },
-  { category: 'storage', types: ['storage_san', 'storage_nas', 'storage_backup'] },
-  { category: 'infrastructure', types: ['rack', 'pdu', 'ups'] },
-  { category: 'software', types: ['database', 'application', 'service', 'middleware', 'cluster'] },
-  { category: 'enduser', types: ['workstation', 'laptop', 'printer'] },
-  { category: 'other', types: ['other'] },
-];
+import { ASSET_TYPE_CATEGORIES } from '@opsweave/shared';
 
 // ---------------------------------------------------------------------------
 // Component
@@ -122,17 +140,81 @@ const assetTypeGroups: Array<{ category: string; types: AssetType[] }> = [
 export function AssetDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { t } = useTranslation('cmdb');
+  const { t, i18n } = useTranslation('cmdb');
   const { t: tCommon } = useTranslation('common');
   const { t: tTickets } = useTranslation('tickets');
 
+  // ── Asset & Relation Types from API ──────────────────────
+  const { data: assetTypesData } = useAssetTypes();
+  const { data: relationTypesData } = useRelationTypes();
+
+  const assetTypeGroups = useMemo(() => {
+    const types = assetTypesData ?? [];
+    const grouped: Record<string, string[]> = {};
+    for (const t of types) {
+      const cat = t.category || 'other';
+      if (!grouped[cat]) grouped[cat] = [];
+      grouped[cat].push(t.slug);
+    }
+    return ASSET_TYPE_CATEGORIES
+      .filter((cat) => grouped[cat]?.length)
+      .map((cat) => ({ category: cat, types: grouped[cat] ?? [] }));
+  }, [assetTypesData]);
+
+  const typeNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const at of assetTypesData ?? []) map.set(at.slug, at.name);
+    return map;
+  }, [assetTypesData]);
+
+  const relTypeNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const rt of relationTypesData ?? []) map.set(rt.slug, rt.name);
+    return map;
+  }, [relationTypesData]);
+
+  const getTypeName = useCallback((slug: string) => {
+    const i18nKey = `types.${slug}`;
+    const translated = t(i18nKey);
+    if (translated !== i18nKey) return translated;
+    return typeNameMap.get(slug) ?? slug;
+  }, [t, typeNameMap]);
+
+  const getRelTypeName = useCallback((slug: string) => {
+    const i18nKey = `relations.${slug}`;
+    const translated = t(i18nKey);
+    if (translated !== i18nKey) return translated;
+    return relTypeNameMap.get(slug) ?? slug;
+  }, [t, relTypeNameMap]);
+
+  const relTypeSchemaMap = useMemo(() => {
+    const map = new Map<string, import('@opsweave/shared').AttributeDefinition[]>();
+    for (const rt of relationTypesData ?? []) {
+      if (rt.properties_schema?.length > 0) map.set(rt.slug, rt.properties_schema);
+    }
+    return map;
+  }, [relationTypesData]);
+
+  // ── Temporal filter state ────────────────────────────────
+  const [viewContext, setViewContext] = useState<'all' | 'operations' | 'security' | 'compliance' | 'architecture'>('all');
+  const [temporalAsOf, setTemporalAsOf] = useState<string>('');
+  const [temporalShowAll, setTemporalShowAll] = useState(false);
+
   // ── Data ──────────────────────────────────────────────────
   const { data: asset, isLoading, isError, refetch } = useAsset(id ?? '');
-  const { data: relations } = useAssetRelations(id ?? '');
+  const relationsOptions = temporalShowAll ? undefined : temporalAsOf ? { as_of: temporalAsOf } : undefined;
+  const { data: relations } = useAssetRelations(id ?? '', relationsOptions);
   const { data: linkedTickets } = useAssetTickets(id ?? '');
   const { data: graphData } = useAssetGraph(id ?? '');
   const { data: groupsData } = useGroups();
   const { data: customersData } = useCustomers();
+
+  // ── Classifications & Capacity ─────────────────────────────
+  const { data: classificationModels } = useClassificationModels();
+  const { data: assetClassifications } = useAssetClassifications(id ?? '');
+  const { data: capacityUtilization } = useAssetCapacityUtilization(id ?? '');
+  const classifyAsset = useClassifyAsset();
+  const removeClassification = useRemoveAssetClassification();
 
   const updateAsset = useUpdateAsset();
   const deleteAssetMutation = useDeleteAsset();
@@ -150,6 +232,19 @@ export function AssetDetailPage() {
   const [relTarget, setRelTarget] = useState('');
   const [relType, setRelType] = useState<string>('depends_on');
   const [relDirection, setRelDirection] = useState<'outgoing' | 'incoming'>('outgoing');
+  const [relProperties, setRelProperties] = useState<Record<string, unknown>>({});
+
+  // ── Classification Dialog ──────────────────────────────────
+  const [classificationOpen, setClassificationOpen] = useState(false);
+  const [selectedModelId, setSelectedModelId] = useState('');
+  const [selectedValueId, setSelectedValueId] = useState('');
+  const [justification, setJustification] = useState('');
+
+  const selectedModelValues = useMemo(() => {
+    if (!selectedModelId || !classificationModels) return [];
+    const model = classificationModels.find((m) => m.id === selectedModelId);
+    return model?.values ?? [];
+  }, [selectedModelId, classificationModels]);
 
   const otherAssets = useMemo(() => {
     const all = allAssetsData?.data ?? [];
@@ -224,9 +319,10 @@ export function AssetDetailPage() {
 
   const handleAddRelation = useCallback(async () => {
     if (!id || !relTarget || !relType) return;
+    const hasProps = Object.keys(relProperties).length > 0;
     const payload = relDirection === 'outgoing'
-      ? { assetId: id, source_asset_id: id, target_asset_id: relTarget, relation_type: relType as RelationType }
-      : { assetId: id, source_asset_id: relTarget, target_asset_id: id, relation_type: relType as RelationType };
+      ? { assetId: id, source_asset_id: id, target_asset_id: relTarget, relation_type: relType, ...(hasProps ? { properties: relProperties } : {}) }
+      : { assetId: id, source_asset_id: relTarget, target_asset_id: id, relation_type: relType, ...(hasProps ? { properties: relProperties } : {}) };
 
     try {
       await createRelation.mutateAsync(payload);
@@ -234,10 +330,11 @@ export function AssetDetailPage() {
       setRelationOpen(false);
       setRelTarget('');
       setRelType('depends_on');
+      setRelProperties({});
     } catch {
       toast.error(t('relations.add_error'));
     }
-  }, [id, relTarget, relType, relDirection, createRelation, t]);
+  }, [id, relTarget, relType, relDirection, relProperties, createRelation, t]);
 
   const handleDeleteRelation = useCallback(async (relationId: string) => {
     if (!id) return;
@@ -248,6 +345,34 @@ export function AssetDetailPage() {
       toast.error(t('relations.delete_error'));
     }
   }, [id, deleteRelation, t]);
+
+  const handleAddClassification = useCallback(async () => {
+    if (!id || !selectedValueId) return;
+    try {
+      await classifyAsset.mutateAsync({
+        assetId: id,
+        value_id: selectedValueId,
+        justification: justification || undefined,
+      });
+      toast.success(t('classifications.add_success'));
+      setClassificationOpen(false);
+      setSelectedModelId('');
+      setSelectedValueId('');
+      setJustification('');
+    } catch {
+      toast.error(t('classifications.add_error'));
+    }
+  }, [id, selectedValueId, justification, classifyAsset, t]);
+
+  const handleRemoveClassification = useCallback(async (valueId: string) => {
+    if (!id) return;
+    try {
+      await removeClassification.mutateAsync({ assetId: id, valueId });
+      toast.success(t('classifications.remove_success'));
+    } catch {
+      toast.error(t('classifications.remove_error'));
+    }
+  }, [id, removeClassification, t]);
 
   // ── Group / Customer Options ──────────────────────────────
 
@@ -290,6 +415,10 @@ export function AssetDetailPage() {
 
   const relationsData = (relations ?? []) as AssetRelationWithDetails[];
   const ticketsData = (linkedTickets ?? []) as AssetTicketSummary[];
+  const classificationsData = assetClassifications ?? [];
+  const capacityData = capacityUtilization?.capacities ?? [];
+  const providesCapacity = capacityData.filter((c) => c.direction === 'provides');
+  const requiresCapacity = capacityData.filter((c) => c.direction === 'requires');
 
   return (
     <div className="space-y-6">
@@ -310,28 +439,73 @@ export function AssetDetailPage() {
         </Button>
       </div>
 
+      {/* Context View Switcher */}
+      <div className="flex items-center gap-2">
+        <Eye className="h-4 w-4 text-muted-foreground" />
+        <span className="text-xs text-muted-foreground font-medium">{t('context_view.label')}</span>
+        <div className="flex rounded-lg border bg-muted p-0.5 gap-0.5">
+          {(['all', 'operations', 'security', 'compliance', 'architecture'] as const).map((ctx) => (
+            <button
+              key={ctx}
+              onClick={() => setViewContext(ctx)}
+              className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
+                viewContext === ctx
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {t(`context_view.${ctx}`)}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2">
           <Tabs defaultValue="details">
             <TabsList>
               <TabsTrigger value="details">{t('tabs.details')}</TabsTrigger>
-              <TabsTrigger value="relations">
-                {t('tabs.relations')}
-                {relationsData.length > 0 && (
-                  <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-[10px]">
-                    {relationsData.length}
-                  </Badge>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="tickets">
-                {t('tabs.tickets')}
-                {ticketsData.length > 0 && (
-                  <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-[10px]">
-                    {ticketsData.length}
-                  </Badge>
-                )}
-              </TabsTrigger>
+              {(viewContext === 'all' || viewContext === 'operations' || viewContext === 'architecture') && (
+                <TabsTrigger value="relations">
+                  {t('tabs.relations')}
+                  {relationsData.length > 0 && (
+                    <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-[10px]">
+                      {relationsData.length}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+              )}
+              {(viewContext === 'all' || viewContext === 'operations') && (
+                <TabsTrigger value="tickets">
+                  {t('tabs.tickets')}
+                  {ticketsData.length > 0 && (
+                    <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-[10px]">
+                      {ticketsData.length}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+              )}
+              {(viewContext === 'all' || viewContext === 'security' || viewContext === 'compliance') && (
+                <TabsTrigger value="classifications">
+                  {t('tabs.classifications')}
+                  {classificationsData.length > 0 && (
+                    <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-[10px]">
+                      {classificationsData.length}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+              )}
+              {(viewContext === 'all' || viewContext === 'operations' || viewContext === 'architecture') && (
+                <TabsTrigger value="capacity">
+                  {t('tabs.capacity')}
+                  {capacityData.length > 0 && (
+                    <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-[10px]">
+                      {capacityData.length}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+              )}
             </TabsList>
 
             {/* Details Tab */}
@@ -353,7 +527,7 @@ export function AssetDetailPage() {
                     <div>
                       <Label className="text-xs text-muted-foreground">{t('fields.asset_type')}</Label>
                       <div className="text-sm mt-1">
-                        <Badge variant="outline">{t(`types.${asset.asset_type}`)}</Badge>
+                        <Badge variant="outline">{getTypeName(asset.asset_type)}</Badge>
                       </div>
                     </div>
                     <div>
@@ -382,6 +556,27 @@ export function AssetDetailPage() {
                       <p className="text-sm text-muted-foreground mt-1">{formatDate(asset.updated_at)}</p>
                     </div>
                   </div>
+                  {/* Dynamic type-specific attributes (Evo-3E) */}
+                  {(() => {
+                    const currentType = (assetTypesData ?? []).find((at) => at.slug === asset.asset_type);
+                    const attrSchema = currentType?.attribute_schema ?? [];
+                    if (attrSchema.length === 0) return null;
+                    const attrValues = (asset as unknown as Record<string, unknown>).attributes as Record<string, unknown> | undefined;
+                    return (
+                      <>
+                        <Separator />
+                        <div>
+                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                            {t('dynamic_fields.attributes')}
+                          </p>
+                          <DynamicFieldDisplay
+                            schema={attrSchema}
+                            values={attrValues ?? {}}
+                          />
+                        </div>
+                      </>
+                    );
+                  })()}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -389,29 +584,53 @@ export function AssetDetailPage() {
             {/* Relations Tab */}
             <TabsContent value="relations" className="mt-4">
               <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-3">
-                  <CardTitle className="text-base">{t('relations.title')}</CardTitle>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant={graphView ? 'outline' : 'default'}
-                      size="sm"
-                      onClick={() => setGraphView(false)}
-                    >
-                      <List className="h-4 w-4 mr-1" />
-                      {t('relations.table_view')}
-                    </Button>
-                    <Button
-                      variant={graphView ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setGraphView(true)}
-                    >
-                      <GitGraph className="h-4 w-4 mr-1" />
-                      {t('relations.graph_view')}
-                    </Button>
-                    <Button size="sm" onClick={() => setRelationOpen(true)}>
-                      <Plus className="mr-1.5 h-3.5 w-3.5" />
-                      {t('relations.add')}
-                    </Button>
+                <CardHeader className="flex flex-col gap-3 pb-3">
+                  <div className="flex flex-row items-center justify-between">
+                    <CardTitle className="text-base">{t('relations.title')}</CardTitle>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant={graphView ? 'outline' : 'default'}
+                        size="sm"
+                        onClick={() => setGraphView(false)}
+                      >
+                        <List className="h-4 w-4 mr-1" />
+                        {t('relations.table_view')}
+                      </Button>
+                      <Button
+                        variant={graphView ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setGraphView(true)}
+                      >
+                        <GitGraph className="h-4 w-4 mr-1" />
+                        {t('relations.graph_view')}
+                      </Button>
+                      <Button size="sm" onClick={() => setRelationOpen(true)}>
+                        <Plus className="mr-1.5 h-3.5 w-3.5" />
+                        {t('relations.add')}
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <Label className="text-xs text-muted-foreground whitespace-nowrap">{t('temporal.as_of')}</Label>
+                      <Input
+                        type="date"
+                        value={temporalAsOf}
+                        onChange={(e) => setTemporalAsOf(e.target.value)}
+                        disabled={temporalShowAll}
+                        className="h-8 w-40 text-xs"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        checked={temporalShowAll}
+                        onCheckedChange={(checked) => setTemporalShowAll(checked === true)}
+                      />
+                      <Label className="text-xs text-muted-foreground whitespace-nowrap cursor-pointer">
+                        {t('temporal.show_all')}
+                      </Label>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -453,6 +672,7 @@ export function AssetDetailPage() {
                           <TableHead>{t('relations.source')}</TableHead>
                           <TableHead>{t('relations.type')}</TableHead>
                           <TableHead>{t('relations.target')}</TableHead>
+                          <TableHead>{t('relations.properties')}</TableHead>
                           <TableHead className="w-[60px]" />
                         </TableRow>
                       </TableHeader>
@@ -473,7 +693,7 @@ export function AssetDetailPage() {
                             </TableCell>
                             <TableCell>
                               <Badge variant="outline" className="text-xs">
-                                {t(`relations.${rel.relation_type}`)}
+                                {getRelTypeName(rel.relation_type)}
                               </Badge>
                             </TableCell>
                             <TableCell className="text-sm">
@@ -487,6 +707,13 @@ export function AssetDetailPage() {
                               ) : (
                                 <span className="font-medium">{asset.display_name}</span>
                               )}
+                            </TableCell>
+                            <TableCell>
+                              <RelationPropertiesCell
+                                properties={rel.properties}
+                                schema={relTypeSchemaMap.get(rel.relation_type)}
+                                locale={i18n.language}
+                              />
                             </TableCell>
                             <TableCell>
                               <Button
@@ -556,6 +783,169 @@ export function AssetDetailPage() {
                 </CardContent>
               </Card>
             </TabsContent>
+
+            {/* Classifications Tab */}
+            <TabsContent value="classifications" className="mt-4">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-3">
+                  <CardTitle className="text-base">{t('classifications.title')}</CardTitle>
+                  <Button size="sm" onClick={() => setClassificationOpen(true)}>
+                    <Plus className="mr-1.5 h-3.5 w-3.5" />
+                    {t('classifications.add')}
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  {classificationsData.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-10 text-center">
+                      <Shield className="h-8 w-8 text-muted-foreground mb-3" />
+                      <p className="text-sm text-muted-foreground">{t('classifications.no_classifications')}</p>
+                    </div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>{t('classifications.model')}</TableHead>
+                          <TableHead>{t('classifications.value')}</TableHead>
+                          <TableHead>{t('classifications.justification')}</TableHead>
+                          <TableHead>{t('classifications.classified_by')}</TableHead>
+                          <TableHead>{t('classifications.classified_at')}</TableHead>
+                          <TableHead className="w-[60px]" />
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {classificationsData.map((cls) => (
+                          <TableRow key={cls.id}>
+                            <TableCell className="text-sm font-medium">
+                              {cls.value?.model?.name ?? '\u2014'}
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant="outline"
+                                className="text-xs"
+                                style={cls.value?.color ? { borderColor: cls.value.color, color: cls.value.color } : undefined}
+                              >
+                                {cls.value?.label ?? cls.value_id}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
+                              {cls.justification ?? '\u2014'}
+                            </TableCell>
+                            <TableCell className="text-sm">
+                              {cls.classified_by_name ?? '\u2014'}
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {formatDate(cls.classified_at)}
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                                onClick={() => handleRemoveClassification(cls.value_id)}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Capacity Tab */}
+            <TabsContent value="capacity" className="mt-4">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">{t('capacity.title')}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {capacityData.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-10 text-center">
+                      <Activity className="h-8 w-8 text-muted-foreground mb-3" />
+                      <p className="text-sm text-muted-foreground">{t('capacity.no_capacity')}</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      {providesCapacity.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                            {t('capacity.provides')}
+                          </p>
+                          <div className="space-y-4">
+                            {providesCapacity.map((cap, idx) => {
+                              const pct = cap.utilization_pct;
+                              const variant = pct > 90 ? 'danger' : pct > 70 ? 'warning' : 'success';
+                              return (
+                                <div key={`provides-${idx}`} className="space-y-1.5">
+                                  <div className="flex items-center justify-between text-sm">
+                                    <span className="font-medium">
+                                      {cap.capacity_type.name}
+                                      <span className="text-muted-foreground ml-1 text-xs">({cap.capacity_type.unit})</span>
+                                    </span>
+                                    <span className={cn(
+                                      'text-xs font-medium',
+                                      pct > 90 ? 'text-destructive' : pct > 70 ? 'text-warning' : 'text-emerald-600 dark:text-emerald-400',
+                                    )}>
+                                      {pct.toFixed(1)}%
+                                    </span>
+                                  </div>
+                                  <Progress value={pct} variant={variant} height={6} />
+                                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                    <span>{t('capacity.allocated')}: {cap.allocated}</span>
+                                    <span>{t('capacity.reserved')}: {cap.reserved}</span>
+                                    <span>{t('capacity.available')}: {cap.available}</span>
+                                    <span>{t('capacity.total')}: {cap.total}</span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                      {requiresCapacity.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                            {t('capacity.requires')}
+                          </p>
+                          <div className="space-y-4">
+                            {requiresCapacity.map((cap, idx) => {
+                              const pct = cap.utilization_pct;
+                              const variant = pct > 90 ? 'danger' : pct > 70 ? 'warning' : 'success';
+                              return (
+                                <div key={`requires-${idx}`} className="space-y-1.5">
+                                  <div className="flex items-center justify-between text-sm">
+                                    <span className="font-medium">
+                                      {cap.capacity_type.name}
+                                      <span className="text-muted-foreground ml-1 text-xs">({cap.capacity_type.unit})</span>
+                                    </span>
+                                    <span className={cn(
+                                      'text-xs font-medium',
+                                      pct > 90 ? 'text-destructive' : pct > 70 ? 'text-warning' : 'text-emerald-600 dark:text-emerald-400',
+                                    )}>
+                                      {pct.toFixed(1)}%
+                                    </span>
+                                  </div>
+                                  <Progress value={pct} variant={variant} height={6} />
+                                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                    <span>{t('capacity.allocated')}: {cap.allocated}</span>
+                                    <span>{t('capacity.reserved')}: {cap.reserved}</span>
+                                    <span>{t('capacity.available')}: {cap.available}</span>
+                                    <span>{t('capacity.total')}: {cap.total}</span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
           </Tabs>
         </div>
 
@@ -600,7 +990,7 @@ export function AssetDetailPage() {
                       <SelectGroup key={group.category}>
                         <SelectLabel>{t(`type_categories.${group.category}`)}</SelectLabel>
                         {group.types.map((at) => (
-                          <SelectItem key={at} value={at}>{t(`types.${at}`)}</SelectItem>
+                          <SelectItem key={at} value={at}>{getTypeName(at)}</SelectItem>
                         ))}
                       </SelectGroup>
                     ))}
@@ -725,14 +1115,14 @@ export function AssetDetailPage() {
 
             <div className="grid gap-2">
               <Label>{t('relations.type')}</Label>
-              <Select value={relType} onValueChange={setRelType}>
+              <Select value={relType} onValueChange={(v) => { setRelType(v); setRelProperties({}); }}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {RELATION_TYPES.map((rt) => (
-                    <SelectItem key={rt} value={rt}>
-                      {t(`relations.${rt}`)}
+                  {(relationTypesData ?? []).map((rt) => (
+                    <SelectItem key={rt.slug} value={rt.slug}>
+                      {getRelTypeName(rt.slug)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -749,12 +1139,25 @@ export function AssetDetailPage() {
                   {otherAssets.map((a) => (
                     <SelectItem key={a.id} value={a.id}>
                       {a.display_name}
-                      <span className="text-muted-foreground ml-2 text-xs">({t(`types.${a.asset_type}`)})</span>
+                      <span className="text-muted-foreground ml-2 text-xs">({getTypeName(a.asset_type)})</span>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
+
+            {relTypeSchemaMap.has(relType) && (
+              <div className="grid gap-2">
+                <Label className="text-xs text-muted-foreground">{t('relations.properties')}</Label>
+                <div className="rounded-md border p-3">
+                  <DynamicFormRenderer
+                    schema={relTypeSchemaMap.get(relType)!}
+                    values={relProperties}
+                    onChange={setRelProperties}
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           <DialogFooter>
@@ -770,6 +1173,126 @@ export function AssetDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Add Classification Dialog */}
+      <Dialog open={classificationOpen} onOpenChange={setClassificationOpen}>
+        <DialogContent className="sm:max-w-[460px]">
+          <DialogHeader>
+            <DialogTitle>{t('classifications.add')}</DialogTitle>
+            <DialogDescription>
+              {asset.display_name}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label>{t('classifications.model')}</Label>
+              <Select
+                value={selectedModelId}
+                onValueChange={(v) => {
+                  setSelectedModelId(v);
+                  setSelectedValueId('');
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={t('classifications.select_model')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {(classificationModels ?? []).map((model) => (
+                    <SelectItem key={model.id} value={model.id}>
+                      {model.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid gap-2">
+              <Label>{t('classifications.value')}</Label>
+              <Select
+                value={selectedValueId}
+                onValueChange={setSelectedValueId}
+                disabled={!selectedModelId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={t('classifications.select_value')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {selectedModelValues.map((val) => (
+                    <SelectItem key={val.id} value={val.id}>
+                      {val.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid gap-2">
+              <Label>{t('classifications.justification')}</Label>
+              <Textarea
+                value={justification}
+                onChange={(e) => setJustification(e.target.value)}
+                placeholder={t('classifications.justification')}
+                rows={3}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setClassificationOpen(false)}>
+              {tCommon('actions.cancel')}
+            </Button>
+            <Button
+              onClick={handleAddClassification}
+              disabled={!selectedValueId || classifyAsset.isPending}
+            >
+              {classifyAsset.isPending ? tCommon('status.loading') : t('classifications.add')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Relation Properties Cell — shows edge metadata as tooltip
+// ---------------------------------------------------------------------------
+
+function RelationPropertiesCell({
+  properties,
+  schema,
+  locale,
+}: {
+  properties: Record<string, unknown>;
+  schema?: import('@opsweave/shared').AttributeDefinition[];
+  locale: string;
+}) {
+  const entries = Object.entries(properties).filter(([, v]) => v != null && v !== '');
+  if (entries.length === 0) return <span className="text-muted-foreground text-xs">{'\u2014'}</span>;
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button variant="ghost" size="sm" className="h-6 px-2 text-xs gap-1">
+          <Info className="h-3 w-3" />
+          {entries.length}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent side="bottom" className="max-w-xs">
+        <div className="space-y-1 text-xs">
+          {entries.map(([key, value]) => {
+            const def = schema?.find((d) => d.key === key);
+            const label = def ? getLocalizedLabel(def.label, locale) : key;
+            return (
+              <div key={key} className="flex gap-2">
+                <span className="text-muted-foreground">{label}:</span>
+                <span className="font-medium">{String(value)}</span>
+              </div>
+            );
+          })}
+        </div>
+      </TooltipContent>
+    </Tooltip>
   );
 }

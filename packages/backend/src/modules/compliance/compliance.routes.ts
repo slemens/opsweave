@@ -10,6 +10,12 @@ import {
   updateRequirementSchema,
   upsertMappingSchema,
   flagAssetSchema,
+  createComplianceAuditSchema,
+  updateComplianceAuditSchema,
+  auditFilterSchema,
+  createAuditFindingSchema,
+  updateAuditFindingSchema,
+  createComplianceEvidenceSchema,
 } from '@opsweave/shared';
 
 import {
@@ -30,7 +36,32 @@ import {
   unflagAsset,
 } from './compliance.controller.js';
 
+import { controlRouter } from '../compliance-controls/controls.routes.js';
+
+import {
+  listAudits,
+  getAudit,
+  createAudit,
+  updateAudit,
+  deleteAudit,
+  listFindings,
+  createFinding,
+  updateFinding,
+  deleteFinding,
+} from '../compliance-controls/audits.controller.js';
+
+import {
+  listEvidence,
+  createEvidence,
+  deleteEvidence,
+} from '../compliance-controls/evidence.controller.js';
+
 const complianceRouter = Router();
+
+// =============================================================================
+// Compliance Controls (Evo-4A) — mounted at /api/v1/compliance/controls
+// =============================================================================
+complianceRouter.use('/controls', controlRouter);
 
 // =============================================================================
 // Regulatory Frameworks
@@ -202,6 +233,142 @@ complianceRouter.delete(
   '/frameworks/:id/assets/:aid',
   validateParams(idParamSchema),
   unflagAsset,
+);
+
+// =============================================================================
+// Compliance Audits (Evo-4B)
+// =============================================================================
+
+/**
+ * GET /api/v1/compliance/audits
+ * List compliance audits with optional filters.
+ */
+complianceRouter.get(
+  '/audits',
+  validateQuery(auditFilterSchema),
+  listAudits,
+);
+
+/**
+ * POST /api/v1/compliance/audits
+ * Create a new compliance audit.
+ */
+complianceRouter.post(
+  '/audits',
+  validate(createComplianceAuditSchema),
+  createAudit,
+);
+
+/**
+ * GET /api/v1/compliance/audits/:id
+ * Get a single audit with finding count.
+ */
+complianceRouter.get(
+  '/audits/:id',
+  validateParams(idParamSchema),
+  getAudit,
+);
+
+/**
+ * PUT /api/v1/compliance/audits/:id
+ * Update a compliance audit.
+ */
+complianceRouter.put(
+  '/audits/:id',
+  validateParams(idParamSchema),
+  validate(updateComplianceAuditSchema),
+  updateAudit,
+);
+
+/**
+ * DELETE /api/v1/compliance/audits/:id
+ * Delete a compliance audit (must not have findings).
+ */
+complianceRouter.delete(
+  '/audits/:id',
+  validateParams(idParamSchema),
+  deleteAudit,
+);
+
+// =============================================================================
+// Audit Findings (Evo-4B)
+// =============================================================================
+
+/**
+ * GET /api/v1/compliance/audits/:id/findings
+ * List findings for an audit.
+ */
+complianceRouter.get(
+  '/audits/:id/findings',
+  validateParams(idParamSchema),
+  listFindings,
+);
+
+/**
+ * POST /api/v1/compliance/audits/:id/findings
+ * Create a finding under an audit.
+ */
+complianceRouter.post(
+  '/audits/:id/findings',
+  validateParams(idParamSchema),
+  validate(createAuditFindingSchema),
+  createFinding,
+);
+
+/**
+ * PUT /api/v1/compliance/findings/:id
+ * Update a finding.
+ */
+complianceRouter.put(
+  '/findings/:id',
+  validateParams(idParamSchema),
+  validate(updateAuditFindingSchema),
+  updateFinding,
+);
+
+/**
+ * DELETE /api/v1/compliance/findings/:id
+ * Delete a finding.
+ */
+complianceRouter.delete(
+  '/findings/:id',
+  validateParams(idParamSchema),
+  deleteFinding,
+);
+
+// =============================================================================
+// Compliance Evidence (Evo-4C)
+// =============================================================================
+
+/**
+ * GET /api/v1/compliance/controls/:id/evidence
+ * List evidence for a control.
+ */
+complianceRouter.get(
+  '/controls/:id/evidence',
+  validateParams(idParamSchema),
+  listEvidence,
+);
+
+/**
+ * POST /api/v1/compliance/controls/:id/evidence
+ * Add evidence to a control.
+ */
+complianceRouter.post(
+  '/controls/:id/evidence',
+  validateParams(idParamSchema),
+  validate(createComplianceEvidenceSchema),
+  createEvidence,
+);
+
+/**
+ * DELETE /api/v1/compliance/evidence/:id
+ * Delete evidence.
+ */
+complianceRouter.delete(
+  '/evidence/:id',
+  validateParams(idParamSchema),
+  deleteEvidence,
 );
 
 export { complianceRouter };

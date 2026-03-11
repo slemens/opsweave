@@ -15,6 +15,10 @@ const createDefinitionSchema = z.object({
   business_hours_end: z.string().regex(/^\d{2}:\d{2}$/).nullable().optional(),
   business_days: z.string().optional(),
   priority_overrides: z.record(z.unknown()).optional(),
+  rpo_minutes: z.number().int().min(0).nullable().optional(),
+  rto_minutes: z.number().int().min(0).nullable().optional(),
+  service_window: z.record(z.unknown()).optional(),
+  escalation_matrix: z.array(z.unknown()).optional(),
   is_default: z.boolean().optional(),
 });
 
