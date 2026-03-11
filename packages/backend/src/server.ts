@@ -112,26 +112,32 @@ async function autoSetupIfNeeded(): Promise<void> {
 async function runEvoMigrations(db: TypedDb): Promise<void> {
   const { TABLES_SQL, EVO_MIGRATIONS_SQL } = await import('./db/setup.js');
 
-  // Create new tables (IF NOT EXISTS — safe for existing DBs)
-  const newTableStatements = TABLES_SQL
+  const allStatements = TABLES_SQL
     .split(';')
     .map((s: string) => s.trim())
-    .filter((s: string) => s.includes('CREATE TABLE IF NOT EXISTS asset_types')
-      || s.includes('CREATE TABLE IF NOT EXISTS relation_types')
-      || s.includes('CREATE TABLE IF NOT EXISTS classification_models')
-      || s.includes('CREATE TABLE IF NOT EXISTS classification_values')
-      || s.includes('CREATE TABLE IF NOT EXISTS asset_classifications')
-      || s.includes('CREATE TABLE IF NOT EXISTS capacity_types')
-      || s.includes('CREATE TABLE IF NOT EXISTS asset_capacities')
-      || s.includes('CREATE INDEX IF NOT EXISTS idx_asset_types')
-      || s.includes('CREATE INDEX IF NOT EXISTS idx_relation_types')
-      || s.includes('CREATE INDEX IF NOT EXISTS idx_classification')
-      || s.includes('CREATE INDEX IF NOT EXISTS idx_asset_classifications')
-      || s.includes('CREATE INDEX IF NOT EXISTS idx_capacity_types')
-      || s.includes('CREATE INDEX IF NOT EXISTS idx_asset_capacities')
-      || s.includes('CREATE INDEX IF NOT EXISTS idx_asset_relations_temporal'));
+    .filter((s: string) => s.length > 0);
 
-  for (const stmt of newTableStatements) {
+  const evoTableNames = [
+    'asset_types', 'relation_types', 'classification_models',
+    'classification_values', 'asset_classifications', 'capacity_types',
+    'asset_capacities',
+  ];
+
+  const evoIndexPrefixes = [
+    'idx_asset_types', 'idx_relation_types', 'idx_classification',
+    'idx_asset_classifications', 'idx_capacity_types', 'idx_asset_capacities',
+    'idx_asset_relations_temporal',
+  ];
+
+  // Phase 1: CREATE TABLE (new evo tables)
+  const tableStmts = allStatements.filter((s) =>
+    evoTableNames.some((t) => s.includes(`CREATE TABLE IF NOT EXISTS ${t}`)));
+
+  // Phase 2: CREATE INDEX (evo indexes — run AFTER alter tables)
+  const indexStmts = allStatements.filter((s) =>
+    evoIndexPrefixes.some((p) => s.includes(`CREATE INDEX IF NOT EXISTS ${p}`)));
+
+  const runStmt = async (stmt: string): Promise<void> => {
     if (config.dbDriver === 'sqlite') {
       const dbRecord = db as unknown as Record<string, unknown>;
       (dbRecord.run as (query: ReturnType<typeof sql.raw>) => void)(sql.raw(stmt));
@@ -139,20 +145,28 @@ async function runEvoMigrations(db: TypedDb): Promise<void> {
       const dbRecord = db as unknown as Record<string, unknown>;
       await (dbRecord.execute as (query: ReturnType<typeof sql.raw>) => Promise<unknown>)(sql.raw(stmt));
     }
+  };
+
+  // 1. Create new evo tables
+  for (const stmt of tableStmts) {
+    await runStmt(stmt);
   }
 
-  // ALTER TABLE migrations (may fail if columns already exist — that's OK)
+  // 2. ALTER TABLE migrations (add columns to existing tables — may fail if already present)
   for (const stmt of EVO_MIGRATIONS_SQL) {
     try {
-      if (config.dbDriver === 'sqlite') {
-        const dbRecord = db as unknown as Record<string, unknown>;
-        (dbRecord.run as (query: ReturnType<typeof sql.raw>) => void)(sql.raw(stmt));
-      } else {
-        const dbRecord = db as unknown as Record<string, unknown>;
-        await (dbRecord.execute as (query: ReturnType<typeof sql.raw>) => Promise<unknown>)(sql.raw(stmt));
-      }
+      await runStmt(stmt);
     } catch {
       // Column already exists — ignore
+    }
+  }
+
+  // 3. Create indexes (after ALTERs, since some indexes reference ALTERed columns)
+  for (const stmt of indexStmts) {
+    try {
+      await runStmt(stmt);
+    } catch {
+      // Index already exists or column missing — ignore
     }
   }
 
