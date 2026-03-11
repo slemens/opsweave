@@ -48,6 +48,8 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           platforms: linux/amd64
+          provenance: false
+          sbom: false
 
   release:
     name: Create GitHub Release
