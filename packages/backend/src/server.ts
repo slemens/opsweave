@@ -116,20 +116,20 @@ async function runEvoMigrations(db: TypedDb): Promise<void> {
   const newTableStatements = TABLES_SQL
     .split(';')
     .map((s: string) => s.trim())
-    .filter((s: string) => s.startsWith('CREATE TABLE IF NOT EXISTS asset_types')
-      || s.startsWith('CREATE TABLE IF NOT EXISTS relation_types')
-      || s.startsWith('CREATE TABLE IF NOT EXISTS classification_models')
-      || s.startsWith('CREATE TABLE IF NOT EXISTS classification_values')
-      || s.startsWith('CREATE TABLE IF NOT EXISTS asset_classifications')
-      || s.startsWith('CREATE TABLE IF NOT EXISTS capacity_types')
-      || s.startsWith('CREATE TABLE IF NOT EXISTS asset_capacities')
-      || s.startsWith('CREATE INDEX IF NOT EXISTS idx_asset_types')
-      || s.startsWith('CREATE INDEX IF NOT EXISTS idx_relation_types')
-      || s.startsWith('CREATE INDEX IF NOT EXISTS idx_classification')
-      || s.startsWith('CREATE INDEX IF NOT EXISTS idx_asset_classifications')
-      || s.startsWith('CREATE INDEX IF NOT EXISTS idx_capacity_types')
-      || s.startsWith('CREATE INDEX IF NOT EXISTS idx_asset_capacities')
-      || s.startsWith('CREATE INDEX IF NOT EXISTS idx_asset_relations_temporal'));
+    .filter((s: string) => s.includes('CREATE TABLE IF NOT EXISTS asset_types')
+      || s.includes('CREATE TABLE IF NOT EXISTS relation_types')
+      || s.includes('CREATE TABLE IF NOT EXISTS classification_models')
+      || s.includes('CREATE TABLE IF NOT EXISTS classification_values')
+      || s.includes('CREATE TABLE IF NOT EXISTS asset_classifications')
+      || s.includes('CREATE TABLE IF NOT EXISTS capacity_types')
+      || s.includes('CREATE TABLE IF NOT EXISTS asset_capacities')
+      || s.includes('CREATE INDEX IF NOT EXISTS idx_asset_types')
+      || s.includes('CREATE INDEX IF NOT EXISTS idx_relation_types')
+      || s.includes('CREATE INDEX IF NOT EXISTS idx_classification')
+      || s.includes('CREATE INDEX IF NOT EXISTS idx_asset_classifications')
+      || s.includes('CREATE INDEX IF NOT EXISTS idx_capacity_types')
+      || s.includes('CREATE INDEX IF NOT EXISTS idx_asset_capacities')
+      || s.includes('CREATE INDEX IF NOT EXISTS idx_asset_relations_temporal'));
 
   for (const stmt of newTableStatements) {
     if (config.dbDriver === 'sqlite') {
