@@ -1096,6 +1096,38 @@ export function AssetDetailPage() {
 
         {/* Sidebar */}
         <div className="space-y-4">
+          {/* Mini Topology Graph */}
+          {rfNodes.length > 0 && (
+            <Card>
+              <CardHeader className="pb-2 pt-3 px-3">
+                <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                  <GitGraph className="h-3.5 w-3.5" />
+                  {t('relations.topology')}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="px-3 pb-3">
+                <div style={{ height: 200 }} className="border rounded-lg overflow-hidden">
+                  <ReactFlow
+                    nodes={rfNodes}
+                    edges={rfEdges}
+                    fitView
+                    fitViewOptions={{ padding: 0.3 }}
+                    nodesDraggable={false}
+                    nodesConnectable={false}
+                    elementsSelectable={false}
+                    panOnDrag={false}
+                    zoomOnScroll={false}
+                    zoomOnPinch={false}
+                    zoomOnDoubleClick={false}
+                    preventScrolling={false}
+                    proOptions={{ hideAttribution: true }}
+                  >
+                    <Background color="#334155" gap={16} size={1} />
+                  </ReactFlow>
+                </div>
+              </CardContent>
+            </Card>
+          )}
           {/* Status */}
           <Card>
             <CardContent className="pt-4 space-y-4">

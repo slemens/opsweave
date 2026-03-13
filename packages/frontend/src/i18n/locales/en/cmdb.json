@@ -92,6 +92,7 @@
     "select_asset": "Select asset",
     "table_view": "Table",
     "graph_view": "Graph",
+    "topology": "Topology",
     "runs_on": "Runs on",
     "connected_to": "Connected to",
     "stored_on": "Stored on",
