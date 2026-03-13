@@ -1151,7 +1151,7 @@ export function TicketBoardPage() {
     [customersData],
   );
   const categoryOptions = useMemo(() =>
-    (categoriesData?.data ?? []).filter((c) => c.is_active).map((c) => ({ value: c.id, label: c.name })),
+    (categoriesData ?? []).filter((c) => c.is_active).map((c) => ({ value: c.id, label: c.name })),
     [categoriesData],
   );
 

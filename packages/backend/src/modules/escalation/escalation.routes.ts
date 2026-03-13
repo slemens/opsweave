@@ -27,7 +27,7 @@ const updateRuleSchema = z.object({
   sla_threshold_pct: z.number().int().min(1).max(100).optional(),
   target_group_id: z.string().uuid().optional(),
   escalation_level: z.number().int().min(1).max(10).optional(),
-  is_active: z.boolean().optional(),
+  is_active: z.union([z.boolean(), z.number()]).transform((v) => (typeof v === 'number' ? v !== 0 : v)).optional(),
 });
 
 const escalateSchema = z.object({

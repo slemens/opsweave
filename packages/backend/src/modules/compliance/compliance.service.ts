@@ -145,17 +145,26 @@ export async function createFramework(
 ): Promise<unknown> {
   const d = db();
 
-  // Community Edition limit check
-  const [countResult] = await d
-    .select({ count: count() })
-    .from(regulatoryFrameworks)
-    .where(eq(regulatoryFrameworks.tenant_id, tenantId));
+  // License-aware limit check
+  const { validateLicenseKey } = await import('../../middleware/license.js');
+  const { getTenantLicenseKey } = await import('../tenants/tenants.service.js');
+  const licenseKey = await getTenantLicenseKey(tenantId);
+  const licensePayload = validateLicenseKey(licenseKey);
+  const maxFrameworks = licensePayload?.limits?.maxFrameworks ?? COMMUNITY_LIMITS.maxFrameworks;
 
-  const currentCount = countResult?.count ?? 0;
-  if (currentCount >= COMMUNITY_LIMITS.maxFrameworks) {
-    throw new LicenseLimitError(
-      `Maximum frameworks reached for Community Edition (limit: ${COMMUNITY_LIMITS.maxFrameworks}). Upgrade to Enterprise for unlimited frameworks.`,
-    );
+  // -1 = unlimited (Enterprise)
+  if (maxFrameworks !== -1) {
+    const [countResult] = await d
+      .select({ count: count() })
+      .from(regulatoryFrameworks)
+      .where(eq(regulatoryFrameworks.tenant_id, tenantId));
+
+    const currentCount = countResult?.count ?? 0;
+    if (currentCount >= maxFrameworks) {
+      throw new LicenseLimitError(
+        `Maximum frameworks reached (limit: ${maxFrameworks}). Upgrade to Enterprise for unlimited frameworks.`,
+      );
+    }
   }
 
   const id = uuidv4();

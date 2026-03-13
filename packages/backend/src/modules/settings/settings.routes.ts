@@ -35,10 +35,10 @@ const settingsKeyParamSchema = z.object({
 
 const passwordPolicySchema = z.object({
   min_length: z.number().int().min(8).max(128).optional(),
-  require_uppercase: z.boolean().optional(),
-  require_lowercase: z.boolean().optional(),
-  require_digit: z.boolean().optional(),
-  require_special: z.boolean().optional(),
+  require_uppercase: z.union([z.boolean(), z.number()]).transform((v) => (typeof v === 'number' ? v !== 0 : v)).optional(),
+  require_lowercase: z.union([z.boolean(), z.number()]).transform((v) => (typeof v === 'number' ? v !== 0 : v)).optional(),
+  require_digit: z.union([z.boolean(), z.number()]).transform((v) => (typeof v === 'number' ? v !== 0 : v)).optional(),
+  require_special: z.union([z.boolean(), z.number()]).transform((v) => (typeof v === 'number' ? v !== 0 : v)).optional(),
   expiry_days: z.number().int().min(0).max(365).optional(),
   history_count: z.number().int().min(0).max(24).optional(),
 });

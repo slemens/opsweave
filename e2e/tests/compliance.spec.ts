@@ -47,14 +47,17 @@ test.describe('Compliance', () => {
     // Wait briefly for the API response
     await page.waitForTimeout(2_000);
 
-    // If the creation succeeded (under limit), modal will close. If not, close it manually.
+    // Wait for modal to close (creation succeeded) or stay open (limit hit)
+    await page.waitForTimeout(2_000);
     const modalVisible = await page.locator(byTestId('modal-framework')).isVisible().catch(() => false);
     if (modalVisible) {
-      // Community limit prevented creation — close the modal
+      // Limit prevented creation — close the modal
       await page.keyboard.press('Escape');
       await expect(page.locator(byTestId('modal-framework'))).not.toBeVisible({ timeout: 5_000 });
     } else {
-      // Creation succeeded — verify the framework appears and clean up
+      // Creation succeeded — reload and verify the framework appears
+      await page.reload();
+      await page.waitForSelector(byTestId('table-frameworks'), { timeout: 10_000 });
       await expect(page.locator(byTestId('table-frameworks'))).toContainText(frameworkName, { timeout: 10_000 });
 
       // Cleanup via API

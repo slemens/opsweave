@@ -50,6 +50,14 @@ import {
 // Helpers
 // ---------------------------------------------------------------------------
 
+/**
+ * Accepts boolean OR number (0/1) and coerces to boolean.
+ * SQLite stores booleans as INTEGER 0/1, so the frontend may send either form.
+ */
+export const booleanLike = z
+  .union([z.boolean(), z.number()])
+  .transform((v) => (typeof v === 'number' ? v !== 0 : v));
+
 /** Validates a UUID v4 string */
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -135,7 +143,7 @@ export const updateTenantSchema = z.object({
     .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
     .optional(),
   settings: z.record(z.unknown()).optional(),
-  is_active: z.boolean().optional(),
+  is_active: booleanLike.optional(),
 });
 
 export type UpdateTenantInput = z.infer<typeof updateTenantSchema>;
@@ -169,7 +177,7 @@ export const updateUserSchema = z.object({
   display_name: z.string().min(1).max(255).optional(),
   email: z.string().email().optional(),
   language: z.enum(SUPPORTED_LANGUAGES).optional(),
-  is_active: z.boolean().optional(),
+  is_active: booleanLike.optional(),
 });
 
 export type UpdateUserInput = z.infer<typeof updateUserSchema>;
@@ -239,7 +247,7 @@ export const createTicketSchema = z.object({
   change_rollback_plan: z.string().max(50000).nullable().default(null),
   change_planned_start: z.string().nullable().default(null),
   change_planned_end: z.string().nullable().default(null),
-  cab_required: z.boolean().optional(),
+  cab_required: booleanLike.optional(),
 });
 
 export type CreateTicketInput = z.infer<typeof createTicketSchema>;
@@ -273,7 +281,7 @@ export const updateTicketSchema = z.object({
   change_planned_end: z.string().nullable().optional(),
   change_actual_start: z.string().nullable().optional(),
   change_actual_end: z.string().nullable().optional(),
-  cab_required: z.boolean().optional(),
+  cab_required: booleanLike.optional(),
   incident_commander_id: uuidSchema.nullable().optional(),
   bridge_call_url: z.string().url().max(2000).nullable().optional(),
 });
@@ -299,7 +307,7 @@ export type AssignTicketInput = z.infer<typeof assignTicketSchema>;
 
 export const createCommentSchema = z.object({
   content: z.string().min(1, 'Comment content is required').max(50000),
-  is_internal: z.boolean().default(false),
+  is_internal: booleanLike.default(false),
   source: z.enum(COMMENT_SOURCES).default('agent'),
 });
 
@@ -421,7 +429,7 @@ export const createWorkflowTemplateSchema = z.object({
   description: z.string().max(2000).nullable().default(null),
   trigger_type: z.enum(WORKFLOW_TRIGGER_TYPES),
   trigger_subtype: z.enum(TICKET_TYPES).nullable().default(null),
-  is_active: z.boolean().default(true),
+  is_active: booleanLike.default(true),
 });
 export type CreateWorkflowTemplateInput = z.infer<typeof createWorkflowTemplateSchema>;
 
@@ -667,7 +675,7 @@ export const createEmailConfigSchema = z.object({
   config: z.record(z.unknown()).default({}),
   target_group_id: uuidSchema.nullable().default(null),
   default_ticket_type: z.enum(TICKET_TYPES).default('incident'),
-  is_active: z.boolean().default(true),
+  is_active: booleanLike.default(true),
 });
 export type CreateEmailConfigInput = z.infer<typeof createEmailConfigSchema>;
 
@@ -713,7 +721,7 @@ const attributeDefinitionSchema = z.object({
   key: z.string().min(1).max(100).regex(/^[a-z][a-z0-9_]*$/, 'Key must be lowercase snake_case'),
   label: z.object({ de: z.string().min(1), en: z.string().min(1) }),
   type: z.enum(['text', 'number', 'boolean', 'date', 'select', 'multiselect', 'url', 'ip_address']),
-  required: z.boolean().default(false),
+  required: booleanLike.default(false),
   default_value: z.unknown().optional(),
   options: z.array(z.object({
     value: z.string().min(1),
@@ -745,7 +753,7 @@ export const updateAssetTypeSchema = z.object({
   category: z.enum(ASSET_TYPE_CATEGORIES).optional(),
   icon: z.string().max(100).nullable().optional(),
   color: z.string().max(50).nullable().optional(),
-  is_active: z.boolean().optional(),
+  is_active: booleanLike.optional(),
   attribute_schema: z.array(attributeDefinitionSchema).optional(),
 });
 export type UpdateAssetTypeInput = z.infer<typeof updateAssetTypeSchema>;
@@ -759,7 +767,7 @@ export const createRelationTypeSchema = z.object({
   name: z.string().min(1).max(255),
   description: z.string().max(1000).nullable().default(null),
   category: z.string().max(100).nullable().default(null),
-  is_directional: z.boolean().default(true),
+  is_directional: booleanLike.default(true),
   source_types: z.array(z.string()).default([]),
   target_types: z.array(z.string()).default([]),
   properties_schema: z.array(attributeDefinitionSchema).default([]),
@@ -771,11 +779,11 @@ export const updateRelationTypeSchema = z.object({
   name: z.string().min(1).max(255).optional(),
   description: z.string().max(1000).nullable().optional(),
   category: z.string().max(100).nullable().optional(),
-  is_directional: z.boolean().optional(),
+  is_directional: booleanLike.optional(),
   source_types: z.array(z.string()).optional(),
   target_types: z.array(z.string()).optional(),
   properties_schema: z.array(attributeDefinitionSchema).optional(),
-  is_active: z.boolean().optional(),
+  is_active: booleanLike.optional(),
   color: z.string().max(50).nullable().optional(),
 });
 export type UpdateRelationTypeInput = z.infer<typeof updateRelationTypeSchema>;
@@ -793,7 +801,7 @@ export type CreateClassificationModelInput = z.infer<typeof createClassification
 export const updateClassificationModelSchema = z.object({
   name: z.string().min(1).max(255).optional(),
   description: z.string().max(1000).nullable().optional(),
-  is_active: z.boolean().optional(),
+  is_active: booleanLike.optional(),
 });
 export type UpdateClassificationModelInput = z.infer<typeof updateClassificationModelSchema>;
 
@@ -901,7 +909,7 @@ export const createServiceProfileSchema = z.object({
   description: z.string().max(10000).nullable().default(null),
   dimensions: z.record(z.unknown()).default({}),
   sla_definition_id: uuidSchema.nullable().default(null),
-  is_active: z.boolean().default(true),
+  is_active: booleanLike.default(true),
 });
 export type CreateServiceProfileInput = z.infer<typeof createServiceProfileSchema>;
 
