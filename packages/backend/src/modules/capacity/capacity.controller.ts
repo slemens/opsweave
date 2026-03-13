@@ -5,7 +5,7 @@ import {
   sendCreated,
   sendNoContent,
 } from '../../lib/response.js';
-import { requireTenantId } from '../../lib/context.js';
+import { requireTenantId, requireUserId } from '../../lib/context.js';
 import * as capacityService from './capacity.service.js';
 import type { CreateCapacityTypeInput, SetAssetCapacityInput } from '@opsweave/shared';
 
@@ -86,9 +86,10 @@ export async function setAssetCapacity(
   res: Response,
 ): Promise<void> {
   const tenantId = requireTenantId(req);
+  const userId = requireUserId(req);
   const { id } = req.params as { id: string };
   const data = req.body as SetAssetCapacityInput;
-  const capacity = await capacityService.setAssetCapacity(tenantId, id, data);
+  const capacity = await capacityService.setAssetCapacity(tenantId, id, data, userId);
   sendSuccess(res, capacity);
 }
 
@@ -116,4 +117,81 @@ export async function getCapacityUtilization(
   const { id } = req.params as { id: string };
   const utilization = await capacityService.getCapacityUtilization(tenantId, id);
   sendSuccess(res, utilization);
+}
+
+// ── Capacity Planning (REQ-3.4a / REQ-3.4b) ─────────────────
+
+/**
+ * GET /api/v1/capacity/utilization
+ */
+export async function getUtilizationOverview(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const tenantId = requireTenantId(req);
+  const overview = await capacityService.getUtilizationOverview(tenantId);
+  sendSuccess(res, overview);
+}
+
+/**
+ * GET /api/v1/capacity/compatible
+ */
+export async function findCompatibleHosts(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const tenantId = requireTenantId(req);
+  const query = req.query as Record<string, string>;
+
+  // Parse requirements from query params: each key is a capacityTypeId, value is the required amount
+  // Format: ?requirements=[{"capacityTypeId":"uuid","value":4},...]
+  const requirementsRaw = query.requirements;
+  let requirements: capacityService.CapacityRequirement[] = [];
+
+  if (requirementsRaw) {
+    try {
+      const parsed = JSON.parse(requirementsRaw) as Array<{ capacityTypeId: string; value: number }>;
+      requirements = parsed.map((r) => ({
+        capacityTypeId: r.capacityTypeId,
+        value: Number(r.value),
+      }));
+    } catch {
+      // Invalid JSON, return empty
+    }
+  }
+
+  const hosts = await capacityService.findCompatibleHosts(tenantId, requirements);
+  sendSuccess(res, hosts);
+}
+
+/**
+ * GET /api/v1/capacity/migration-check
+ */
+export async function checkMigrationFeasibility(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const tenantId = requireTenantId(req);
+  const { workload, target } = req.query as { workload?: string; target?: string };
+
+  if (!workload || !target) {
+    sendSuccess(res, { feasible: false, details: [], error: 'Missing workload or target parameter' });
+    return;
+  }
+
+  const result = await capacityService.checkMigrationFeasibility(tenantId, workload, target);
+  sendSuccess(res, result);
+}
+
+/**
+ * GET /api/v1/capacity/overprovisioned
+ */
+export async function getOverprovisionedAssets(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const tenantId = requireTenantId(req);
+  const threshold = req.query.threshold ? Number(req.query.threshold) : 30;
+  const assets = await capacityService.getOverprovisionedAssets(tenantId, threshold);
+  sendSuccess(res, assets);
 }

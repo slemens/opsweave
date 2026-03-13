@@ -16,6 +16,10 @@ import {
   setAssetCapacity,
   deleteAssetCapacity,
   getCapacityUtilization,
+  getUtilizationOverview,
+  findCompatibleHosts,
+  checkMigrationFeasibility,
+  getOverprovisionedAssets,
 } from './capacity.controller.js';
 
 const capacityRouter = Router();
@@ -25,6 +29,12 @@ capacityRouter.get('/types', listCapacityTypes);
 capacityRouter.post('/types', validate(createCapacityTypeSchema), createCapacityType);
 capacityRouter.put('/types/:id', validateParams(idParamSchema), updateCapacityType);
 capacityRouter.delete('/types/:id', validateParams(idParamSchema), deleteCapacityType);
+
+// ── Capacity Planning (REQ-3.4a / REQ-3.4b) ────────────────
+capacityRouter.get('/utilization', getUtilizationOverview);
+capacityRouter.get('/compatible', findCompatibleHosts);
+capacityRouter.get('/migration-check', checkMigrationFeasibility);
+capacityRouter.get('/overprovisioned', getOverprovisionedAssets);
 
 // ── Asset Capacities ────────────────────────────────────────
 capacityRouter.get('/assets/:id', validateParams(idParamSchema), getAssetCapacities);

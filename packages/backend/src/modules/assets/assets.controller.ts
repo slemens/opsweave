@@ -14,6 +14,7 @@ import type {
   CreateAssetInput,
   UpdateAssetInput,
   CreateAssetRelationInput,
+  UpdateAssetRelationInput,
 } from '@opsweave/shared';
 
 // ─── List Assets ───────────────────────────────────────
@@ -139,10 +140,28 @@ export async function deleteAssetRelation(
   res: Response,
 ): Promise<void> {
   const tenantId = requireTenantId(req);
+  const userId = requireUserId(req);
   const { rid } = req.params as { id: string; rid: string };
 
-  await assetsService.deleteAssetRelation(tenantId, rid);
+  await assetsService.deleteAssetRelation(tenantId, rid, userId);
   sendNoContent(res);
+}
+
+/**
+ * PUT /api/v1/assets/:id/relations/:rid
+ * REQ-3.2a: Update relation properties
+ */
+export async function updateAssetRelation(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const tenantId = requireTenantId(req);
+  const userId = requireUserId(req);
+  const { rid } = req.params as { id: string; rid: string };
+  const data = req.body as UpdateAssetRelationInput;
+
+  const relation = await assetsService.updateAssetRelation(tenantId, rid, data, userId);
+  sendSuccess(res, relation);
 }
 
 // ─── Stats ─────────────────────────────────────────────
@@ -247,4 +266,34 @@ export async function getAssetCompliance(
 
   const compliance = await assetsService.getAssetCompliance(tenantId, id);
   sendSuccess(res, compliance);
+}
+
+// ─── REQ-3.3b — History Endpoints ────────────────────────────
+
+/**
+ * GET /api/v1/assets/:id/relation-history
+ */
+export async function getAssetRelationHistory(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const tenantId = requireTenantId(req);
+  const { id } = req.params as { id: string };
+
+  const history = await assetsService.getAssetRelationHistoryEntries(tenantId, id);
+  sendSuccess(res, history);
+}
+
+/**
+ * GET /api/v1/assets/:id/capacity-history
+ */
+export async function getAssetCapacityHistory(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const tenantId = requireTenantId(req);
+  const { id } = req.params as { id: string };
+
+  const history = await assetsService.getAssetCapacityHistoryEntries(tenantId, id);
+  sendSuccess(res, history);
 }

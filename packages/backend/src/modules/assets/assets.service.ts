@@ -5,6 +5,7 @@ import { getDb, type TypedDb } from '../../config/database.js';
 import {
   assets,
   assetRelations,
+  assetRelationHistory,
   assetServiceLinks,
   assetRegulatoryFlags,
   assigneeGroups,
@@ -574,6 +575,25 @@ export async function createAssetRelation(
     throw err;
   }
 
+  // REQ-3.3b: Record creation in relation history
+  await d.insert(assetRelationHistory).values({
+    id: uuidv4(),
+    relation_id: id,
+    tenant_id: tenantId,
+    action: 'created',
+    changed_by: userId,
+    changed_at: now,
+    old_values: null,
+    new_values: JSON.stringify({
+      source_asset_id: data.source_asset_id,
+      target_asset_id: data.target_asset_id,
+      relation_type: data.relation_type,
+      properties: data.properties ?? {},
+      valid_from: data.valid_from ?? null,
+      valid_until: data.valid_until ?? null,
+    }),
+  });
+
   return {
     id,
     tenant_id: tenantId,
@@ -590,16 +610,27 @@ export async function createAssetRelation(
 }
 
 /**
- * Delete an asset relation.
+ * Update an existing asset relation (properties, valid_from, valid_until, metadata).
+ * REQ-3.2a: Edge Properties on Relations
  */
-export async function deleteAssetRelation(
+export async function updateAssetRelation(
   tenantId: string,
   relationId: string,
-): Promise<void> {
+  data: { properties?: Record<string, unknown>; valid_from?: string | null; valid_until?: string | null; metadata?: Record<string, unknown> },
+  userId?: string,
+): Promise<unknown> {
   const d = db();
 
   const [existing] = await d
-    .select({ id: assetRelations.id })
+    .select({
+      id: assetRelations.id,
+      source_asset_id: assetRelations.source_asset_id,
+      target_asset_id: assetRelations.target_asset_id,
+      relation_type: assetRelations.relation_type,
+      properties: assetRelations.properties,
+      valid_from: assetRelations.valid_from,
+      valid_until: assetRelations.valid_until,
+    })
     .from(assetRelations)
     .where(and(eq(assetRelations.tenant_id, tenantId), eq(assetRelations.id, relationId)))
     .limit(1);
@@ -607,6 +638,132 @@ export async function deleteAssetRelation(
   if (!existing) {
     throw new NotFoundError('Relation not found');
   }
+
+  const updateData: Record<string, unknown> = {};
+  if (data.properties !== undefined) updateData.properties = JSON.stringify(data.properties);
+  if (data.valid_from !== undefined) updateData.valid_from = data.valid_from;
+  if (data.valid_until !== undefined) updateData.valid_until = data.valid_until;
+  if (data.metadata !== undefined) updateData.metadata = JSON.stringify(data.metadata);
+
+  if (Object.keys(updateData).length > 0) {
+    // REQ-3.3b: Record modification in relation history
+    const parseProps = (val: string | null | undefined) => {
+      if (!val) return {};
+      try { return JSON.parse(val); } catch { return {}; }
+    };
+    await d.insert(assetRelationHistory).values({
+      id: uuidv4(),
+      relation_id: relationId,
+      tenant_id: tenantId,
+      action: 'modified',
+      changed_by: userId ?? null,
+      changed_at: new Date().toISOString(),
+      old_values: JSON.stringify({
+        properties: parseProps(existing.properties),
+        valid_from: existing.valid_from,
+        valid_until: existing.valid_until,
+      }),
+      new_values: JSON.stringify({
+        properties: data.properties ?? parseProps(existing.properties),
+        valid_from: data.valid_from !== undefined ? data.valid_from : existing.valid_from,
+        valid_until: data.valid_until !== undefined ? data.valid_until : existing.valid_until,
+      }),
+    });
+
+    await d
+      .update(assetRelations)
+      .set(updateData)
+      .where(and(eq(assetRelations.tenant_id, tenantId), eq(assetRelations.id, relationId)));
+  }
+
+  const [updated] = await d
+    .select({
+      id: assetRelations.id,
+      tenant_id: assetRelations.tenant_id,
+      source_asset_id: assetRelations.source_asset_id,
+      target_asset_id: assetRelations.target_asset_id,
+      relation_type: assetRelations.relation_type,
+      properties: assetRelations.properties,
+      valid_from: assetRelations.valid_from,
+      valid_until: assetRelations.valid_until,
+      metadata: assetRelations.metadata,
+      created_at: assetRelations.created_at,
+      created_by: assetRelations.created_by,
+    })
+    .from(assetRelations)
+    .where(and(eq(assetRelations.tenant_id, tenantId), eq(assetRelations.id, relationId)))
+    .limit(1);
+
+  if (!updated) {
+    throw new NotFoundError('Relation not found after update');
+  }
+
+  const parseJsonLocal = (val: string | null | undefined) => {
+    if (!val) return {};
+    try { return JSON.parse(val); } catch { return {}; }
+  };
+
+  return {
+    id: updated.id,
+    tenant_id: updated.tenant_id,
+    source_asset_id: updated.source_asset_id,
+    target_asset_id: updated.target_asset_id,
+    relation_type: updated.relation_type,
+    properties: typeof updated.properties === 'string' ? JSON.parse(updated.properties) : updated.properties,
+    valid_from: updated.valid_from ?? null,
+    valid_until: updated.valid_until ?? null,
+    metadata: parseJsonLocal(updated.metadata),
+    created_at: updated.created_at,
+    created_by: updated.created_by,
+  };
+}
+
+/**
+ * Delete an asset relation.
+ */
+export async function deleteAssetRelation(
+  tenantId: string,
+  relationId: string,
+  userId?: string,
+): Promise<void> {
+  const d = db();
+
+  const [existing] = await d
+    .select({
+      id: assetRelations.id,
+      source_asset_id: assetRelations.source_asset_id,
+      target_asset_id: assetRelations.target_asset_id,
+      relation_type: assetRelations.relation_type,
+      properties: assetRelations.properties,
+      valid_from: assetRelations.valid_from,
+      valid_until: assetRelations.valid_until,
+    })
+    .from(assetRelations)
+    .where(and(eq(assetRelations.tenant_id, tenantId), eq(assetRelations.id, relationId)))
+    .limit(1);
+
+  if (!existing) {
+    throw new NotFoundError('Relation not found');
+  }
+
+  // REQ-3.3b: Record deletion in relation history
+  await d.insert(assetRelationHistory).values({
+    id: uuidv4(),
+    relation_id: relationId,
+    tenant_id: tenantId,
+    action: 'deleted',
+    changed_by: userId ?? null,
+    changed_at: new Date().toISOString(),
+    old_values: JSON.stringify({
+      source_asset_id: existing.source_asset_id,
+      target_asset_id: existing.target_asset_id,
+      relation_type: existing.relation_type,
+      properties: typeof existing.properties === 'string' ? JSON.parse(existing.properties) : existing.properties,
+      valid_from: existing.valid_from,
+      valid_until: existing.valid_until,
+    }),
+    new_values: null,
+  });
 
   await d
     .delete(assetRelations)
@@ -1003,4 +1160,171 @@ export async function getAssetCompliance(
     ));
 
   return rows;
+}
+
+// ─── REQ-3.3b — History Endpoints ────────────────────────────
+
+/**
+ * Get relation change history for an asset.
+ * Returns all history entries for relations where this asset is source or target.
+ */
+export async function getAssetRelationHistoryEntries(
+  tenantId: string,
+  assetId: string,
+): Promise<Array<{
+  id: string;
+  relation_id: string;
+  action: string;
+  changed_by: string | null;
+  changed_at: string;
+  old_values: Record<string, unknown> | null;
+  new_values: Record<string, unknown> | null;
+  changed_by_name: string | null;
+}>> {
+  const d = db();
+
+  // Get all relation IDs that involve this asset (current and historical)
+  const relRows = await d
+    .select({ id: assetRelations.id })
+    .from(assetRelations)
+    .where(
+      and(
+        eq(assetRelations.tenant_id, tenantId),
+        or(
+          eq(assetRelations.source_asset_id, assetId),
+          eq(assetRelations.target_asset_id, assetId),
+        ),
+      ),
+    );
+
+  const relIds = relRows.map((r) => r.id);
+
+  // Also find relation IDs from history that reference this asset (for deleted relations)
+  const historyRelIds = await d
+    .select({ relation_id: assetRelationHistory.relation_id })
+    .from(assetRelationHistory)
+    .where(eq(assetRelationHistory.tenant_id, tenantId));
+
+  // Filter history entries whose old_values or new_values reference this asset
+  const allHistoryRelIds = new Set(relIds);
+  for (const h of historyRelIds) {
+    allHistoryRelIds.add(h.relation_id);
+  }
+
+  if (allHistoryRelIds.size === 0) return [];
+
+  const rows = await d
+    .select({
+      id: assetRelationHistory.id,
+      relation_id: assetRelationHistory.relation_id,
+      action: assetRelationHistory.action,
+      changed_by: assetRelationHistory.changed_by,
+      changed_at: assetRelationHistory.changed_at,
+      old_values: assetRelationHistory.old_values,
+      new_values: assetRelationHistory.new_values,
+      changed_by_name: users.display_name,
+    })
+    .from(assetRelationHistory)
+    .leftJoin(users, eq(assetRelationHistory.changed_by, users.id))
+    .where(
+      and(
+        eq(assetRelationHistory.tenant_id, tenantId),
+        inArray(assetRelationHistory.relation_id, Array.from(allHistoryRelIds)),
+      ),
+    )
+    .orderBy(desc(assetRelationHistory.changed_at));
+
+  const parseJson = (val: string | null): Record<string, unknown> | null => {
+    if (!val) return null;
+    try { return JSON.parse(val) as Record<string, unknown>; } catch { return null; }
+  };
+
+  // Filter: only include entries that actually involve this asset
+  return rows
+    .map((row) => ({
+      id: row.id,
+      relation_id: row.relation_id,
+      action: row.action,
+      changed_by: row.changed_by,
+      changed_at: row.changed_at,
+      old_values: parseJson(row.old_values),
+      new_values: parseJson(row.new_values),
+      changed_by_name: row.changed_by_name ?? null,
+    }))
+    .filter((entry) => {
+      // Keep if the relation is directly associated with this asset
+      if (relIds.includes(entry.relation_id)) return true;
+      // Or if old/new values reference this asset
+      const checkAssetId = (vals: Record<string, unknown> | null): boolean => {
+        if (!vals) return false;
+        return vals.source_asset_id === assetId || vals.target_asset_id === assetId;
+      };
+      return checkAssetId(entry.old_values) || checkAssetId(entry.new_values);
+    });
+}
+
+/**
+ * Get capacity change history for an asset.
+ */
+export async function getAssetCapacityHistoryEntries(
+  tenantId: string,
+  assetId: string,
+): Promise<Array<{
+  id: string;
+  asset_id: string;
+  capacity_type_id: string;
+  old_total: number | null;
+  old_allocated: number | null;
+  new_total: number | null;
+  new_allocated: number | null;
+  changed_by: string | null;
+  changed_at: string;
+  reason: string | null;
+  changed_by_name: string | null;
+  capacity_type_name: string | null;
+}>> {
+  const d = db();
+
+  const { assetCapacityHistory, capacityTypes } = await import('../../db/schema/index.js');
+
+  const rows = await d
+    .select({
+      id: assetCapacityHistory.id,
+      asset_id: assetCapacityHistory.asset_id,
+      capacity_type_id: assetCapacityHistory.capacity_type_id,
+      old_total: assetCapacityHistory.old_total,
+      old_allocated: assetCapacityHistory.old_allocated,
+      new_total: assetCapacityHistory.new_total,
+      new_allocated: assetCapacityHistory.new_allocated,
+      changed_by: assetCapacityHistory.changed_by,
+      changed_at: assetCapacityHistory.changed_at,
+      reason: assetCapacityHistory.reason,
+      changed_by_name: users.display_name,
+      capacity_type_name: capacityTypes.name,
+    })
+    .from(assetCapacityHistory)
+    .leftJoin(users, eq(assetCapacityHistory.changed_by, users.id))
+    .leftJoin(capacityTypes, eq(assetCapacityHistory.capacity_type_id, capacityTypes.id))
+    .where(
+      and(
+        eq(assetCapacityHistory.tenant_id, tenantId),
+        eq(assetCapacityHistory.asset_id, assetId),
+      ),
+    )
+    .orderBy(desc(assetCapacityHistory.changed_at));
+
+  return rows.map((row) => ({
+    id: row.id,
+    asset_id: row.asset_id,
+    capacity_type_id: row.capacity_type_id,
+    old_total: row.old_total,
+    old_allocated: row.old_allocated,
+    new_total: row.new_total,
+    new_allocated: row.new_allocated,
+    changed_by: row.changed_by,
+    changed_at: row.changed_at,
+    reason: row.reason,
+    changed_by_name: row.changed_by_name ?? null,
+    capacity_type_name: row.capacity_type_name ?? null,
+  }));
 }

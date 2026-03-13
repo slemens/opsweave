@@ -8,6 +8,7 @@ import {
   createAssetSchema,
   updateAssetSchema,
   createAssetRelationSchema,
+  updateAssetRelationSchema,
   classifyAssetSchema,
 } from '@opsweave/shared';
 
@@ -19,6 +20,7 @@ import {
   deleteAsset,
   getAssetRelations,
   createAssetRelation,
+  updateAssetRelation,
   deleteAssetRelation,
   getAssetStats,
   getFullAssetGraph,
@@ -27,6 +29,8 @@ import {
   getAssetSlaChain,
   getAssetServices,
   getAssetCompliance,
+  getAssetRelationHistory,
+  getAssetCapacityHistory,
 } from './assets.controller.js';
 import {
   getAssetClassifications,
@@ -189,6 +193,18 @@ assetRouter.delete(
 );
 
 /**
+ * PUT /api/v1/assets/:id/relations/:rid
+ * Update a relation (properties, valid_from, valid_until, metadata).
+ * REQ-3.2a: Edge Properties on Relations
+ */
+assetRouter.put(
+  '/:id/relations/:rid',
+  validateParams(assetRelationParamsSchema),
+  validate(updateAssetRelationSchema),
+  updateAssetRelation,
+);
+
+/**
  * GET /api/v1/assets/:id/tickets
  * Get tickets linked to an asset.
  */
@@ -228,6 +244,28 @@ assetRouter.get(
   '/:id/compliance',
   validateParams(idParamSchema),
   getAssetCompliance,
+);
+
+// ─── REQ-3.3b — History Endpoints ────────────────────────
+
+/**
+ * GET /api/v1/assets/:id/relation-history
+ * Get relation change history for an asset.
+ */
+assetRouter.get(
+  '/:id/relation-history',
+  validateParams(idParamSchema),
+  getAssetRelationHistory,
+);
+
+/**
+ * GET /api/v1/assets/:id/capacity-history
+ * Get capacity change history for an asset.
+ */
+assetRouter.get(
+  '/:id/capacity-history',
+  validateParams(idParamSchema),
+  getAssetCapacityHistory,
 );
 
 // ─── Asset Classifications (Evo-1C) ─────────────────────

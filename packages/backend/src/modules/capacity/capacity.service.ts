@@ -2,7 +2,7 @@ import { eq, and, count } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 
 import { getDb, type TypedDb } from '../../config/database.js';
-import { capacityTypes, assetCapacities } from '../../db/schema/index.js';
+import { capacityTypes, assetCapacities, assetCapacityHistory, assets } from '../../db/schema/index.js';
 import { NotFoundError, ConflictError } from '../../lib/errors.js';
 import type { CreateCapacityTypeInput, SetAssetCapacityInput } from '@opsweave/shared';
 
@@ -182,6 +182,7 @@ export async function setAssetCapacity(
   tenantId: string,
   assetId: string,
   data: SetAssetCapacityInput,
+  userId?: string,
 ): Promise<unknown> {
   const d = db();
   const now = new Date().toISOString();
@@ -215,6 +216,22 @@ export async function setAssetCapacity(
   if (existing) {
     // Update existing entry
     entryId = existing.id;
+
+    // REQ-3.3b: Record capacity change in history
+    await d.insert(assetCapacityHistory).values({
+      id: uuidv4(),
+      asset_id: assetId,
+      capacity_type_id: data.capacity_type_id,
+      tenant_id: tenantId,
+      old_total: Math.round(parseFloat(existing.total) || 0),
+      old_allocated: Math.round(parseFloat(existing.allocated) || 0),
+      new_total: Math.round(data.total),
+      new_allocated: Math.round(parseFloat(existing.allocated) || 0),
+      changed_by: userId ?? null,
+      changed_at: now,
+      reason: null,
+    });
+
     await d
       .update(assetCapacities)
       .set({
@@ -236,6 +253,21 @@ export async function setAssetCapacity(
       reserved: '0',
       created_at: now,
       updated_at: now,
+    });
+
+    // REQ-3.3b: Record capacity creation in history
+    await d.insert(assetCapacityHistory).values({
+      id: uuidv4(),
+      asset_id: assetId,
+      capacity_type_id: data.capacity_type_id,
+      tenant_id: tenantId,
+      old_total: null,
+      old_allocated: null,
+      new_total: Math.round(data.total),
+      new_allocated: 0,
+      changed_by: userId ?? null,
+      changed_at: now,
+      reason: null,
     });
   }
 
@@ -345,6 +377,426 @@ export async function getCapacityUtilization(
       type_category: row.type_category,
     };
   });
+}
+
+// ── Capacity Planning (REQ-3.4a / REQ-3.4b) ─────────────────
+
+/**
+ * Utilization overview: aggregated utilization across all assets
+ * that PROVIDE capacity.
+ */
+export interface UtilizationOverviewItem {
+  assetId: string;
+  assetName: string;
+  assetType: string;
+  capacities: Array<{
+    capacityTypeId: string;
+    type: string;
+    unit: string;
+    total: number;
+    allocated: number;
+    reserved: number;
+    available: number;
+    utilizationPct: number;
+  }>;
+}
+
+export async function getUtilizationOverview(
+  tenantId: string,
+): Promise<UtilizationOverviewItem[]> {
+  const d = db();
+
+  const rows = await d
+    .select({
+      assetId: assetCapacities.asset_id,
+      assetName: assets.display_name,
+      assetType: assets.asset_type,
+      capacityTypeId: assetCapacities.capacity_type_id,
+      typeName: capacityTypes.name,
+      typeUnit: capacityTypes.unit,
+      total: assetCapacities.total,
+      allocated: assetCapacities.allocated,
+      reserved: assetCapacities.reserved,
+    })
+    .from(assetCapacities)
+    .innerJoin(assets, eq(assetCapacities.asset_id, assets.id))
+    .innerJoin(capacityTypes, eq(assetCapacities.capacity_type_id, capacityTypes.id))
+    .where(and(
+      eq(assetCapacities.tenant_id, tenantId),
+      eq(assetCapacities.direction, 'provides'),
+    ))
+    .orderBy(assets.display_name, capacityTypes.name);
+
+  // Group by asset
+  const assetMap = new Map<string, UtilizationOverviewItem>();
+  for (const row of rows) {
+    let entry = assetMap.get(row.assetId);
+    if (!entry) {
+      entry = {
+        assetId: row.assetId,
+        assetName: row.assetName,
+        assetType: row.assetType,
+        capacities: [],
+      };
+      assetMap.set(row.assetId, entry);
+    }
+    const total = parseFloat(row.total) || 0;
+    const allocated = parseFloat(row.allocated) || 0;
+    const reserved = parseFloat(row.reserved) || 0;
+    const available = Math.max(0, total - allocated - reserved);
+    const utilizationPct = total > 0
+      ? Math.round(((allocated + reserved) / total) * 10000) / 100
+      : 0;
+
+    entry.capacities.push({
+      capacityTypeId: row.capacityTypeId,
+      type: row.typeName,
+      unit: row.typeUnit,
+      total,
+      allocated,
+      reserved,
+      available,
+      utilizationPct,
+    });
+  }
+
+  return Array.from(assetMap.values());
+}
+
+/**
+ * Find assets that provide ALL requested capacity types with sufficient free capacity.
+ * Returns sorted by best fit (most total free capacity first).
+ */
+export interface CapacityRequirement {
+  capacityTypeId: string;
+  value: number;
+}
+
+export interface CompatibleHost {
+  assetId: string;
+  assetName: string;
+  assetType: string;
+  capacities: Array<{
+    capacityTypeId: string;
+    type: string;
+    unit: string;
+    total: number;
+    allocated: number;
+    reserved: number;
+    available: number;
+    required: number;
+    remainingAfter: number;
+  }>;
+  /** Sum of (available - required) across all requirements; higher = better fit */
+  fitScore: number;
+}
+
+export async function findCompatibleHosts(
+  tenantId: string,
+  requirements: CapacityRequirement[],
+): Promise<CompatibleHost[]> {
+  if (requirements.length === 0) return [];
+
+  const d = db();
+
+  // Fetch all 'provides' capacities for the requested types
+  const rows = await d
+    .select({
+      assetId: assetCapacities.asset_id,
+      assetName: assets.display_name,
+      assetType: assets.asset_type,
+      capacityTypeId: assetCapacities.capacity_type_id,
+      typeName: capacityTypes.name,
+      typeUnit: capacityTypes.unit,
+      total: assetCapacities.total,
+      allocated: assetCapacities.allocated,
+      reserved: assetCapacities.reserved,
+    })
+    .from(assetCapacities)
+    .innerJoin(assets, eq(assetCapacities.asset_id, assets.id))
+    .innerJoin(capacityTypes, eq(assetCapacities.capacity_type_id, capacityTypes.id))
+    .where(and(
+      eq(assetCapacities.tenant_id, tenantId),
+      eq(assetCapacities.direction, 'provides'),
+    ))
+    .orderBy(assets.display_name);
+
+  // Build per-asset capacity map
+  const assetMap = new Map<string, {
+    assetId: string;
+    assetName: string;
+    assetType: string;
+    caps: Map<string, { typeName: string; typeUnit: string; total: number; allocated: number; reserved: number }>;
+  }>();
+
+  for (const row of rows) {
+    let entry = assetMap.get(row.assetId);
+    if (!entry) {
+      entry = {
+        assetId: row.assetId,
+        assetName: row.assetName,
+        assetType: row.assetType,
+        caps: new Map(),
+      };
+      assetMap.set(row.assetId, entry);
+    }
+    entry.caps.set(row.capacityTypeId, {
+      typeName: row.typeName,
+      typeUnit: row.typeUnit,
+      total: parseFloat(row.total) || 0,
+      allocated: parseFloat(row.allocated) || 0,
+      reserved: parseFloat(row.reserved) || 0,
+    });
+  }
+
+  // Filter: asset must have ALL required types with sufficient free capacity
+  const results: CompatibleHost[] = [];
+  for (const entry of assetMap.values()) {
+    let allSatisfied = true;
+    let fitScore = 0;
+    const capacities: CompatibleHost['capacities'] = [];
+
+    for (const req of requirements) {
+      const cap = entry.caps.get(req.capacityTypeId);
+      if (!cap) {
+        allSatisfied = false;
+        break;
+      }
+      const available = Math.max(0, cap.total - cap.allocated - cap.reserved);
+      if (available < req.value) {
+        allSatisfied = false;
+        break;
+      }
+      const remainingAfter = available - req.value;
+      fitScore += remainingAfter;
+      capacities.push({
+        capacityTypeId: req.capacityTypeId,
+        type: cap.typeName,
+        unit: cap.typeUnit,
+        total: cap.total,
+        allocated: cap.allocated,
+        reserved: cap.reserved,
+        available,
+        required: req.value,
+        remainingAfter,
+      });
+    }
+
+    if (allSatisfied) {
+      results.push({
+        assetId: entry.assetId,
+        assetName: entry.assetName,
+        assetType: entry.assetType,
+        capacities,
+        fitScore,
+      });
+    }
+  }
+
+  // Sort by best fit (most free capacity first)
+  results.sort((a, b) => b.fitScore - a.fitScore);
+  return results;
+}
+
+/**
+ * Check if a workload (asset that REQUIRES capacity) can fit on a target
+ * (asset that PROVIDES capacity).
+ */
+export interface MigrationFeasibilityResult {
+  feasible: boolean;
+  workloadAssetId: string;
+  workloadAssetName: string;
+  targetAssetId: string;
+  targetAssetName: string;
+  details: Array<{
+    capacityTypeId: string;
+    type: string;
+    unit: string;
+    required: number;
+    available: number;
+    sufficient: boolean;
+  }>;
+}
+
+export async function checkMigrationFeasibility(
+  tenantId: string,
+  workloadAssetId: string,
+  targetAssetId: string,
+): Promise<MigrationFeasibilityResult> {
+  const d = db();
+
+  // Get workload's requirements
+  const workloadRows = await d
+    .select({
+      capacityTypeId: assetCapacities.capacity_type_id,
+      total: assetCapacities.total,
+      typeName: capacityTypes.name,
+      typeUnit: capacityTypes.unit,
+    })
+    .from(assetCapacities)
+    .innerJoin(capacityTypes, eq(assetCapacities.capacity_type_id, capacityTypes.id))
+    .where(and(
+      eq(assetCapacities.tenant_id, tenantId),
+      eq(assetCapacities.asset_id, workloadAssetId),
+      eq(assetCapacities.direction, 'requires'),
+    ));
+
+  // Get target's provided capacities
+  const targetRows = await d
+    .select({
+      capacityTypeId: assetCapacities.capacity_type_id,
+      total: assetCapacities.total,
+      allocated: assetCapacities.allocated,
+      reserved: assetCapacities.reserved,
+      typeName: capacityTypes.name,
+      typeUnit: capacityTypes.unit,
+    })
+    .from(assetCapacities)
+    .innerJoin(capacityTypes, eq(assetCapacities.capacity_type_id, capacityTypes.id))
+    .where(and(
+      eq(assetCapacities.tenant_id, tenantId),
+      eq(assetCapacities.asset_id, targetAssetId),
+      eq(assetCapacities.direction, 'provides'),
+    ));
+
+  // Get asset names
+  const [workloadAsset] = await d
+    .select({ name: assets.display_name })
+    .from(assets)
+    .where(and(eq(assets.id, workloadAssetId), eq(assets.tenant_id, tenantId)))
+    .limit(1);
+
+  const [targetAsset] = await d
+    .select({ name: assets.display_name })
+    .from(assets)
+    .where(and(eq(assets.id, targetAssetId), eq(assets.tenant_id, tenantId)))
+    .limit(1);
+
+  if (!workloadAsset) throw new NotFoundError('Workload asset not found');
+  if (!targetAsset) throw new NotFoundError('Target asset not found');
+
+  const targetCaps = new Map<string, { total: number; allocated: number; reserved: number; typeName: string; typeUnit: string }>();
+  for (const row of targetRows) {
+    targetCaps.set(row.capacityTypeId, {
+      total: parseFloat(row.total) || 0,
+      allocated: parseFloat(row.allocated) || 0,
+      reserved: parseFloat(row.reserved) || 0,
+      typeName: row.typeName,
+      typeUnit: row.typeUnit,
+    });
+  }
+
+  let feasible = true;
+  const details: MigrationFeasibilityResult['details'] = [];
+
+  for (const wRow of workloadRows) {
+    const required = parseFloat(wRow.total) || 0;
+    const tCap = targetCaps.get(wRow.capacityTypeId);
+    const available = tCap
+      ? Math.max(0, tCap.total - tCap.allocated - tCap.reserved)
+      : 0;
+    const sufficient = available >= required;
+    if (!sufficient) feasible = false;
+
+    details.push({
+      capacityTypeId: wRow.capacityTypeId,
+      type: wRow.typeName,
+      unit: wRow.typeUnit,
+      required,
+      available,
+      sufficient,
+    });
+  }
+
+  return {
+    feasible,
+    workloadAssetId,
+    workloadAssetName: workloadAsset.name,
+    targetAssetId,
+    targetAssetName: targetAsset.name,
+    details,
+  };
+}
+
+/**
+ * Find assets where utilization is below threshold% for any provided capacity type.
+ */
+export interface OverprovisionedAsset {
+  assetId: string;
+  assetName: string;
+  assetType: string;
+  underutilizedCapacities: Array<{
+    capacityTypeId: string;
+    type: string;
+    unit: string;
+    total: number;
+    allocated: number;
+    reserved: number;
+    utilizationPct: number;
+  }>;
+}
+
+export async function getOverprovisionedAssets(
+  tenantId: string,
+  threshold: number = 30,
+): Promise<OverprovisionedAsset[]> {
+  const d = db();
+
+  const rows = await d
+    .select({
+      assetId: assetCapacities.asset_id,
+      assetName: assets.display_name,
+      assetType: assets.asset_type,
+      capacityTypeId: assetCapacities.capacity_type_id,
+      typeName: capacityTypes.name,
+      typeUnit: capacityTypes.unit,
+      total: assetCapacities.total,
+      allocated: assetCapacities.allocated,
+      reserved: assetCapacities.reserved,
+    })
+    .from(assetCapacities)
+    .innerJoin(assets, eq(assetCapacities.asset_id, assets.id))
+    .innerJoin(capacityTypes, eq(assetCapacities.capacity_type_id, capacityTypes.id))
+    .where(and(
+      eq(assetCapacities.tenant_id, tenantId),
+      eq(assetCapacities.direction, 'provides'),
+    ))
+    .orderBy(assets.display_name);
+
+  const assetMap = new Map<string, OverprovisionedAsset>();
+
+  for (const row of rows) {
+    const total = parseFloat(row.total) || 0;
+    const allocated = parseFloat(row.allocated) || 0;
+    const reserved = parseFloat(row.reserved) || 0;
+    const utilizationPct = total > 0
+      ? Math.round(((allocated + reserved) / total) * 10000) / 100
+      : 0;
+
+    if (utilizationPct < threshold) {
+      let entry = assetMap.get(row.assetId);
+      if (!entry) {
+        entry = {
+          assetId: row.assetId,
+          assetName: row.assetName,
+          assetType: row.assetType,
+          underutilizedCapacities: [],
+        };
+        assetMap.set(row.assetId, entry);
+      }
+      entry.underutilizedCapacities.push({
+        capacityTypeId: row.capacityTypeId,
+        type: row.typeName,
+        unit: row.typeUnit,
+        total,
+        allocated,
+        reserved,
+        utilizationPct,
+      });
+    }
+  }
+
+  return Array.from(assetMap.values());
 }
 
 // ── Helpers ──────────────────────────────────────────────────

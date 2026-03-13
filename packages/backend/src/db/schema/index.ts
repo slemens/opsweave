@@ -30,6 +30,8 @@ export {
   capacityTypes,
   assetCapacities,
   assetTenantAssignments,
+  assetRelationHistory,
+  assetCapacityHistory,
 } from './assets.js';
 
 // Tickets
