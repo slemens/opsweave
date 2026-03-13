@@ -911,6 +911,7 @@ export const EVO_MIGRATIONS_SQL = [
   `ALTER TABLE requirement_service_mappings ADD COLUMN maturity_level TEXT`,
   `ALTER TABLE requirement_service_mappings ADD COLUMN last_verified TEXT`,
   `ALTER TABLE requirement_service_mappings ADD COLUMN verified_by TEXT`,
+  `ALTER TABLE audit_logs ADD COLUMN integrity_hash TEXT`,
 ];
 
 // CLI entry point: only runs when executed directly (not when imported)

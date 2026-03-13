@@ -97,6 +97,23 @@ async function doSeed(): Promise<void> {
   });
   logger.info('  ✓ Tenant: Demo Organisation (Enterprise license applied)');
 
+  // ─── System User (for automated actions: SLA breach, escalation, etc.) ──
+  const SYSTEM_USER_ID = '00000000-0000-0000-0000-000000000000';
+  await db.insert(users).values({
+    id: SYSTEM_USER_ID,
+    email: 'system@opsweave.internal',
+    display_name: 'System',
+    password_hash: null,
+    auth_provider: 'local' as const,
+    external_id: null,
+    language: 'de' as const,
+    is_active: 0,
+    is_superadmin: 0,
+    last_login: null,
+    created_at: now,
+  }).onConflictDoNothing();
+  logger.info('  ✓ System user for automated actions');
+
   // ─── Users ──────────────────────────────────────────────
   const adminId = uuidv4();
   const agentId = uuidv4();

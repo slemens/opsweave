@@ -37,13 +37,22 @@ interface AuthState {
   isAuthenticated: () => boolean;
 }
 
+/**
+ * Check if the httpOnly auth cookie exists by attempting /auth/me.
+ * The cookie itself is not readable by JS, but its presence
+ * is indicated by the opsweave_csrf cookie.
+ */
+function hasCsrfCookie(): boolean {
+  return document.cookie.includes('opsweave_csrf=');
+}
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
       user: null,
       tenants: [],
       tenantId: null,
-      token: null,
+      token: null, // Kept for backward compat but no longer the primary auth mechanism
       isLoading: false,
       error: null,
 
@@ -55,7 +64,7 @@ export const useAuthStore = create<AuthState>()(
 
           set({
             user,
-            token,
+            token, // Still stored for API client backward compat
             tenants,
             tenantId: user.activeTenantId,
             isLoading: false,
@@ -103,7 +112,9 @@ export const useAuthStore = create<AuthState>()(
 
       isAuthenticated: () => {
         const state = get();
-        return state.token !== null && state.user !== null;
+        // Primary: check httpOnly cookie presence via CSRF cookie
+        // Fallback: check token in store (backward compat)
+        return (hasCsrfCookie() || state.token !== null) && state.user !== null;
       },
     }),
     {

@@ -5,11 +5,18 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
+  CheckCircle2,
+  XCircle,
+  Download,
+  ShieldCheck,
+  Loader2,
 } from 'lucide-react';
 import {
   useAuditLogs,
   useAuditEventTypes,
   useAuditResourceTypes,
+  useAuditIntegrity,
+  getAuditExportUrl,
 } from '@/api/audit';
 import type { AuditLogEntry, AuditLogParams } from '@/api/audit';
 import {
@@ -55,9 +62,13 @@ export default function AuditLogPage() {
   });
   const [search, setSearch] = useState('');
 
+  const [verifyEnabled, setVerifyEnabled] = useState(false);
+
   const { data: response, isLoading } = useAuditLogs(params);
   const { data: eventTypes } = useAuditEventTypes();
   const { data: resourceTypes } = useAuditResourceTypes();
+  const { data: integrityRaw, isLoading: verifying, isFetched: verifyDone } = useAuditIntegrity(verifyEnabled);
+  const integrity = integrityRaw as unknown as { data: { valid: boolean; totalChecked: number; firstInvalidIndex: number } } | undefined;
 
   const logs = (response as unknown as { data: AuditLogEntry[]; meta: { total: number; page: number; totalPages: number } } | undefined)?.data ?? [];
   const meta = (response as unknown as { data: AuditLogEntry[]; meta: { total: number; page: number; totalPages: number } } | undefined)?.meta;
@@ -71,15 +82,64 @@ export default function AuditLogPage() {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <div className="flex items-center gap-2">
-            <Shield className="h-5 w-5 text-muted-foreground" />
-            <div>
-              <CardTitle className="text-base">
-                {t('settings:audit.title')}
-              </CardTitle>
-              <CardDescription className="text-sm">
-                {t('settings:audit.description')}
-              </CardDescription>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-muted-foreground" />
+              <div>
+                <CardTitle className="text-base">
+                  {t('settings:audit.title')}
+                </CardTitle>
+                <CardDescription className="text-sm">
+                  {t('settings:audit.description')}
+                </CardDescription>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {/* Integrity verification */}
+              {verifyDone && integrity?.data ? (
+                <div className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md ${
+                  integrity.data.valid
+                    ? 'bg-green-500/10 text-green-600 dark:text-green-400'
+                    : 'bg-red-500/10 text-red-600 dark:text-red-400'
+                }`}>
+                  {integrity.data.valid
+                    ? <CheckCircle2 className="h-3.5 w-3.5" />
+                    : <XCircle className="h-3.5 w-3.5" />}
+                  {integrity.data.valid
+                    ? t('settings:audit.integrity_valid', { count: integrity.data.totalChecked })
+                    : t('settings:audit.integrity_invalid', { index: integrity.data.firstInvalidIndex })}
+                </div>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setVerifyEnabled(true)}
+                  disabled={verifying}
+                >
+                  {verifying
+                    ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                    : <ShieldCheck className="h-4 w-4 mr-1.5" />}
+                  {t('settings:audit.verify_integrity')}
+                </Button>
+              )}
+
+              {/* Export */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open(getAuditExportUrl('csv', params), '_blank')}
+              >
+                <Download className="h-4 w-4 mr-1.5" />
+                CSV
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open(getAuditExportUrl('json', params), '_blank')}
+              >
+                <Download className="h-4 w-4 mr-1.5" />
+                JSON
+              </Button>
             </div>
           </div>
         </CardHeader>
