@@ -9,10 +9,10 @@ export const CSRF_HEADER = 'x-csrf-token';
  * Cookie options for the httpOnly JWT token cookie.
  */
 function tokenCookieOptions(): CookieOptions {
-  const isProduction = config.nodeEnv === 'production';
+  const useSecure = process.env.FORCE_HTTPS === 'true';
   return {
     httpOnly: true,
-    secure: isProduction,
+    secure: useSecure,
     sameSite: 'lax',
     path: '/api',
     maxAge: parseExpiry(config.jwtExpiresIn),
@@ -23,10 +23,10 @@ function tokenCookieOptions(): CookieOptions {
  * Cookie options for the CSRF cookie (readable by JavaScript).
  */
 function csrfCookieOptions(): CookieOptions {
-  const isProduction = config.nodeEnv === 'production';
+  const useSecure = process.env.FORCE_HTTPS === 'true';
   return {
     httpOnly: false, // Must be readable by frontend JS
-    secure: isProduction,
+    secure: useSecure,
     sameSite: 'lax',
     path: '/',
     maxAge: parseExpiry(config.jwtExpiresIn),
