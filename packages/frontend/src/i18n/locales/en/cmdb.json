@@ -31,6 +31,7 @@
     "pdu": "Power Distribution Unit",
     "ups": "UPS",
     "database": "Database",
+    "database_instance": "Database Instance",
     "application": "Application",
     "service": "Service",
     "middleware": "Middleware",

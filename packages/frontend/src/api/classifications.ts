@@ -70,7 +70,7 @@ export function useClassificationModels() {
   return useQuery({
     queryKey: classificationKeys.models(),
     queryFn: async () => {
-      return apiClient.get<ClassificationModel[]>('/classification-models');
+      return apiClient.get<ClassificationModel[]>('/classifications');
     },
   });
 }
