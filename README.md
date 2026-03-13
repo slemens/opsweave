@@ -21,9 +21,10 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/license-AGPL--3.0-blue?style=flat-square" alt="License" />
-  <img src="https://img.shields.io/badge/release-v0.5.0-orange?style=flat-square" alt="Release" />
-  <img src="https://github.com/slemens/opsweave/actions/workflows/ci.yml/badge.svg" alt="CI" />
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue?style=flat-square" alt="License" /></a>
+  <a href="https://github.com/slemens/opsweave/releases/latest"><img src="https://img.shields.io/github/v/release/slemens/opsweave?style=flat-square&color=orange" alt="Release" /></a>
+  <a href="https://github.com/slemens/opsweave/actions/workflows/ci.yml"><img src="https://github.com/slemens/opsweave/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+  <a href="https://ghcr.io/slemens/opsweave"><img src="https://img.shields.io/badge/docker-ghcr.io-2496ED?style=flat-square&logo=docker&logoColor=white" alt="Docker" /></a>
   <img src="https://img.shields.io/badge/i18n-de%20%7C%20en-blue?style=flat-square" alt="Languages" />
 </p>
 
@@ -135,6 +136,14 @@ docker compose up -d
 - **REST API**: Every function is API-accessible — automate everything
 - **OIDC Authentication**: Azure AD, Keycloak, Okta (Enterprise)
 - **Role-based access**: Admin, Manager, Agent, Viewer
+
+### 🔒 Security & Audit
+- **Tamper-proof audit trail**: Every mutation is logged with a SHA-256 hash chain
+- **Integrity verification**: Cryptographic proof that audit logs haven't been tampered with
+- **httpOnly cookie authentication**: JWT stored in httpOnly cookies, not localStorage
+- **CSRF protection**: Double-submit cookie pattern for cross-site request forgery prevention
+- **Content Security Policy**: Helmet CSP headers in production mode
+- **Audit export**: Download audit logs as CSV or JSON for compliance audits
 
 ## Editions
 
