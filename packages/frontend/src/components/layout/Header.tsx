@@ -128,7 +128,7 @@ export function Header() {
           <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8" data-testid="btn-theme-toggle">
+                <Button variant="ghost" size="icon" className="h-8 w-8" data-testid="btn-theme-toggle" aria-label={t(`theme.${theme}`)}>
                   {themeIcon}
                 </Button>
               </DropdownMenuTrigger>
@@ -177,7 +177,7 @@ export function Header() {
         {/* Notifications */}
         <Tooltip delayDuration={0}>
           <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8 relative" data-testid="btn-notifications">
+            <Button variant="ghost" size="icon" className="h-8 w-8 relative" data-testid="btn-notifications" aria-label={t('user_menu.notifications')}>
               <Bell className="h-4 w-4" />
             </Button>
           </TooltipTrigger>

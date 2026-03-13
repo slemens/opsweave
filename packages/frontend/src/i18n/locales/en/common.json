@@ -37,7 +37,11 @@
     "remove": "Remove",
     "view": "View",
     "retry": "Retry",
-    "reset_filters": "Reset filters"
+    "reset_filters": "Reset filters",
+    "copy": "Copy",
+    "menu": "Menu",
+    "toggle_active": "Toggle active/inactive",
+    "toggle_visibility": "Toggle visibility"
   },
   "status": {
     "loading": "Loading\u2026",
@@ -101,6 +105,12 @@
     "title": "Monitoring",
     "coming_soon": "Coming Soon",
     "description": "The Check_MK integration (v1 Livestatus + v2 REST API) is planned. Once available, monitoring sources will be managed here, events displayed, and incidents automatically created from alerts."
+  },
+  "error_boundary": {
+    "title": "An unexpected error occurred",
+    "description": "Please try reloading the page.",
+    "reload": "Reload page",
+    "details": "Error details"
   },
   "not_found": {
     "title": "Page Not Found",

@@ -107,6 +107,7 @@ interface SortableStepCardProps {
 }
 
 function SortableStepCard({ step, index, onRemove, isRemoving, tWf }: SortableStepCardProps) {
+  const { t: tCommon } = useTranslation('common');
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: step.id });
 
   const style = {
@@ -155,6 +156,7 @@ function SortableStepCard({ step, index, onRemove, isRemoving, tWf }: SortableSt
         className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
         disabled={isRemoving}
         onClick={() => onRemove(step.id)}
+        aria-label={tCommon('actions.delete')}
       >
         <Trash2 className="h-3.5 w-3.5" />
       </Button>

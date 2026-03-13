@@ -118,7 +118,7 @@ export default function CreateAssetPage() {
     <div className="mx-auto max-w-4xl space-y-6" data-testid="page-create-asset">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/assets')} data-testid="btn-back">
+        <Button variant="ghost" size="icon" onClick={() => navigate('/assets')} data-testid="btn-back" aria-label={tCommon('actions.back')}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>

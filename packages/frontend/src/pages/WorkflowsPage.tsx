@@ -255,7 +255,7 @@ export function WorkflowsPage() {
         </div>
       ) : (
         <>
-          <div className="rounded-md border">
+          <div className="rounded-md border overflow-x-auto">
             <Table data-testid="table-workflows">
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
@@ -274,6 +274,9 @@ export function WorkflowsPage() {
                     key={tmpl.id}
                     className="cursor-pointer"
                     onClick={() => navigate(`/workflows/${tmpl.id}`)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/workflows/${tmpl.id}`); } }}
+                    role="button"
+                    tabIndex={0}
                     data-testid={`row-workflow-${tmpl.id}`}
                   >
                     <TableCell className="font-medium">{tmpl.name}</TableCell>
@@ -309,6 +312,7 @@ export function WorkflowsPage() {
                         size="icon"
                         className="h-7 w-7 text-muted-foreground hover:text-destructive"
                         onClick={(e) => handleDeleteClick(tmpl, e)}
+                        aria-label={tCommon('actions.delete')}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
@@ -331,6 +335,7 @@ export function WorkflowsPage() {
                 className="h-8 w-8"
                 disabled={page <= 1}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
+                aria-label={tCommon('pagination.previous')}
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
@@ -340,6 +345,7 @@ export function WorkflowsPage() {
                 className="h-8 w-8"
                 disabled={page >= totalPages}
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                aria-label={tCommon('pagination.next')}
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>

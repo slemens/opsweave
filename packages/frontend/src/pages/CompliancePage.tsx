@@ -1,5 +1,6 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
 import { ControlsTab } from '@/components/compliance/ControlsTab';
 import { AuditsTab } from '@/components/compliance/AuditsTab';
 import { EvidenceTab } from '@/components/compliance/EvidenceTab';
@@ -731,7 +732,7 @@ function FrameworksTab({
       </div>
 
       {/* Table */}
-      <div className="rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+      <div className="rounded-lg border border-slate-200 dark:border-slate-700 overflow-x-auto">
         <Table data-testid="table-frameworks">
           <TableHeader>
             <TableRow className="dark:border-slate-700 dark:bg-slate-800/50">
@@ -961,7 +962,7 @@ function RequirementsTab({
       {!selectedFrameworkId ? (
         <EmptyState message={t('requirements.select_framework')} />
       ) : (
-        <div className="rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+        <div className="rounded-lg border border-slate-200 dark:border-slate-700 overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow className="dark:border-slate-700 dark:bg-slate-800/50">
@@ -1339,7 +1340,21 @@ function MatrixTab({
 export function CompliancePage() {
   const { t } = useTranslation('compliance');
 
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const VALID_TABS = ['dashboard', 'frameworks', 'requirements', 'matrix', 'controls', 'audits', 'evidence', 'cross-mappings'];
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab');
+  const activeTab = tabParam && VALID_TABS.includes(tabParam) ? tabParam : 'dashboard';
+  const setActiveTab = useCallback((tab: string) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (tab === 'dashboard') {
+        next.delete('tab');
+      } else {
+        next.set('tab', tab);
+      }
+      return next;
+    }, { replace: true });
+  }, [setSearchParams]);
   const [selectedFrameworkId, setSelectedFrameworkId] = useState<string | undefined>(undefined);
 
   const { data: frameworksData } = useFrameworks({ limit: 100 });

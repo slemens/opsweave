@@ -280,7 +280,7 @@ function CreateTicketDialog({ open, onOpenChange, onCreated }: CreateTicketDialo
               onClick={() => handleOpenChange(false)}
               disabled={isSubmitting}
             >
-              Abbrechen
+              {t('actions.cancel', { ns: 'common' })}
             </Button>
             <Button type="submit" disabled={isSubmitting || !title.trim()} data-testid="btn-submit-portal-ticket">
               {isSubmitting ? (

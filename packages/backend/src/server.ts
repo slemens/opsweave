@@ -174,6 +174,35 @@ async function runEvoMigrations(db: TypedDb): Promise<void> {
     }
   }
 
+  // 4. Fix asset_relation_history FK constraint — history rows must survive relation deletes
+  // Recreate table without FK on relation_id (SQLite has no ALTER TABLE DROP CONSTRAINT)
+  if (config.dbDriver === 'sqlite') {
+    try {
+      const stmts = [
+        `CREATE TABLE IF NOT EXISTS asset_relation_history_tmp (
+          id TEXT PRIMARY KEY,
+          relation_id TEXT NOT NULL,
+          tenant_id TEXT NOT NULL REFERENCES tenants(id),
+          action TEXT NOT NULL,
+          changed_by TEXT,
+          changed_at TEXT NOT NULL,
+          old_values TEXT,
+          new_values TEXT
+        )`,
+        `INSERT OR IGNORE INTO asset_relation_history_tmp SELECT * FROM asset_relation_history`,
+        `DROP TABLE IF EXISTS asset_relation_history`,
+        `ALTER TABLE asset_relation_history_tmp RENAME TO asset_relation_history`,
+        `CREATE INDEX IF NOT EXISTS idx_arh_relation ON asset_relation_history(relation_id)`,
+        `CREATE INDEX IF NOT EXISTS idx_arh_tenant_changed ON asset_relation_history(tenant_id, changed_at)`,
+      ];
+      for (const s of stmts) {
+        await runStmt(s);
+      }
+    } catch {
+      // Table may not exist yet or migration already applied — ignore
+    }
+  }
+
   // Ensure system user exists (required by SLA-breach + escalation workers)
   const SYSTEM_USER_ID = '00000000-0000-0000-0000-000000000000';
   try {
@@ -357,7 +386,7 @@ async function bootstrap(): Promise<void> {
         language: config.defaultLanguage,
         serveStatic: config.serveStatic,
       },
-      'OpsWeave Backend v0.5.4 started',
+      'OpsWeave Backend v0.5.5 started',
     );
 
     startEmailPollingWorker().catch((err: unknown) => {
