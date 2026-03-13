@@ -280,6 +280,7 @@ async function bootstrap(): Promise<void> {
   }
 
   // Security headers
+  const forceHttps = process.env.FORCE_HTTPS === 'true';
   app.use(helmet({
     contentSecurityPolicy: config.serveStatic ? {
       directives: {
@@ -291,12 +292,12 @@ async function bootstrap(): Promise<void> {
         fontSrc: ["'self'"],
         objectSrc: ["'none'"],
         frameAncestors: ["'none'"],
+        // Only upgrade insecure requests when HTTPS is available
+        ...(forceHttps ? { upgradeInsecureRequests: [] } : {}),
       },
     } : false, // Disable CSP when frontend is served separately (dev mode)
-    hsts: {
-      maxAge: 31536000,
-      includeSubDomains: false, // Avoid forcing HTTPS on subdomains (e.g. 3as.opsweave.de)
-    },
+    // Only send HSTS header when explicitly opted in (avoids breaking HTTP-only deployments)
+    hsts: forceHttps ? { maxAge: 31536000, includeSubDomains: false } : false,
   }));
 
   // CORS — in single-container mode (serveStatic), same-origin so CORS is irrelevant.
@@ -386,7 +387,7 @@ async function bootstrap(): Promise<void> {
         language: config.defaultLanguage,
         serveStatic: config.serveStatic,
       },
-      'OpsWeave Backend v0.5.5 started',
+      'OpsWeave Backend v0.5.6 started',
     );
 
     startEmailPollingWorker().catch((err: unknown) => {
