@@ -16,6 +16,7 @@ import {
   createAuditFindingSchema,
   updateAuditFindingSchema,
   createComplianceEvidenceSchema,
+  createCrossMappingSchema,
 } from '@opsweave/shared';
 
 import {
@@ -34,6 +35,13 @@ import {
   getFrameworkAssets,
   flagAsset,
   unflagAsset,
+  listCrossMappings,
+  createCrossMapping,
+  deleteCrossMapping,
+  getFrameworkCrossMappings,
+  exportCrossMappingsCsv,
+  importCrossMappingsCsv,
+  getDashboard,
 } from './compliance.controller.js';
 
 import { controlRouter } from '../compliance-controls/controls.routes.js';
@@ -48,6 +56,8 @@ import {
   createFinding,
   updateFinding,
   deleteFinding,
+  exportAuditCsv,
+  exportAuditJson,
 } from '../compliance-controls/audits.controller.js';
 
 import {
@@ -292,6 +302,30 @@ complianceRouter.delete(
 );
 
 // =============================================================================
+// Audit Export
+// =============================================================================
+
+/**
+ * GET /api/v1/compliance/audits/:id/export/csv
+ * Export a single audit report as CSV.
+ */
+complianceRouter.get(
+  '/audits/:id/export/csv',
+  validateParams(idParamSchema),
+  exportAuditCsv,
+);
+
+/**
+ * GET /api/v1/compliance/audits/:id/export/json
+ * Export a single audit report as JSON.
+ */
+complianceRouter.get(
+  '/audits/:id/export/json',
+  validateParams(idParamSchema),
+  exportAuditJson,
+);
+
+// =============================================================================
 // Audit Findings (Evo-4B)
 // =============================================================================
 
@@ -335,6 +369,80 @@ complianceRouter.delete(
   '/findings/:id',
   validateParams(idParamSchema),
   deleteFinding,
+);
+
+// =============================================================================
+// Cross-Framework Requirement Mappings (Evo-4D: REQ-4.1)
+// =============================================================================
+
+/**
+ * GET /api/v1/compliance/cross-mappings/export
+ * Export all cross-mappings as CSV.
+ */
+complianceRouter.get(
+  '/cross-mappings/export',
+  exportCrossMappingsCsv,
+);
+
+/**
+ * POST /api/v1/compliance/cross-mappings/import
+ * Import cross-mappings from CSV.
+ */
+complianceRouter.post(
+  '/cross-mappings/import',
+  importCrossMappingsCsv,
+);
+
+/**
+ * GET /api/v1/compliance/cross-mappings
+ * List all cross-framework requirement mappings (optional ?requirement_id filter).
+ */
+complianceRouter.get(
+  '/cross-mappings',
+  listCrossMappings,
+);
+
+/**
+ * POST /api/v1/compliance/cross-mappings
+ * Create a cross-framework requirement mapping.
+ */
+complianceRouter.post(
+  '/cross-mappings',
+  validate(createCrossMappingSchema),
+  createCrossMapping,
+);
+
+/**
+ * DELETE /api/v1/compliance/cross-mappings/:id
+ * Delete a cross-framework requirement mapping.
+ */
+complianceRouter.delete(
+  '/cross-mappings/:id',
+  validateParams(idParamSchema),
+  deleteCrossMapping,
+);
+
+/**
+ * GET /api/v1/compliance/frameworks/:id/cross-mappings
+ * Get all cross-mappings for a specific framework.
+ */
+complianceRouter.get(
+  '/frameworks/:id/cross-mappings',
+  validateParams(idParamSchema),
+  getFrameworkCrossMappings,
+);
+
+// =============================================================================
+// Compliance Dashboard (Evo-4D: REQ-4.4)
+// =============================================================================
+
+/**
+ * GET /api/v1/compliance/dashboard
+ * Get compliance dashboard statistics.
+ */
+complianceRouter.get(
+  '/dashboard',
+  getDashboard,
 );
 
 // =============================================================================

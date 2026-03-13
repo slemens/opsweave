@@ -5,7 +5,9 @@ import { getDb, type TypedDb } from '../../config/database.js';
 import {
   complianceAudits,
   auditFindings,
+  complianceControls,
   regulatoryFrameworks,
+  regulatoryRequirements,
 } from '../../db/schema/index.js';
 import { NotFoundError, ConflictError } from '../../lib/errors.js';
 import type {
@@ -416,4 +418,155 @@ export async function deleteFinding(
         eq(auditFindings.id, findingId),
       ),
     );
+}
+
+// =============================================================================
+// Audit Export
+// =============================================================================
+
+interface ExportFinding {
+  title: string;
+  severity: string;
+  status: string;
+  control_code: string | null;
+  requirement_code: string | null;
+  description: string | null;
+  remediation_plan: string | null;
+  due_date: string | null;
+  resolved_at: string | null;
+}
+
+interface AuditExportData {
+  audit: {
+    name: string;
+    framework: string | null;
+    status: string;
+    auditor: string | null;
+    start_date: string | null;
+    end_date: string | null;
+    scope: string | null;
+  };
+  findings: ExportFinding[];
+  summary: {
+    total_findings: number;
+    by_severity: Record<string, number>;
+    by_status: Record<string, number>;
+  };
+}
+
+export async function getAuditExportData(
+  tenantId: string,
+  auditId: string,
+): Promise<AuditExportData> {
+  const d = db();
+
+  // Fetch audit
+  const [audit] = await d
+    .select()
+    .from(complianceAudits)
+    .where(
+      and(
+        eq(complianceAudits.tenant_id, tenantId),
+        eq(complianceAudits.id, auditId),
+      ),
+    )
+    .limit(1);
+
+  if (!audit) throw new NotFoundError('Compliance audit not found');
+
+  // Fetch framework name if linked
+  let frameworkName: string | null = null;
+  if (audit.framework_id) {
+    const [fw] = await d
+      .select({ name: regulatoryFrameworks.name })
+      .from(regulatoryFrameworks)
+      .where(eq(regulatoryFrameworks.id, audit.framework_id))
+      .limit(1);
+    frameworkName = fw?.name ?? null;
+  }
+
+  // Fetch findings with joined control/requirement codes
+  const rawFindings = await d
+    .select()
+    .from(auditFindings)
+    .where(
+      and(
+        eq(auditFindings.tenant_id, tenantId),
+        eq(auditFindings.audit_id, auditId),
+      ),
+    )
+    .orderBy(auditFindings.created_at);
+
+  // Collect unique control/requirement IDs for batch lookup
+  const controlIds = new Set<string>();
+  const requirementIds = new Set<string>();
+  for (const f of rawFindings) {
+    if (f.control_id) controlIds.add(f.control_id);
+    if (f.requirement_id) requirementIds.add(f.requirement_id);
+  }
+
+  // Batch-fetch control codes
+  const controlMap = new Map<string, string>();
+  if (controlIds.size > 0) {
+    for (const cid of controlIds) {
+      const [ctrl] = await d
+        .select({ code: complianceControls.code })
+        .from(complianceControls)
+        .where(eq(complianceControls.id, cid))
+        .limit(1);
+      if (ctrl) controlMap.set(cid, ctrl.code);
+    }
+  }
+
+  // Batch-fetch requirement codes
+  const requirementMap = new Map<string, string>();
+  if (requirementIds.size > 0) {
+    for (const rid of requirementIds) {
+      const [req] = await d
+        .select({ code: regulatoryRequirements.code })
+        .from(regulatoryRequirements)
+        .where(eq(regulatoryRequirements.id, rid))
+        .limit(1);
+      if (req) requirementMap.set(rid, req.code);
+    }
+  }
+
+  // Build export findings
+  const findings: ExportFinding[] = rawFindings.map((f) => ({
+    title: f.title,
+    severity: f.severity,
+    status: f.status,
+    control_code: f.control_id ? (controlMap.get(f.control_id) ?? null) : null,
+    requirement_code: f.requirement_id ? (requirementMap.get(f.requirement_id) ?? null) : null,
+    description: f.description,
+    remediation_plan: f.remediation_plan,
+    due_date: f.due_date,
+    resolved_at: f.resolved_at,
+  }));
+
+  // Build summary
+  const bySeverity: Record<string, number> = {};
+  const byStatus: Record<string, number> = {};
+  for (const f of findings) {
+    bySeverity[f.severity] = (bySeverity[f.severity] ?? 0) + 1;
+    byStatus[f.status] = (byStatus[f.status] ?? 0) + 1;
+  }
+
+  return {
+    audit: {
+      name: audit.name,
+      framework: frameworkName,
+      status: audit.status,
+      auditor: audit.auditor,
+      start_date: audit.start_date,
+      end_date: audit.end_date,
+      scope: audit.scope,
+    },
+    findings,
+    summary: {
+      total_findings: findings.length,
+      by_severity: bySeverity,
+      by_status: byStatus,
+    },
+  };
 }

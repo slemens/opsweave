@@ -97,6 +97,14 @@ async function request<T>(
   });
 
   if (!response.ok) {
+    // Session expired or invalid — clear auth state and redirect to login
+    if (response.status === 401 && !endpoint.startsWith('/auth/')) {
+      const { useAuthStore } = await import('@/stores/auth-store');
+      useAuthStore.getState().clearAuth();
+      window.location.href = '/login?reason=session_expired';
+      throw new ApiRequestError(401, 'Session expired');
+    }
+
     let errorBody: ApiError | undefined;
     try {
       errorBody = (await response.json()) as ApiError;

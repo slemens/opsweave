@@ -1,0 +1,229 @@
+{
+  "database": "sqlite",
+  "timestamp": "2026-03-13T13:17:53.387Z",
+  "iterations": 10,
+  "warmup": 3,
+  "hardware": "darwin arm64",
+  "scales": {
+    "100": {
+      "assetCount": 100,
+      "relationCount": 300,
+      "scenarios": {
+        "asset-list": {
+          "p50": 0.02,
+          "p95": 0.02,
+          "max": 0.02,
+          "unit": "ms",
+          "runs": 10
+        },
+        "asset-detail": {
+          "p50": 0.03,
+          "p95": 0.04,
+          "max": 0.04,
+          "unit": "ms",
+          "runs": 10
+        },
+        "dependency-tree": {
+          "p50": 0.27,
+          "p95": 0.28,
+          "max": 0.28,
+          "unit": "ms",
+          "runs": 10
+        },
+        "sla-inheritance": {
+          "p50": 0.02,
+          "p95": 0.02,
+          "max": 0.02,
+          "unit": "ms",
+          "runs": 10
+        },
+        "capacity-utilization": {
+          "p50": 0.35,
+          "p95": 0.35,
+          "max": 0.35,
+          "unit": "ms",
+          "runs": 10
+        },
+        "compliance-coverage": {
+          "p50": 0.08,
+          "p95": 0.08,
+          "max": 0.08,
+          "unit": "ms",
+          "runs": 10
+        },
+        "impact-analysis": {
+          "p50": 0.38,
+          "p95": 0.41,
+          "max": 0.41,
+          "unit": "ms",
+          "runs": 10
+        }
+      }
+    },
+    "500": {
+      "assetCount": 500,
+      "relationCount": 1500,
+      "scenarios": {
+        "asset-list": {
+          "p50": 0.04,
+          "p95": 0.04,
+          "max": 0.04,
+          "unit": "ms",
+          "runs": 10
+        },
+        "asset-detail": {
+          "p50": 0.11,
+          "p95": 0.11,
+          "max": 0.11,
+          "unit": "ms",
+          "runs": 10
+        },
+        "dependency-tree": {
+          "p50": 7.34,
+          "p95": 7.52,
+          "max": 7.52,
+          "unit": "ms",
+          "runs": 10
+        },
+        "sla-inheritance": {
+          "p50": 0.08,
+          "p95": 0.09,
+          "max": 0.09,
+          "unit": "ms",
+          "runs": 10
+        },
+        "capacity-utilization": {
+          "p50": 10.44,
+          "p95": 10.77,
+          "max": 10.77,
+          "unit": "ms",
+          "runs": 10
+        },
+        "compliance-coverage": {
+          "p50": 0.08,
+          "p95": 0.08,
+          "max": 0.08,
+          "unit": "ms",
+          "runs": 10
+        },
+        "impact-analysis": {
+          "p50": 13.12,
+          "p95": 14.14,
+          "max": 14.14,
+          "unit": "ms",
+          "runs": 10
+        }
+      }
+    },
+    "1000": {
+      "assetCount": 1000,
+      "relationCount": 3000,
+      "scenarios": {
+        "asset-list": {
+          "p50": 0.05,
+          "p95": 0.06,
+          "max": 0.06,
+          "unit": "ms",
+          "runs": 10
+        },
+        "asset-detail": {
+          "p50": 0.2,
+          "p95": 0.22,
+          "max": 0.22,
+          "unit": "ms",
+          "runs": 10
+        },
+        "dependency-tree": {
+          "p50": 29.77,
+          "p95": 51.88,
+          "max": 51.88,
+          "unit": "ms",
+          "runs": 10
+        },
+        "sla-inheritance": {
+          "p50": 0.17,
+          "p95": 0.17,
+          "max": 0.17,
+          "unit": "ms",
+          "runs": 10
+        },
+        "capacity-utilization": {
+          "p50": 41.59,
+          "p95": 42.38,
+          "max": 42.38,
+          "unit": "ms",
+          "runs": 10
+        },
+        "compliance-coverage": {
+          "p50": 0.08,
+          "p95": 0.09,
+          "max": 0.09,
+          "unit": "ms",
+          "runs": 10
+        },
+        "impact-analysis": {
+          "p50": 50.36,
+          "p95": 81.46,
+          "max": 81.46,
+          "unit": "ms",
+          "runs": 10
+        }
+      }
+    },
+    "5000": {
+      "assetCount": 5000,
+      "relationCount": 15000,
+      "scenarios": {
+        "asset-list": {
+          "p50": 0.19,
+          "p95": 0.2,
+          "max": 0.2,
+          "unit": "ms",
+          "runs": 10
+        },
+        "asset-detail": {
+          "p50": 0.93,
+          "p95": 1.1,
+          "max": 1.1,
+          "unit": "ms",
+          "runs": 10
+        },
+        "dependency-tree": {
+          "p50": 38.75,
+          "p95": 39.53,
+          "max": 39.53,
+          "unit": "ms",
+          "runs": 10
+        },
+        "sla-inheritance": {
+          "p50": 0.64,
+          "p95": 0.71,
+          "max": 0.71,
+          "unit": "ms",
+          "runs": 10
+        },
+        "capacity-utilization": {
+          "p50": 111.79,
+          "p95": 113.6,
+          "max": 113.6,
+          "unit": "ms",
+          "runs": 10
+        },
+        "compliance-coverage": {
+          "p50": 0.08,
+          "p95": 0.09,
+          "max": 0.09,
+          "unit": "ms",
+          "runs": 10
+        },
+        "impact-analysis": {
+          "p50": 112.16,
+          "p95": 114.87,
+          "max": 114.87,
+          "unit": "ms",
+          "runs": 10
+        }
+      }
+    }
+  }
+}

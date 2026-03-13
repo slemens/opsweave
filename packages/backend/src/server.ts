@@ -123,13 +123,14 @@ async function runEvoMigrations(db: TypedDb): Promise<void> {
     'classification_values', 'asset_classifications', 'capacity_types',
     'asset_capacities', 'asset_tenant_assignments', 'service_scope_items',
     'asset_relation_history', 'asset_capacity_history',
+    'framework_requirement_mappings',
   ];
 
   const evoIndexPrefixes = [
     'idx_asset_types', 'idx_relation_types', 'idx_classification',
     'idx_asset_classifications', 'idx_capacity_types', 'idx_asset_capacities',
     'idx_asset_relations_temporal', 'idx_ata_', 'idx_ssi_',
-    'idx_arh_', 'idx_ach_',
+    'idx_arh_', 'idx_ach_', 'idx_frm_',
   ];
 
   // Phase 1: CREATE TABLE (new evo tables)
@@ -292,6 +293,7 @@ async function bootstrap(): Promise<void> {
 
   // Body parsing
   app.use(express.json({ limit: '10mb' }));
+  app.use(express.text({ type: ['text/csv', 'text/plain'], limit: '10mb' }));
   app.use(express.urlencoded({ extended: true }));
 
   // Cookie parsing (for httpOnly JWT auth)
@@ -355,7 +357,7 @@ async function bootstrap(): Promise<void> {
         language: config.defaultLanguage,
         serveStatic: config.serveStatic,
       },
-      'OpsWeave Backend v0.5.3 started',
+      'OpsWeave Backend v0.5.4 started',
     );
 
     startEmailPollingWorker().catch((err: unknown) => {

@@ -17,6 +17,7 @@ import type {
   UpdateRequirementInput,
   UpsertMappingInput,
   FlagAssetInput,
+  CreateCrossMappingInput,
 } from '@opsweave/shared';
 
 // =============================================================================
@@ -274,4 +275,127 @@ export async function unflagAsset(
 
   await complianceService.unflagAsset(tenantId, frameworkId, aid);
   sendNoContent(res);
+}
+
+// =============================================================================
+// Cross-Framework Requirement Mappings (Evo-4D: REQ-4.1)
+// =============================================================================
+
+/**
+ * GET /api/v1/compliance/cross-mappings
+ */
+export async function listCrossMappings(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const tenantId = requireTenantId(req);
+  const requirementId = (req.query as Record<string, string>).requirement_id;
+
+  const mappings = await complianceService.listCrossMappings(tenantId, requirementId);
+  sendSuccess(res, mappings);
+}
+
+/**
+ * POST /api/v1/compliance/cross-mappings
+ */
+export async function createCrossMapping(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const tenantId = requireTenantId(req);
+  const userId = requireUserId(req);
+  const data = req.body as CreateCrossMappingInput;
+
+  const mapping = await complianceService.createCrossMapping(tenantId, data, userId);
+  sendCreated(res, mapping);
+}
+
+/**
+ * DELETE /api/v1/compliance/cross-mappings/:id
+ */
+export async function deleteCrossMapping(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const tenantId = requireTenantId(req);
+  const { id } = req.params as { id: string };
+
+  await complianceService.deleteCrossMapping(tenantId, id);
+  sendNoContent(res);
+}
+
+/**
+ * GET /api/v1/compliance/frameworks/:id/cross-mappings
+ */
+export async function getFrameworkCrossMappings(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const tenantId = requireTenantId(req);
+  const { id: frameworkId } = req.params as { id: string };
+
+  const mappings = await complianceService.getCrossMappingsForFramework(tenantId, frameworkId);
+  sendSuccess(res, mappings);
+}
+
+/**
+ * GET /api/v1/compliance/cross-mappings/export
+ * Export cross-mappings as CSV file.
+ */
+export async function exportCrossMappingsCsv(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const tenantId = requireTenantId(req);
+
+  const csv = await complianceService.exportCrossMappingsCsv(tenantId);
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', 'attachment; filename="cross-mappings-export.csv"');
+  res.send(csv);
+}
+
+/**
+ * POST /api/v1/compliance/cross-mappings/import
+ * Import cross-mappings from CSV.
+ */
+export async function importCrossMappingsCsv(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const tenantId = requireTenantId(req);
+  const userId = requireUserId(req);
+
+  // Accept both text/csv body and JSON with csv field
+  let csvText: string;
+  const contentType = req.headers['content-type'] ?? '';
+  if (contentType.includes('text/csv') || contentType.includes('text/plain')) {
+    csvText = req.body as string;
+  } else if (typeof req.body === 'object' && req.body !== null && 'csv' in (req.body as Record<string, unknown>)) {
+    csvText = (req.body as { csv: string }).csv;
+  } else if (typeof req.body === 'string') {
+    csvText = req.body;
+  } else {
+    res.status(400).json({ error: { message: 'Expected CSV text in request body' } });
+    return;
+  }
+
+  const result = await complianceService.importCrossMappingsCsv(tenantId, csvText, userId);
+  sendSuccess(res, result);
+}
+
+// =============================================================================
+// Compliance Dashboard (Evo-4D: REQ-4.4)
+// =============================================================================
+
+/**
+ * GET /api/v1/compliance/dashboard
+ */
+export async function getDashboard(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const tenantId = requireTenantId(req);
+
+  const stats = await complianceService.getDashboardStats(tenantId);
+  sendSuccess(res, stats);
 }

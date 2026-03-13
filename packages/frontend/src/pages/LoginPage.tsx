@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -21,6 +21,9 @@ export function LoginPage() {
   const isLoading = useAuthStore((s) => s.isLoading);
   const error = useAuthStore((s) => s.error);
   const clearError = useAuthStore((s) => s.clearError);
+
+  const [searchParams] = useSearchParams();
+  const sessionExpired = searchParams.get('reason') === 'session_expired';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -63,6 +66,11 @@ export function LoginPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4" data-testid="form-login">
+              {sessionExpired && !error && (
+                <div className="rounded-md bg-amber-500/10 border border-amber-500/20 px-4 py-3 text-sm text-amber-600 dark:text-amber-400">
+                  {t('auth.session_expired')}
+                </div>
+              )}
               {error && (
                 <div className="rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive" data-testid="error-login">
                   {error === 'Login failed'

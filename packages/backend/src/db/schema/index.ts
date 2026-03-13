@@ -67,6 +67,7 @@ export {
   complianceAudits,
   auditFindings,
   complianceEvidence,
+  frameworkRequirementMappings,
 } from './compliance.js';
 
 // Monitoring

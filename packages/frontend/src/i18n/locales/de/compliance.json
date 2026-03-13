@@ -136,6 +136,9 @@
     "remediation_placeholder": "Beschreiben Sie die geplanten Maßnahmen…",
     "due_date": "Fälligkeitsdatum",
     "save_error": "Fehler beim Speichern",
+    "export_csv": "Als CSV exportieren",
+    "export_json": "Als JSON exportieren",
+    "export_report": "Bericht exportieren",
     "statuses": {
       "planned": "Geplant",
       "in_progress": "In Bearbeitung",
@@ -147,6 +150,53 @@
       "in_remediation": "In Behebung",
       "resolved": "Behoben",
       "accepted_risk": "Akzeptiertes Risiko"
+    }
+  },
+  "cross_mappings": {
+    "title": "Cross-Mappings",
+    "create": "Mapping erstellen",
+    "source_framework": "Quell-Framework",
+    "source_requirement": "Quell-Anforderung",
+    "target_framework": "Ziel-Framework",
+    "target_requirement": "Ziel-Anforderung",
+    "mapping_type": "Mapping-Typ",
+    "notes": "Notizen",
+    "types": {
+      "equal": "Gleich",
+      "partial": "Teilweise",
+      "related": "Verwandt"
+    },
+    "no_mappings": "Keine Cross-Mappings vorhanden",
+    "no_mappings_hint": "Erstellen Sie das erste Cross-Framework-Mapping.",
+    "different_framework_required": "Ziel-Framework muss sich vom Quell-Framework unterscheiden.",
+    "create_success": "Mapping erfolgreich erstellt",
+    "delete_success": "Mapping erfolgreich gelöscht",
+    "save_error": "Fehler beim Speichern",
+    "delete_confirm": "Möchten Sie dieses Mapping wirklich löschen?",
+    "export_csv": "CSV exportieren",
+    "import_csv": "CSV importieren",
+    "import_success": "{{count}} importiert",
+    "import_skipped": "{{count}} übersprungen",
+    "import_errors": "{{count}} Fehler"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "coverage_overview": "Abdeckungsübersicht",
+    "control_status": "Control-Status",
+    "open_findings": "Offene Feststellungen",
+    "stale_controls": "Veraltete Controls",
+    "stale_controls_hint": "Controls, die seit über 12 Monaten nicht aktualisiert wurden",
+    "recent_audits": "Letzte Audits",
+    "no_stale": "Keine veralteten Controls vorhanden.",
+    "no_audits": "Keine Audits vorhanden.",
+    "no_findings": "Keine offenen Feststellungen.",
+    "coverage_pct": "{{pct}}% abgedeckt",
+    "requirements_mapped": "{{mapped}} von {{total}} Anforderungen",
+    "severity": {
+      "critical": "Kritisch",
+      "major": "Schwerwiegend",
+      "minor": "Geringfügig",
+      "observation": "Beobachtung"
     }
   },
   "evidence": {

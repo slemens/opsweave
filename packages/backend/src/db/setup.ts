@@ -952,6 +952,21 @@ CREATE INDEX IF NOT EXISTS idx_af_tenant_severity ON audit_findings(tenant_id, s
 CREATE INDEX IF NOT EXISTS idx_ce_tenant ON compliance_evidence(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_ce_control ON compliance_evidence(control_id);
 CREATE INDEX IF NOT EXISTS idx_ce_tenant_type ON compliance_evidence(tenant_id, evidence_type);
+-- framework_requirement_mappings (Evo-4D: Cross-Framework Requirement Mapping)
+CREATE TABLE IF NOT EXISTS framework_requirement_mappings (
+  id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  source_requirement_id TEXT NOT NULL REFERENCES regulatory_requirements(id),
+  target_requirement_id TEXT NOT NULL REFERENCES regulatory_requirements(id),
+  mapping_type TEXT NOT NULL CHECK(mapping_type IN ('equal','partial','related')),
+  notes TEXT,
+  created_by TEXT,
+  created_at TEXT NOT NULL,
+  UNIQUE(tenant_id, source_requirement_id, target_requirement_id)
+);
+CREATE INDEX IF NOT EXISTS idx_frm_tenant ON framework_requirement_mappings(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_frm_source ON framework_requirement_mappings(source_requirement_id);
+CREATE INDEX IF NOT EXISTS idx_frm_target ON framework_requirement_mappings(target_requirement_id);
 CREATE INDEX IF NOT EXISTS idx_feedback_type ON feedback_entries(entry_type);
 CREATE INDEX IF NOT EXISTS idx_feedback_created ON feedback_entries(created_at);
 CREATE INDEX IF NOT EXISTS idx_ata_tenant ON asset_tenant_assignments(tenant_id);
