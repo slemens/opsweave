@@ -267,9 +267,21 @@ async function bootstrap(): Promise<void> {
     },
   }));
 
-  // CORS
+  // CORS — in single-container mode (serveStatic), same-origin so CORS is irrelevant.
+  // In dev/split mode, accept the configured origin or reflect the request origin
+  // for localhost development (any port).
   app.use(cors({
-    origin: config.corsOrigin,
+    origin: (origin, callback) => {
+      // No origin = same-origin or non-browser (curl, etc.) — always allow
+      if (!origin) return callback(null, true);
+      // Configured origin matches
+      if (origin === config.corsOrigin) return callback(null, true);
+      // Dev mode: allow any localhost origin (any port)
+      if (config.nodeEnv !== 'production' && /^https?:\/\/localhost(:\d+)?$/.test(origin)) {
+        return callback(null, origin);
+      }
+      callback(null, false);
+    },
     credentials: true,
   }));
 
@@ -292,7 +304,7 @@ async function bootstrap(): Promise<void> {
   // Rate limiting
   const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    limit: 1000,              // max 1000 requests per window
+    limit: config.nodeEnv === 'production' ? 1000 : 50000, // relaxed in dev/test
     standardHeaders: 'draft-7',
     legacyHeaders: false,
     message: {

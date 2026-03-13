@@ -268,11 +268,11 @@ export default function ProjectDetailPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="mx-auto max-w-6xl space-y-6" data-testid="page-project-detail">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/projects')}>
+          <Button variant="ghost" size="icon" onClick={() => navigate('/projects')} data-testid="btn-back-projects">
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
@@ -289,13 +289,13 @@ export default function ProjectDetailPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={openEdit}>
+          <Button variant="outline" size="sm" onClick={openEdit} data-testid="btn-edit-project">
             <Pencil className="mr-1.5 h-3.5 w-3.5" />
             {t('common:actions.edit')}
           </Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="outline" size="sm" className="text-destructive">
+              <Button variant="outline" size="sm" className="text-destructive" data-testid="btn-delete-project">
                 <Trash2 className="mr-1.5 h-3.5 w-3.5" />
                 {t('common:actions.delete')}
               </Button>
@@ -347,8 +347,8 @@ export default function ProjectDetailPage() {
       {/* Tabs */}
       <Tabs defaultValue="assets">
         <TabsList>
-          <TabsTrigger value="assets">{t('projects:tabs.assets')}</TabsTrigger>
-          <TabsTrigger value="tickets">{t('projects:tabs.tickets')}</TabsTrigger>
+          <TabsTrigger value="assets" data-testid="tab-project-assets">{t('projects:tabs.assets')}</TabsTrigger>
+          <TabsTrigger value="tickets" data-testid="tab-project-tickets">{t('projects:tabs.tickets')}</TabsTrigger>
         </TabsList>
 
         {/* Assets Tab */}
@@ -357,7 +357,7 @@ export default function ProjectDetailPage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base">{t('projects:tabs.assets')}</CardTitle>
-                <Button size="sm" variant="outline" onClick={() => setAddAssetOpen(true)}>
+                <Button size="sm" variant="outline" onClick={() => setAddAssetOpen(true)} data-testid="btn-add-asset">
                   <Plus className="mr-1.5 h-3.5 w-3.5" />
                   {t('projects:add_asset')}
                 </Button>
@@ -368,7 +368,7 @@ export default function ProjectDetailPage() {
                 <p className="text-center py-6 text-sm text-muted-foreground">{t('projects:no_assets')}</p>
               ) : (
                 <div className="rounded-md border">
-                  <Table>
+                  <Table data-testid="table-project-assets">
                     <TableHeader>
                       <TableRow>
                         <TableHead>{t('projects:asset_name')}</TableHead>
@@ -418,7 +418,7 @@ export default function ProjectDetailPage() {
                 <p className="text-center py-6 text-sm text-muted-foreground">{t('projects:no_tickets')}</p>
               ) : (
                 <div className="rounded-md border">
-                  <Table>
+                  <Table data-testid="table-project-tickets">
                     <TableHeader>
                       <TableRow>
                         <TableHead>{t('projects:ticket_number')}</TableHead>
@@ -455,7 +455,7 @@ export default function ProjectDetailPage() {
 
       {/* Edit Project Dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="sm:max-w-[450px]">
+        <DialogContent className="sm:max-w-[450px]" data-testid="modal-edit-project">
           <DialogHeader>
             <DialogTitle>{t('projects:edit')}</DialogTitle>
           </DialogHeader>
@@ -493,7 +493,7 @@ export default function ProjectDetailPage() {
 
       {/* Add Asset Dialog */}
       <Dialog open={addAssetOpen} onOpenChange={setAddAssetOpen}>
-        <DialogContent className="sm:max-w-[400px]">
+        <DialogContent className="sm:max-w-[400px]" data-testid="modal-add-asset">
           <DialogHeader>
             <DialogTitle>{t('projects:add_asset')}</DialogTitle>
           </DialogHeader>

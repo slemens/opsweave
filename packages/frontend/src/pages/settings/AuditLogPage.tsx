@@ -79,7 +79,7 @@ export default function AuditLogPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="page-audit-log">
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -113,6 +113,7 @@ export default function AuditLogPage() {
                 <Button
                   variant="outline"
                   size="sm"
+                  data-testid="btn-verify-integrity"
                   onClick={() => setVerifyEnabled(true)}
                   disabled={verifying}
                 >
@@ -127,6 +128,7 @@ export default function AuditLogPage() {
               <Button
                 variant="outline"
                 size="sm"
+                data-testid="btn-export-csv"
                 onClick={() => window.open(getAuditExportUrl('csv', params), '_blank')}
               >
                 <Download className="h-4 w-4 mr-1.5" />
@@ -135,6 +137,7 @@ export default function AuditLogPage() {
               <Button
                 variant="outline"
                 size="sm"
+                data-testid="btn-export-json"
                 onClick={() => window.open(getAuditExportUrl('json', params), '_blank')}
               >
                 <Download className="h-4 w-4 mr-1.5" />
@@ -148,13 +151,14 @@ export default function AuditLogPage() {
           <div className="flex flex-wrap gap-3">
             <div className="flex items-center gap-2 flex-1 min-w-[200px] max-w-sm">
               <Input
+                data-testid="input-audit-search"
                 placeholder={t('settings:audit.search_placeholder')}
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') handleSearch(); }}
                 className="flex-1"
               />
-              <Button variant="outline" size="icon" onClick={handleSearch}>
+              <Button variant="outline" size="icon" data-testid="btn-audit-search" onClick={handleSearch}>
                 <Search className="h-4 w-4" />
               </Button>
             </div>
@@ -162,7 +166,7 @@ export default function AuditLogPage() {
               value={params.event_type ?? ALL_VALUE}
               onValueChange={v => setParams(p => ({ ...p, event_type: v === ALL_VALUE ? undefined : v, page: 1 }))}
             >
-              <SelectTrigger className="w-48">
+              <SelectTrigger className="w-48" data-testid="select-audit-event-type">
                 <SelectValue placeholder={t('settings:audit.all_events')} />
               </SelectTrigger>
               <SelectContent>
@@ -176,7 +180,7 @@ export default function AuditLogPage() {
               value={params.resource_type ?? ALL_VALUE}
               onValueChange={v => setParams(p => ({ ...p, resource_type: v === ALL_VALUE ? undefined : v, page: 1 }))}
             >
-              <SelectTrigger className="w-48">
+              <SelectTrigger className="w-48" data-testid="select-audit-resource-type">
                 <SelectValue placeholder={t('settings:audit.all_resources')} />
               </SelectTrigger>
               <SelectContent>
@@ -203,7 +207,7 @@ export default function AuditLogPage() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full text-sm" data-testid="table-audit-logs">
                 <thead>
                   <tr className="border-b dark:border-slate-700 text-left text-muted-foreground">
                     <th className="pb-2 font-medium">{t('settings:audit.columns.time')}</th>
@@ -266,6 +270,7 @@ export default function AuditLogPage() {
                   variant="outline"
                   size="icon"
                   className="h-7 w-7"
+                  data-testid="btn-audit-prev-page"
                   disabled={(params.page ?? 1) <= 1}
                   onClick={() => setParams(p => ({ ...p, page: (p.page ?? 1) - 1 }))}
                 >
@@ -275,6 +280,7 @@ export default function AuditLogPage() {
                   variant="outline"
                   size="icon"
                   className="h-7 w-7"
+                  data-testid="btn-audit-next-page"
                   disabled={(params.page ?? 1) >= totalPages}
                   onClick={() => setParams(p => ({ ...p, page: (p.page ?? 1) + 1 }))}
                 >

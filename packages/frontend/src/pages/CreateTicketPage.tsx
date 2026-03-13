@@ -159,10 +159,10 @@ export default function CreateTicketPage() {
   ]);
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6" data-testid="page-create-ticket">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/tickets')}>
+        <Button variant="ghost" size="icon" onClick={() => navigate('/tickets')} data-testid="btn-back">
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
@@ -198,7 +198,7 @@ export default function CreateTicketPage() {
                   onValueChange={(v) => setTicketType(v as TicketType)}
                   disabled={!!typeParam}
                 >
-                  <SelectTrigger id="ticket-type">
+                  <SelectTrigger id="ticket-type" data-testid="select-ticket-type">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -223,6 +223,7 @@ export default function CreateTicketPage() {
                   }}
                   placeholder={t('placeholder_title')}
                   className={cn(titleError && 'border-destructive focus-visible:ring-destructive')}
+                  data-testid="input-title"
                 />
                 {titleError && (
                   <p className="text-xs text-destructive">{titleError}</p>
@@ -239,6 +240,7 @@ export default function CreateTicketPage() {
                   placeholder={t('placeholder_description')}
                   rows={6}
                   className="resize-none"
+                  data-testid="input-description"
                 />
               </div>
             </CardContent>
@@ -254,7 +256,7 @@ export default function CreateTicketPage() {
                 <div className="space-y-2">
                   <Label>{t('fields.impact')}</Label>
                   <Select value={impact} onValueChange={setImpact}>
-                    <SelectTrigger>
+                    <SelectTrigger data-testid="select-impact">
                       <SelectValue placeholder="—" />
                     </SelectTrigger>
                     <SelectContent>
@@ -269,7 +271,7 @@ export default function CreateTicketPage() {
                 <div className="space-y-2">
                   <Label>{t('fields.urgency')}</Label>
                   <Select value={urgency} onValueChange={setUrgency}>
-                    <SelectTrigger>
+                    <SelectTrigger data-testid="select-urgency">
                       <SelectValue placeholder="—" />
                     </SelectTrigger>
                     <SelectContent>
@@ -302,7 +304,7 @@ export default function CreateTicketPage() {
                   </div>
                 ) : (
                   <Select value={priority} onValueChange={(v) => setPriority(v as TicketPriority)}>
-                    <SelectTrigger>
+                    <SelectTrigger data-testid="select-priority">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -343,6 +345,7 @@ export default function CreateTicketPage() {
                     placeholder={t('rfc.justification_placeholder')}
                     rows={3}
                     className="resize-none"
+                    data-testid="input-justification"
                   />
                 </div>
 
@@ -355,6 +358,7 @@ export default function CreateTicketPage() {
                     placeholder={t('rfc.implementation_placeholder')}
                     rows={3}
                     className="resize-none"
+                    data-testid="input-implementation"
                   />
                 </div>
 
@@ -367,6 +371,7 @@ export default function CreateTicketPage() {
                     placeholder={t('rfc.rollback_placeholder')}
                     rows={3}
                     className="resize-none"
+                    data-testid="input-rollback"
                   />
                 </div>
 
@@ -380,7 +385,7 @@ export default function CreateTicketPage() {
                   <div className="space-y-2">
                     <Label>{t('rfc.risk_likelihood')}</Label>
                     <Select value={changeRiskLikelihood} onValueChange={setChangeRiskLikelihood}>
-                      <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                      <SelectTrigger data-testid="select-risk-likelihood"><SelectValue placeholder="—" /></SelectTrigger>
                       <SelectContent>
                         {CHANGE_RISK_LIKELIHOODS.map((l) => (
                           <SelectItem key={l} value={l}>{t(`rfc.likelihoods.${l}`)}</SelectItem>
@@ -391,7 +396,7 @@ export default function CreateTicketPage() {
                   <div className="space-y-2">
                     <Label>{t('rfc.risk_impact')}</Label>
                     <Select value={changeRiskImpact} onValueChange={setChangeRiskImpact}>
-                      <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                      <SelectTrigger data-testid="select-risk-impact"><SelectValue placeholder="—" /></SelectTrigger>
                       <SelectContent>
                         {CHANGE_RISK_IMPACTS.map((i) => (
                           <SelectItem key={i} value={i}>{t(`rfc.impacts.${i}`)}</SelectItem>
@@ -420,6 +425,7 @@ export default function CreateTicketPage() {
                       type="datetime-local"
                       value={changePlannedStart}
                       onChange={(e) => setChangePlannedStart(e.target.value)}
+                      data-testid="input-planned-start"
                     />
                   </div>
                   <div className="space-y-2">
@@ -428,6 +434,7 @@ export default function CreateTicketPage() {
                       type="datetime-local"
                       value={changePlannedEnd}
                       onChange={(e) => setChangePlannedEnd(e.target.value)}
+                      data-testid="input-planned-end"
                     />
                   </div>
                 </div>
@@ -448,6 +455,7 @@ export default function CreateTicketPage() {
                     id="cab-required"
                     checked={cabRequired}
                     onCheckedChange={setCabRequired}
+                    data-testid="input-cab-required"
                   />
                 </div>
               </CardContent>
@@ -469,7 +477,7 @@ export default function CreateTicketPage() {
                   <Skeleton className="h-9 w-full rounded-md" />
                 ) : (
                   <Select value={groupId} onValueChange={setGroupId}>
-                    <SelectTrigger>
+                    <SelectTrigger data-testid="select-group">
                       <SelectValue placeholder={t('select_group')} />
                     </SelectTrigger>
                     <SelectContent>
@@ -490,7 +498,7 @@ export default function CreateTicketPage() {
                   <Skeleton className="h-9 w-full rounded-md" />
                 ) : (
                   <Select value={customerId} onValueChange={setCustomerId}>
-                    <SelectTrigger>
+                    <SelectTrigger data-testid="select-customer">
                       <SelectValue placeholder={t('select_customer')} />
                     </SelectTrigger>
                     <SelectContent>
@@ -511,7 +519,7 @@ export default function CreateTicketPage() {
                   <Skeleton className="h-9 w-full rounded-md" />
                 ) : (
                   <Select value={categoryId} onValueChange={setCategoryId}>
-                    <SelectTrigger>
+                    <SelectTrigger data-testid="select-category">
                       <SelectValue placeholder={t('select_category')} />
                     </SelectTrigger>
                     <SelectContent>
@@ -529,11 +537,11 @@ export default function CreateTicketPage() {
 
           {/* Actions */}
           <div className="flex flex-col gap-2">
-            <Button onClick={() => void handleSubmit()} disabled={createTicket.isPending} className="w-full">
+            <Button onClick={() => void handleSubmit()} disabled={createTicket.isPending} className="w-full" data-testid="btn-submit">
               {createTicket.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {t('create')}
             </Button>
-            <Button variant="outline" onClick={() => navigate('/tickets')} className="w-full">
+            <Button variant="outline" onClick={() => navigate('/tickets')} className="w-full" data-testid="btn-cancel">
               {tCommon('actions.cancel')}
             </Button>
           </div>

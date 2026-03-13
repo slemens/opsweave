@@ -100,7 +100,7 @@ export default function KnownErrorsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="page-known-errors">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -110,7 +110,7 @@ export default function KnownErrorsPage() {
           </h1>
           <p className="text-sm text-muted-foreground mt-1">{t('kedb_description')}</p>
         </div>
-        <Button onClick={() => setIsCreateOpen(true)}>
+        <Button onClick={() => setIsCreateOpen(true)} data-testid="btn-create-known-error">
           <Plus className="h-4 w-4 mr-2" />
           {t('kedb_create')}
         </Button>
@@ -125,10 +125,11 @@ export default function KnownErrorsPage() {
             value={searchQuery}
             onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
             className="pl-9"
+            data-testid="input-search-known-errors"
           />
         </div>
         <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v === 'all' ? '' : v); setPage(1); }}>
-          <SelectTrigger className="w-[200px]">
+          <SelectTrigger className="w-[200px]" data-testid="select-status-filter">
             <SelectValue placeholder={t('kedb_filter_status')} />
           </SelectTrigger>
           <SelectContent>
@@ -157,7 +158,7 @@ export default function KnownErrorsPage() {
       ) : (
         <div className="space-y-3">
           {items.map((item) => (
-            <Card key={item.id} className="hover:shadow-sm transition-shadow">
+            <Card key={item.id} className="hover:shadow-sm transition-shadow" data-testid={`card-known-error-${item.id}`}>
               <CardContent className="p-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0 space-y-1">

@@ -318,7 +318,7 @@ export function AssetsPage() {
   // ── Render ────────────────────────────────────────────────
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-testid="page-assets">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -329,7 +329,7 @@ export function AssetsPage() {
             </p>
           )}
         </div>
-        <Button onClick={() => navigate('/assets/new')}>
+        <Button onClick={() => navigate('/assets/new')} data-testid="btn-create-asset">
           <Plus className="mr-2 h-4 w-4" />
           {t('create')}
         </Button>
@@ -342,6 +342,7 @@ export function AssetsPage() {
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
             !globalGraphView ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'
           }`}
+          data-testid="btn-view-table"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
           {t('view_table')}
@@ -351,6 +352,7 @@ export function AssetsPage() {
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
             globalGraphView ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'
           }`}
+          data-testid="btn-view-topology"
         >
           <Network size={14} />
           {t('view_topology')}
@@ -389,10 +391,11 @@ export function AssetsPage() {
                 className="pl-8"
                 value={searchQuery}
                 onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
+                data-testid="input-search-assets"
               />
             </form>
             {hasActiveFilters && (
-              <Button variant="ghost" size="sm" onClick={resetFilters} className="text-muted-foreground">
+              <Button variant="ghost" size="sm" onClick={resetFilters} className="text-muted-foreground" data-testid="btn-reset-filters">
                 <FilterX className="mr-1.5 h-4 w-4" />
                 {tCommon('actions.reset')}
               </Button>
@@ -436,7 +439,7 @@ export function AssetsPage() {
         ) : (
           <>
             <div className="rounded-md border">
-              <Table>
+              <Table data-testid="table-assets">
                 <TableHeader>
                   <TableRow className="hover:bg-transparent">
                     <TableHead className="w-[220px]">
@@ -497,6 +500,7 @@ export function AssetsPage() {
                       key={asset.id}
                       className="cursor-pointer"
                       onClick={() => navigate(`/assets/${asset.id}`)}
+                      data-testid={`row-asset-${asset.id}`}
                     >
                       <TableCell className="font-medium">
                         <div>

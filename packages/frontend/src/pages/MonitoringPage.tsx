@@ -260,7 +260,7 @@ export function MonitoringPage() {
 
   // ── Render ───────────────────────────────────────────────
   return (
-    <div className="flex flex-col gap-6 p-6">
+    <div className="flex flex-col gap-6 p-6" data-testid="page-monitoring">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
@@ -274,7 +274,7 @@ export function MonitoringPage() {
           const Icon = cfg.icon;
           const count = stats?.[state] ?? 0;
           return (
-            <Card key={state} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setEventFilters((f) => ({ ...f, state, page: 1 }))}>
+            <Card key={state} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setEventFilters((f) => ({ ...f, state, page: 1 }))} data-testid={`card-monitoring-${state}`}>
               <CardContent className="flex items-center gap-4 p-4">
                 <div className={cn('rounded-lg p-2', cfg.color)}>
                   <Icon className="h-5 w-5" />
@@ -293,8 +293,8 @@ export function MonitoringPage() {
       {/* Tabs */}
       <Tabs defaultValue="events">
         <TabsList>
-          <TabsTrigger value="events">{t('tabs.events')}</TabsTrigger>
-          <TabsTrigger value="sources">{t('tabs.sources')}</TabsTrigger>
+          <TabsTrigger value="events" data-testid="tab-events">{t('tabs.events')}</TabsTrigger>
+          <TabsTrigger value="sources" data-testid="tab-sources">{t('tabs.sources')}</TabsTrigger>
         </TabsList>
 
         {/* ─── Events Tab ─────────────────────────────── */}
@@ -308,6 +308,7 @@ export function MonitoringPage() {
                 placeholder={t('events.search_placeholder')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
+                data-testid="input-monitoring-search"
               />
             </div>
 
@@ -315,7 +316,7 @@ export function MonitoringPage() {
               value={eventFilters.state ?? 'all'}
               onValueChange={(v) => setEventFilters((f) => ({ ...f, state: v === 'all' ? undefined : v, page: 1 }))}
             >
-              <SelectTrigger className="w-[150px] h-9 text-sm">
+              <SelectTrigger className="w-[150px] h-9 text-sm" data-testid="select-event-state">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -331,7 +332,7 @@ export function MonitoringPage() {
               value={eventFilters.source_id ?? 'all'}
               onValueChange={(v) => setEventFilters((f) => ({ ...f, source_id: v === 'all' ? undefined : v, page: 1 }))}
             >
-              <SelectTrigger className="w-[180px] h-9 text-sm">
+              <SelectTrigger className="w-[180px] h-9 text-sm" data-testid="select-event-source">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -342,7 +343,7 @@ export function MonitoringPage() {
               </SelectContent>
             </Select>
 
-            <Button variant="outline" size="sm" onClick={() => void refetchEvents()}>
+            <Button variant="outline" size="sm" onClick={() => void refetchEvents()} data-testid="btn-refresh-events">
               <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
               {tCommon('actions.refresh', { defaultValue: 'Aktualisieren' })}
             </Button>
@@ -362,7 +363,7 @@ export function MonitoringPage() {
           {/* Events table */}
           {!eventsError && (
             <div className="rounded-lg border overflow-hidden">
-              <Table>
+              <Table data-testid="table-monitoring-events">
                 <TableHeader>
                   <TableRow className="bg-muted/40 hover:bg-muted/40">
                     <TableHead className="w-[80px]">{t('events.state')}</TableHead>
@@ -470,14 +471,14 @@ export function MonitoringPage() {
         <TabsContent value="sources" className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold">{t('sources.title')}</h2>
-            <Button onClick={openCreateSource} size="sm">
+            <Button onClick={openCreateSource} size="sm" data-testid="btn-create-source">
               <Plus className="mr-1.5 h-3.5 w-3.5" />
               {t('sources.create')}
             </Button>
           </div>
 
           <div className="rounded-lg border overflow-hidden">
-            <Table>
+            <Table data-testid="table-monitoring-sources">
               <TableHeader>
                 <TableRow className="bg-muted/40 hover:bg-muted/40">
                   <TableHead>{t('sources.name')}</TableHead>
@@ -592,7 +593,7 @@ export function MonitoringPage() {
 
       {/* Source Create/Edit Dialog */}
       <Dialog open={sourceDialogOpen} onOpenChange={setSourceDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg" data-testid="modal-monitoring-source">
           <DialogHeader>
             <DialogTitle>
               {editingSource ? t('sources.edit') : t('sources.create')}
@@ -606,6 +607,7 @@ export function MonitoringPage() {
                 value={sourceForm.name}
                 onChange={(e) => setSourceForm((f) => ({ ...f, name: e.target.value }))}
                 placeholder={t('sources.name')}
+                data-testid="input-source-name"
               />
             </div>
 
@@ -675,7 +677,7 @@ export function MonitoringPage() {
             <Button variant="outline" onClick={() => setSourceDialogOpen(false)} disabled={isSaving}>
               {tCommon('actions.cancel')}
             </Button>
-            <Button onClick={() => void handleSaveSource()} disabled={isSaving || !sourceForm.name.trim()}>
+            <Button onClick={() => void handleSaveSource()} disabled={isSaving || !sourceForm.name.trim()} data-testid="btn-save-source">
               {isSaving ? '...' : tCommon('actions.save')}
             </Button>
           </DialogFooter>
@@ -684,7 +686,7 @@ export function MonitoringPage() {
 
       {/* Delete confirmation */}
       <AlertDialog open={deleteTarget !== null} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
-        <AlertDialogContent>
+        <AlertDialogContent data-testid="modal-delete-source">
           <AlertDialogHeader>
             <AlertDialogTitle>{tCommon('actions.delete')}</AlertDialogTitle>
             <AlertDialogDescription>{t('sources.delete_confirm')}</AlertDialogDescription>

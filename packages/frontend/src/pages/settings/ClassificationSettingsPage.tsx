@@ -230,7 +230,7 @@ export default function ClassificationSettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="page-classification-settings">
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -241,7 +241,7 @@ export default function ClassificationSettingsPage() {
               </CardTitle>
               <CardDescription>{t('settings:classifications.description')}</CardDescription>
             </div>
-            <Button size="sm" onClick={() => { resetModelForm(); setModelDialogOpen(true); }}>
+            <Button size="sm" data-testid="btn-create-classification" onClick={() => { resetModelForm(); setModelDialogOpen(true); }}>
               <Plus className="mr-1.5 h-3.5 w-3.5" />
               {t('settings:classifications.create')}
             </Button>
@@ -367,7 +367,7 @@ export default function ClassificationSettingsPage() {
 
       {/* Create/Edit Model Dialog */}
       <Dialog open={modelDialogOpen} onOpenChange={(open) => { setModelDialogOpen(open); if (!open) resetModelForm(); }}>
-        <DialogContent className="sm:max-w-[450px]">
+        <DialogContent className="sm:max-w-[450px]" data-testid="modal-classification-model">
           <DialogHeader>
             <DialogTitle>
               {editingModel ? t('settings:classifications.edit') : t('settings:classifications.create')}
@@ -376,7 +376,7 @@ export default function ClassificationSettingsPage() {
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label>{t('settings:classifications.name_col')}</Label>
-              <Input value={modelName} onChange={(e) => setModelName(e.target.value)} placeholder="CIA+A" />
+              <Input data-testid="input-classification-name" value={modelName} onChange={(e) => setModelName(e.target.value)} placeholder="CIA+A" />
             </div>
             <div className="grid gap-2">
               <Label>{t('settings:classifications.description_field')}</Label>
@@ -388,6 +388,7 @@ export default function ClassificationSettingsPage() {
               {t('common:actions.cancel')}
             </Button>
             <Button
+              data-testid="btn-save-classification"
               onClick={() => void handleSaveModel()}
               disabled={!modelName.trim() || createModel.isPending || updateModel.isPending}
             >
@@ -399,18 +400,18 @@ export default function ClassificationSettingsPage() {
 
       {/* Create Value Dialog */}
       <Dialog open={valueDialogOpen} onOpenChange={setValueDialogOpen}>
-        <DialogContent className="sm:max-w-[400px]">
+        <DialogContent className="sm:max-w-[400px]" data-testid="modal-classification-value">
           <DialogHeader>
             <DialogTitle>{t('settings:classifications.add_value')}</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label>{t('settings:classifications.value_key')}</Label>
-              <Input value={valueName} onChange={(e) => setValueName(e.target.value)} placeholder="high" />
+              <Input data-testid="input-classification-value-key" value={valueName} onChange={(e) => setValueName(e.target.value)} placeholder="high" />
             </div>
             <div className="grid gap-2">
               <Label>{t('settings:classifications.value_label')}</Label>
-              <Input value={valueLabel} onChange={(e) => setValueLabel(e.target.value)} placeholder="Hoch" />
+              <Input data-testid="input-classification-value-label" value={valueLabel} onChange={(e) => setValueLabel(e.target.value)} placeholder="Hoch" />
             </div>
             <div className="grid gap-2">
               <Label>{t('settings:classifications.value_color')}</Label>
@@ -422,6 +423,7 @@ export default function ClassificationSettingsPage() {
               {t('common:actions.cancel')}
             </Button>
             <Button
+              data-testid="btn-save-classification-value"
               onClick={() => void handleSaveValue()}
               disabled={!valueName.trim() || !valueLabel.trim() || createValue.isPending}
             >

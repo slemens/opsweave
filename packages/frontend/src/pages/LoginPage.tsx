@@ -42,7 +42,7 @@ export function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
+    <div className="flex min-h-screen items-center justify-center bg-background p-4" data-testid="page-login">
       <div className="w-full max-w-md space-y-6">
         {/* Logo */}
         <div className="flex flex-col items-center space-y-2">
@@ -62,9 +62,9 @@ export function LoginPage() {
             <CardDescription>{t('auth.login_subtitle')}</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4" data-testid="form-login">
               {error && (
-                <div className="rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                <div className="rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive" data-testid="error-login">
                   {error === 'Login failed'
                     ? t('auth.invalid_credentials')
                     : error}
@@ -83,6 +83,7 @@ export function LoginPage() {
                   autoComplete="email"
                   autoFocus
                   disabled={isLoading}
+                  data-testid="input-email"
                 />
               </div>
 
@@ -97,6 +98,7 @@ export function LoginPage() {
                   required
                   autoComplete="current-password"
                   disabled={isLoading}
+                  data-testid="input-password"
                 />
               </div>
 
@@ -104,6 +106,7 @@ export function LoginPage() {
                 type="submit"
                 className="w-full"
                 disabled={isLoading}
+                data-testid="btn-login"
               >
                 {isLoading ? (
                   <>
@@ -125,6 +128,7 @@ export function LoginPage() {
             size="sm"
             onClick={handleLanguageToggle}
             className="text-muted-foreground"
+            data-testid="btn-language-toggle"
           >
             {i18n.language === 'de' ? t('language.en') : t('language.de')}
           </Button>

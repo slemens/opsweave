@@ -80,6 +80,7 @@ export function Sidebar() {
         'flex h-screen flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-all duration-300',
         collapsed ? 'w-16' : 'w-64',
       )}
+      data-testid="sidebar"
     >
       {/* Logo */}
       <div
@@ -106,10 +107,13 @@ export function Sidebar() {
               ? location.pathname === '/'
               : location.pathname.startsWith(item.href);
 
+          const sidebarId = item.href === '/' ? 'dashboard' : item.href.replace(/^\//, '').replace(/\//g, '-');
+
           const linkContent = (
             <NavLink
               key={item.href}
               to={item.href}
+              data-testid={`sidebar-${sidebarId}`}
               className={cn(
                 'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
                 isActive
@@ -144,11 +148,13 @@ export function Sidebar() {
 
         {bottomNavItems.map((item) => {
           const isActive = location.pathname.startsWith(item.href);
+          const bottomSidebarId = item.href.replace(/^\//, '').replace(/\//g, '-');
 
           const linkContent = (
             <NavLink
               key={item.href}
               to={item.href}
+              data-testid={`sidebar-${bottomSidebarId}`}
               className={cn(
                 'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
                 isActive
@@ -219,6 +225,7 @@ export function Sidebar() {
             !collapsed && 'justify-end',
           )}
           aria-label={collapsed ? t('sidebar.expand') : t('sidebar.collapse')}
+          data-testid="btn-sidebar-toggle"
         >
           {collapsed ? (
             <ChevronRight className="h-4 w-4" />

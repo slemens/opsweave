@@ -72,7 +72,7 @@ function GeneralSection() {
             value={i18n.language}
             onValueChange={(lang) => i18n.changeLanguage(lang)}
           >
-            <SelectTrigger className="w-48">
+            <SelectTrigger className="w-48" data-testid="select-language">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -101,6 +101,7 @@ function GeneralSection() {
             </div>
             <Switch
               id="email-notifications"
+              data-testid="input-email-notifications"
               checked={emailNotifications}
               onCheckedChange={setEmailNotifications}
             />
@@ -117,13 +118,14 @@ function GeneralSection() {
             </div>
             <Switch
               id="browser-notifications"
+              data-testid="input-browser-notifications"
               checked={browserNotifications}
               onCheckedChange={setBrowserNotifications}
             />
           </div>
         </CardContent>
         <CardFooter className="justify-end border-t pt-6">
-          <Button>{t('common:actions.save')}</Button>
+          <Button data-testid="btn-save-general">{t('common:actions.save')}</Button>
         </CardFooter>
       </Card>
     </div>
@@ -141,10 +143,11 @@ interface ThemeCardProps {
   onSelect: () => void;
 }
 
-function ThemeCard({ label, icon, isSelected, onSelect }: ThemeCardProps) {
+function ThemeCard({ themeValue, label, icon, isSelected, onSelect }: ThemeCardProps) {
   return (
     <button
       type="button"
+      data-testid={`btn-theme-${themeValue}`}
       onClick={onSelect}
       className={cn(
         'relative flex flex-col items-center gap-3 rounded-xl border-2 p-6 transition-all duration-200',
@@ -388,6 +391,7 @@ function LicenseSection() {
             <Button
               variant="outline"
               size="sm"
+              data-testid="btn-deactivate-license"
               onClick={handleDeactivate}
               disabled={deactivateMutation.isPending}
             >
@@ -476,6 +480,7 @@ function LicenseSection() {
             </Label>
             <Textarea
               id="license-key"
+              data-testid="input-license-key"
               value={licenseKey}
               onChange={(e) => setLicenseKey(e.target.value)}
               placeholder="eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
@@ -485,6 +490,7 @@ function LicenseSection() {
         </CardContent>
         <CardFooter className="justify-end border-t pt-6">
           <Button
+            data-testid="btn-activate-license"
             disabled={!licenseKey.trim() || activateMutation.isPending}
             onClick={handleActivate}
           >
@@ -503,7 +509,7 @@ function LicenseSection() {
 // ============================================================
 export default function GeneralSettingsPage() {
   return (
-    <div className="space-y-8">
+    <div className="space-y-8" data-testid="page-general-settings">
       <GeneralSection />
       <AppearanceSection />
       <LicenseSection />

@@ -67,6 +67,7 @@ function ArticleCard({ article, onOpen }: ArticleCardProps) {
     <Card
       className="group flex flex-col cursor-pointer border-border bg-card shadow-sm transition-all hover:shadow-md hover:border-primary/30"
       onClick={() => onOpen(article)}
+      data-testid="card-kb-article"
     >
       <CardHeader className="pb-3">
         <CardTitle className="line-clamp-2 text-base font-semibold leading-snug group-hover:text-primary transition-colors">
@@ -129,7 +130,7 @@ function ArticleDialog({ article, onClose }: ArticleDialogProps) {
 
   return (
     <Dialog open={!!article} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto" data-testid="modal-kb-article">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold leading-snug pr-8">
             {article?.title}
@@ -203,7 +204,7 @@ export function PortalKbPage() {
   const isEmpty = !isLoading && !error && articles.length === 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="page-portal-kb">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-foreground">
@@ -220,6 +221,7 @@ export function PortalKbPage() {
           onChange={(e) => setSearch(e.target.value)}
           placeholder={t('kb.search_placeholder')}
           className="pl-9"
+          data-testid="input-portal-kb-search"
         />
         {search && (
           <button

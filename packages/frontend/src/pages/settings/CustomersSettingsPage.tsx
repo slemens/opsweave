@@ -108,12 +108,12 @@ export default function CustomersSettingsPage() {
   }
 
   return (
-    <Card>
+    <Card data-testid="page-customers-settings">
       <CardHeader className="flex flex-row items-center justify-between pb-3">
         <div>
           <CardTitle className="text-base">{t('settings:customers.title')}</CardTitle>
         </div>
-        <Button size="sm" onClick={openCreate}>
+        <Button size="sm" data-testid="btn-create-customer" onClick={openCreate}>
           <Plus className="h-4 w-4 mr-2" />
           {t('settings:customers.create')}
         </Button>
@@ -130,7 +130,7 @@ export default function CustomersSettingsPage() {
             <p className="text-xs mt-1">{t('settings:customers.empty_hint')}</p>
           </div>
         ) : (
-          <Table>
+          <Table data-testid="table-customers">
             <TableHeader>
               <TableRow>
                 <TableHead>{t('settings:customers.name')}</TableHead>
@@ -165,7 +165,7 @@ export default function CustomersSettingsPage() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" data-testid="modal-customer">
           <DialogHeader>
             <DialogTitle>
               {editing ? t('settings:customers.edit') : t('settings:customers.create')}
@@ -175,6 +175,7 @@ export default function CustomersSettingsPage() {
             <div className="space-y-1.5">
               <Label>{t('settings:customers.name')}</Label>
               <Input
+                data-testid="input-customer-name"
                 value={form.name}
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                 placeholder="Acme Corp"
@@ -183,6 +184,7 @@ export default function CustomersSettingsPage() {
             <div className="space-y-1.5">
               <Label>{t('settings:customers.industry')}</Label>
               <Input
+                data-testid="input-customer-industry"
                 value={form.industry}
                 onChange={e => setForm(f => ({ ...f, industry: e.target.value }))}
                 placeholder="IT"
@@ -191,6 +193,7 @@ export default function CustomersSettingsPage() {
             <div className="space-y-1.5">
               <Label>{t('settings:customers.email')}</Label>
               <Input
+                data-testid="input-customer-email"
                 type="email"
                 value={form.contact_email}
                 onChange={e => setForm(f => ({ ...f, contact_email: e.target.value }))}
@@ -198,13 +201,13 @@ export default function CustomersSettingsPage() {
               />
             </div>
             <div className="flex items-center gap-2">
-              <Switch checked={form.is_active} onCheckedChange={v => setForm(f => ({ ...f, is_active: v }))} />
+              <Switch data-testid="input-customer-active" checked={form.is_active} onCheckedChange={v => setForm(f => ({ ...f, is_active: v }))} />
               <Label>{t('settings:customers.active')}</Label>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>{tCommon('cancel')}</Button>
-            <Button onClick={() => { void handleSave(); }} disabled={!form.name || createCustomer.isPending || updateCustomer.isPending}>
+            <Button variant="outline" data-testid="btn-cancel-customer" onClick={() => setDialogOpen(false)}>{tCommon('cancel')}</Button>
+            <Button data-testid="btn-save-customer" onClick={() => { void handleSave(); }} disabled={!form.name || createCustomer.isPending || updateCustomer.isPending}>
               {tCommon('save')}
             </Button>
           </DialogFooter>

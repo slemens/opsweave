@@ -421,11 +421,11 @@ export function AssetDetailPage() {
   const requiresCapacity = capacityData.filter((c) => c.direction === 'requires');
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="page-asset-detail">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/assets')}>
+          <Button variant="ghost" size="icon" onClick={() => navigate('/assets')} data-testid="btn-back">
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
@@ -433,7 +433,7 @@ export function AssetDetailPage() {
             <p className="text-sm text-muted-foreground font-mono">{asset.name}</p>
           </div>
         </div>
-        <Button variant="outline" size="sm" className="text-destructive" onClick={handleDelete}>
+        <Button variant="outline" size="sm" className="text-destructive" onClick={handleDelete} data-testid="btn-delete-asset">
           <Trash2 className="mr-2 h-4 w-4" />
           {tCommon('actions.delete')}
         </Button>
@@ -465,9 +465,9 @@ export function AssetDetailPage() {
         <div className="lg:col-span-2">
           <Tabs defaultValue="details">
             <TabsList>
-              <TabsTrigger value="details">{t('tabs.details')}</TabsTrigger>
+              <TabsTrigger value="details" data-testid="tab-details">{t('tabs.details')}</TabsTrigger>
               {(viewContext === 'all' || viewContext === 'operations' || viewContext === 'architecture') && (
-                <TabsTrigger value="relations">
+                <TabsTrigger value="relations" data-testid="tab-relations">
                   {t('tabs.relations')}
                   {relationsData.length > 0 && (
                     <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-[10px]">
@@ -477,7 +477,7 @@ export function AssetDetailPage() {
                 </TabsTrigger>
               )}
               {(viewContext === 'all' || viewContext === 'operations') && (
-                <TabsTrigger value="tickets">
+                <TabsTrigger value="tickets" data-testid="tab-tickets">
                   {t('tabs.tickets')}
                   {ticketsData.length > 0 && (
                     <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-[10px]">
@@ -487,7 +487,7 @@ export function AssetDetailPage() {
                 </TabsTrigger>
               )}
               {(viewContext === 'all' || viewContext === 'security' || viewContext === 'compliance') && (
-                <TabsTrigger value="classifications">
+                <TabsTrigger value="classifications" data-testid="tab-classifications">
                   {t('tabs.classifications')}
                   {classificationsData.length > 0 && (
                     <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-[10px]">
@@ -497,7 +497,7 @@ export function AssetDetailPage() {
                 </TabsTrigger>
               )}
               {(viewContext === 'all' || viewContext === 'operations' || viewContext === 'architecture') && (
-                <TabsTrigger value="capacity">
+                <TabsTrigger value="capacity" data-testid="tab-capacity">
                   {t('tabs.capacity')}
                   {capacityData.length > 0 && (
                     <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-[10px]">
@@ -636,7 +636,7 @@ export function AssetDetailPage() {
                 <CardContent>
                   {graphView ? (
                     rfNodes.length > 0 ? (
-                      <div style={{ height: 400 }} className="border rounded-lg overflow-hidden">
+                      <div style={{ height: 400 }} className="border rounded-lg overflow-hidden" data-testid="relation-graph">
                         <ReactFlow
                           nodes={rfNodes}
                           edges={rfEdges}

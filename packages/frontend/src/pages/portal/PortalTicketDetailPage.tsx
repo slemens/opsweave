@@ -265,13 +265,14 @@ export function PortalTicketDetailPage() {
   // ---------------------------------------------------------------------------
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="page-portal-ticket-detail">
       {/* Back navigation */}
       <Button
         variant="ghost"
         size="sm"
         className="-ml-2 w-fit text-muted-foreground hover:text-foreground"
         onClick={() => navigate('/portal/tickets')}
+        data-testid="btn-back-portal-tickets"
       >
         <ArrowLeft className="mr-1.5 h-4 w-4" />
         {t('ticket.back')}
@@ -280,7 +281,7 @@ export function PortalTicketDetailPage() {
       {/* ------------------------------------------------------------------ */}
       {/* Ticket details card                                                 */}
       {/* ------------------------------------------------------------------ */}
-      <Card className="shadow-sm">
+      <Card className="shadow-sm" data-testid="card-portal-ticket-detail">
         <CardHeader className="pb-4">
           {isLoadingTicket ? (
             <DetailSkeleton />
@@ -345,7 +346,7 @@ export function PortalTicketDetailPage() {
       {/* ------------------------------------------------------------------ */}
       {/* Comments section                                                    */}
       {/* ------------------------------------------------------------------ */}
-      <Card className="shadow-sm">
+      <Card className="shadow-sm" data-testid="card-portal-comments">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
             <MessageSquare className="h-4 w-4 text-muted-foreground" />
@@ -394,7 +395,7 @@ export function PortalTicketDetailPage() {
           {ticket && ticket.status !== 'closed' && (
             <>
               <Separator className="my-2" />
-              <form onSubmit={handleSubmitComment} className="space-y-3">
+              <form onSubmit={handleSubmitComment} className="space-y-3" data-testid="form-portal-comment">
                 {commentError && (
                   <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
                     {commentError}
@@ -407,12 +408,14 @@ export function PortalTicketDetailPage() {
                   disabled={isSubmittingComment}
                   rows={3}
                   className="resize-none"
+                  data-testid="input-portal-comment"
                 />
                 <div className="flex justify-end">
                   <Button
                     type="submit"
                     size="sm"
                     disabled={isSubmittingComment || !newComment.trim()}
+                    data-testid="btn-send-portal-comment"
                   >
                     {isSubmittingComment ? (
                       <>

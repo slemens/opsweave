@@ -8,7 +8,7 @@ export function NotFoundPage() {
   const navigate = useNavigate();
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
+    <div className="flex min-h-screen items-center justify-center bg-background" data-testid="page-not-found">
       <div className="flex flex-col items-center space-y-6 text-center">
         <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted">
           <FileQuestion className="h-10 w-10 text-muted-foreground" />
@@ -20,7 +20,7 @@ export function NotFoundPage() {
             {t('not_found.description')}
           </p>
         </div>
-        <Button onClick={() => navigate('/')}>
+        <Button onClick={() => navigate('/')} data-testid="btn-go-home">
           {t('not_found.go_home')}
         </Button>
       </div>

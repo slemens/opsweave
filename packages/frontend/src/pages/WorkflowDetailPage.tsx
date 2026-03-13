@@ -194,7 +194,7 @@ function WorkflowFlowView({ steps }: { steps: WorkflowStepWithConfig[] }) {
   if (steps.length === 0) return null;
 
   return (
-    <div className="h-[500px] rounded-lg border overflow-hidden">
+    <div className="h-[500px] rounded-lg border overflow-hidden" data-testid="workflow-canvas">
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -361,9 +361,9 @@ export function WorkflowDetailPage() {
   const instanceList = instances ?? [];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-testid="page-workflow-detail">
       {/* Back nav */}
-      <Button variant="ghost" size="sm" onClick={() => navigate('/workflows')} className="-ml-2 text-muted-foreground">
+      <Button variant="ghost" size="sm" onClick={() => navigate('/workflows')} className="-ml-2 text-muted-foreground" data-testid="btn-back">
         <ArrowLeft className="mr-1.5 h-4 w-4" />
         {tWf('title')}
       </Button>
@@ -389,9 +389,9 @@ export function WorkflowDetailPage() {
         <div className="col-span-2">
           <Tabs defaultValue="steps">
             <TabsList>
-              <TabsTrigger value="steps">{tWf('tabs.steps')}</TabsTrigger>
-              <TabsTrigger value="flow">{tWf('tabs.flow')}</TabsTrigger>
-              <TabsTrigger value="instances">{tWf('tabs.instances')}</TabsTrigger>
+              <TabsTrigger value="steps" data-testid="tab-steps">{tWf('tabs.steps')}</TabsTrigger>
+              <TabsTrigger value="flow" data-testid="tab-flow">{tWf('tabs.flow')}</TabsTrigger>
+              <TabsTrigger value="instances" data-testid="tab-instances">{tWf('tabs.instances')}</TabsTrigger>
             </TabsList>
 
             {/* Steps Tab */}
@@ -576,7 +576,7 @@ export function WorkflowDetailPage() {
 
       {/* Add Step Dialog */}
       <Dialog open={addStepOpen} onOpenChange={(open) => { setAddStepOpen(open); if (!open) resetAddStep(); }}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg" data-testid="modal-add-step">
           <DialogHeader>
             <DialogTitle>{tWf('steps.add')}</DialogTitle>
             <DialogDescription>{tWf('fields.step_name')}</DialogDescription>
@@ -656,7 +656,7 @@ export function WorkflowDetailPage() {
 
       {/* Remove Step Confirm Dialog */}
       <Dialog open={!!removeTarget} onOpenChange={(open) => { if (!open) setRemoveTarget(null); }}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-sm" data-testid="modal-confirm-remove-step">
           <DialogHeader>
             <DialogTitle>{tWf('steps.remove')}</DialogTitle>
             <DialogDescription>{tWf('steps.remove_confirm')}</DialogDescription>

@@ -67,7 +67,7 @@ export default function NotificationSettingsPage() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="page-notification-settings">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
@@ -103,6 +103,7 @@ export default function NotificationSettingsPage() {
                   </div>
                   <Switch
                     id={`notif-${eventType}`}
+                    data-testid={`input-notif-${eventType}`}
                     checked={enabled}
                     onCheckedChange={() => handleToggle(eventType, enabled)}
                     disabled={updateMutation.isPending}

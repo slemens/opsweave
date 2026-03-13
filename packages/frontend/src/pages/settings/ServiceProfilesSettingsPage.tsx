@@ -189,7 +189,7 @@ export default function ServiceProfilesSettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="page-service-profiles-settings">
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -200,7 +200,7 @@ export default function ServiceProfilesSettingsPage() {
               </CardTitle>
               <CardDescription>{t('settings:service_profiles.description')}</CardDescription>
             </div>
-            <Button size="sm" onClick={() => { resetForm(); setDialogOpen(true); }}>
+            <Button size="sm" data-testid="btn-create-service-profile" onClick={() => { resetForm(); setDialogOpen(true); }}>
               <Plus className="mr-1.5 h-3.5 w-3.5" />
               {t('settings:service_profiles.create')}
             </Button>
@@ -215,7 +215,7 @@ export default function ServiceProfilesSettingsPage() {
             </div>
           ) : (
             <div className="rounded-md border">
-              <Table>
+              <Table data-testid="table-service-profiles">
                 <TableHeader>
                   <TableRow>
                     <TableHead>{t('settings:service_profiles.name_col')}</TableHead>
@@ -285,7 +285,7 @@ export default function ServiceProfilesSettingsPage() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[500px]" data-testid="modal-service-profile">
           <DialogHeader>
             <DialogTitle>
               {editing ? t('settings:service_profiles.edit') : t('settings:service_profiles.create')}
@@ -294,7 +294,7 @@ export default function ServiceProfilesSettingsPage() {
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label>{t('settings:service_profiles.name_col')}</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Standard Support" />
+              <Input data-testid="input-service-profile-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Standard Support" />
             </div>
             <div className="grid gap-2">
               <Label>{t('settings:service_profiles.description_field')}</Label>
@@ -303,6 +303,7 @@ export default function ServiceProfilesSettingsPage() {
             <div className="grid gap-2">
               <Label>{t('settings:service_profiles.dimensions_field')}</Label>
               <Textarea
+                data-testid="input-service-profile-dimensions"
                 value={dimensions}
                 onChange={(e) => setDimensions(e.target.value)}
                 placeholder='{"support_hours": "24/7", "response_time": "1h"}'
@@ -316,6 +317,7 @@ export default function ServiceProfilesSettingsPage() {
               {t('common:actions.cancel')}
             </Button>
             <Button
+              data-testid="btn-save-service-profile"
               onClick={() => void handleSave()}
               disabled={!name.trim() || createProfile.isPending || updateProfile.isPending}
             >

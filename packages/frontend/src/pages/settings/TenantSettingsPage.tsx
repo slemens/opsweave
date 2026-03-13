@@ -88,6 +88,7 @@ function TenantSection() {
           </Label>
           <Input
             id="tenant-name"
+            data-testid="input-tenant-name"
             value={tenantName}
             onChange={(e) => setTenantName(e.target.value)}
             className="max-w-md"
@@ -99,6 +100,7 @@ function TenantSection() {
           </Label>
           <Input
             id="tenant-slug"
+            data-testid="input-tenant-slug"
             value={activeTenant?.slug ?? ''}
             readOnly
             disabled
@@ -115,7 +117,7 @@ function TenantSection() {
         </div>
       </CardContent>
       <CardFooter className="justify-end border-t pt-6">
-        <Button>{t('settings:tenant.save')}</Button>
+        <Button data-testid="btn-save-tenant">{t('settings:tenant.save')}</Button>
       </CardFooter>
     </Card>
   );
@@ -224,7 +226,7 @@ function EmailSection() {
           <CardTitle className="text-base">{t('configs_title')}</CardTitle>
           <CardDescription className="text-sm">{t('subtitle')}</CardDescription>
         </div>
-        <Button size="sm" onClick={openCreate}>
+        <Button size="sm" data-testid="btn-create-email-config" onClick={openCreate}>
           <Plus className="h-4 w-4 mr-2" />
           {t('new_config')}
         </Button>
@@ -241,7 +243,7 @@ function EmailSection() {
             <p className="text-xs mt-1">{t('no_configs_hint')}</p>
           </div>
         ) : (
-          <table className="w-full text-sm">
+          <table className="w-full text-sm" data-testid="table-email-configs">
             <thead>
               <tr className="border-b dark:border-slate-700 text-left text-slate-500 dark:text-slate-400">
                 <th className="pb-2 font-medium">{t('fields.name')}</th>
@@ -292,7 +294,7 @@ function EmailSection() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="dark:bg-slate-800 dark:border-slate-700 max-w-lg">
+        <DialogContent className="dark:bg-slate-800 dark:border-slate-700 max-w-lg" data-testid="modal-email-config">
           <DialogHeader>
             <DialogTitle className="dark:text-white">
               {editing ? t('dialogs.edit_title') : t('dialogs.create_title')}
@@ -302,6 +304,7 @@ function EmailSection() {
             <div className="space-y-1.5">
               <Label className="dark:text-slate-300">{t('fields.name')}</Label>
               <Input
+                data-testid="input-email-config-name"
                 value={form.name}
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                 className="dark:bg-slate-700 dark:border-slate-600 dark:text-white"
@@ -360,7 +363,7 @@ function EmailSection() {
               </div>
             )}
             <div className="flex items-center gap-2">
-              <Switch checked={form.is_active} onCheckedChange={v => setForm(f => ({ ...f, is_active: v }))} />
+              <Switch data-testid="input-email-config-active" checked={form.is_active} onCheckedChange={v => setForm(f => ({ ...f, is_active: v }))} />
               <Label className="dark:text-slate-300">{t('fields.is_active')}</Label>
             </div>
           </div>
@@ -368,7 +371,7 @@ function EmailSection() {
             <Button variant="outline" onClick={() => setDialogOpen(false)} className="dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700">
               {tCommon('cancel')}
             </Button>
-            <Button onClick={() => { void handleSave(); }} disabled={!form.name || createConfig.isPending || updateConfig.isPending}>
+            <Button data-testid="btn-save-email-config" onClick={() => { void handleSave(); }} disabled={!form.name || createConfig.isPending || updateConfig.isPending}>
               {tCommon('save')}
             </Button>
           </DialogFooter>
@@ -459,6 +462,7 @@ function PasswordPolicySection() {
           <div className="flex items-center gap-4 max-w-md">
             <Input
               type="number"
+              data-testid="input-password-min-length"
               value={form.min_length}
               onChange={e => setForm(f => ({ ...f, min_length: Math.max(8, Math.min(128, parseInt(e.target.value) || 8)) }))}
               min={8}
@@ -477,6 +481,7 @@ function PasswordPolicySection() {
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <Switch
+                data-testid="input-require-uppercase"
                 checked={form.require_uppercase}
                 onCheckedChange={v => setForm(f => ({ ...f, require_uppercase: v }))}
               />
@@ -484,6 +489,7 @@ function PasswordPolicySection() {
             </div>
             <div className="flex items-center gap-2">
               <Switch
+                data-testid="input-require-lowercase"
                 checked={form.require_lowercase}
                 onCheckedChange={v => setForm(f => ({ ...f, require_lowercase: v }))}
               />
@@ -491,6 +497,7 @@ function PasswordPolicySection() {
             </div>
             <div className="flex items-center gap-2">
               <Switch
+                data-testid="input-require-digit"
                 checked={form.require_digit}
                 onCheckedChange={v => setForm(f => ({ ...f, require_digit: v }))}
               />
@@ -498,6 +505,7 @@ function PasswordPolicySection() {
             </div>
             <div className="flex items-center gap-2">
               <Switch
+                data-testid="input-require-special"
                 checked={form.require_special}
                 onCheckedChange={v => setForm(f => ({ ...f, require_special: v }))}
               />
@@ -547,7 +555,7 @@ function PasswordPolicySection() {
         </div>
       </CardContent>
       <CardFooter className="justify-end border-t pt-6">
-        <Button onClick={() => { void handleSave(); }} disabled={updatePolicy.isPending}>
+        <Button data-testid="btn-save-password-policy" onClick={() => { void handleSave(); }} disabled={updatePolicy.isPending}>
           {t('settings:tenant.save')}
         </Button>
       </CardFooter>
@@ -560,7 +568,7 @@ function PasswordPolicySection() {
 // ============================================================
 export default function TenantSettingsPage() {
   return (
-    <div className="space-y-8">
+    <div className="space-y-8" data-testid="page-tenant-settings">
       <TenantSection />
       <PasswordPolicySection />
       <EmailSection />

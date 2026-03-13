@@ -197,10 +197,10 @@ export function CustomerDetailPage() {
   const { customer, stats, assets, recent_tickets, sla_assignments, vertical_catalogs } = overview;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="page-customer-detail">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/customers')}>
+        <Button variant="ghost" size="icon" onClick={() => navigate('/customers')} data-testid="btn-back">
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex-1">
@@ -221,11 +221,11 @@ export function CustomerDetailPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={openEditDialog}>
+          <Button variant="outline" size="sm" onClick={openEditDialog} data-testid="btn-edit-customer">
             <Pencil className="mr-2 h-4 w-4" />
             {t('common:customer_detail.edit')}
           </Button>
-          <Button variant="destructive" size="sm" onClick={() => setDeleteOpen(true)} disabled={!customer.is_active}>
+          <Button variant="destructive" size="sm" onClick={() => setDeleteOpen(true)} disabled={!customer.is_active} data-testid="btn-delete-customer">
             <Trash2 className="mr-2 h-4 w-4" />
             {t('common:customer_detail.delete')}
           </Button>
@@ -467,7 +467,7 @@ export function CustomerDetailPage() {
 
       {/* Edit Dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent>
+        <DialogContent data-testid="modal-edit-customer">
           <DialogHeader>
             <DialogTitle>{t('common:customer_detail.edit')}</DialogTitle>
           </DialogHeader>
@@ -511,7 +511,7 @@ export function CustomerDetailPage() {
 
       {/* Delete Confirmation */}
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent data-testid="modal-confirm-delete">
           <AlertDialogHeader>
             <AlertDialogTitle>{t('common:customer_detail.delete_confirm_title')}</AlertDialogTitle>
             <AlertDialogDescription>

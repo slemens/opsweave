@@ -41,7 +41,7 @@ export function SettingsLayout() {
   const { t } = useTranslation('settings');
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="mx-auto max-w-6xl space-y-6" data-testid="page-settings">
       <div>
         <h2 className="text-2xl font-bold tracking-tight">
           {t('settings:title')}
@@ -50,11 +50,12 @@ export function SettingsLayout() {
 
       <div className="flex flex-col gap-6 md:flex-row">
         {/* Sidebar navigation */}
-        <nav className="flex shrink-0 flex-row gap-1 overflow-x-auto md:w-56 md:flex-col md:overflow-x-visible">
+        <nav className="flex shrink-0 flex-row gap-1 overflow-x-auto md:w-56 md:flex-col md:overflow-x-visible" data-testid="nav-settings">
           {settingsNav.map(({ to, icon: Icon, labelKey }) => (
             <NavLink
               key={to}
               to={to}
+              data-testid={`nav-settings-${to.split('/').pop()}`}
               className={({ isActive }) =>
                 cn(
                   'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',

@@ -52,7 +52,7 @@ export function PortalLoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
+    <div className="flex min-h-screen items-center justify-center bg-background p-4" data-testid="page-portal-login">
       <div className="w-full max-w-md space-y-6">
         {/* Logo & Heading */}
         <div className="flex flex-col items-center space-y-3">
@@ -79,7 +79,7 @@ export function PortalLoginPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4" data-testid="form-portal-login">
               {/* Error message */}
               {error && (
                 <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
@@ -100,6 +100,7 @@ export function PortalLoginPage() {
                   autoComplete="organization"
                   autoFocus
                   disabled={isLoading}
+                  data-testid="input-portal-tenant"
                 />
                 <p className="text-xs text-muted-foreground">
                   Die Organisations-ID wurde Ihnen von Ihrem IT-Dienstleister mitgeteilt.
@@ -118,6 +119,7 @@ export function PortalLoginPage() {
                   required
                   autoComplete="email"
                   disabled={isLoading}
+                  data-testid="input-portal-email"
                 />
               </div>
 
@@ -133,6 +135,7 @@ export function PortalLoginPage() {
                   required
                   autoComplete="current-password"
                   disabled={isLoading}
+                  data-testid="input-portal-password"
                 />
               </div>
 
@@ -140,6 +143,7 @@ export function PortalLoginPage() {
                 type="submit"
                 className="w-full"
                 disabled={isLoading || !email || !password || !tenantSlug}
+                data-testid="btn-portal-login"
               >
                 {isLoading ? (
                   <>

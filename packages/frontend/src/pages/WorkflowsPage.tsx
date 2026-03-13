@@ -171,7 +171,7 @@ export function WorkflowsPage() {
 
   // ── Render ────────────────────────────────────────────────
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-testid="page-workflows">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -182,7 +182,7 @@ export function WorkflowsPage() {
             </p>
           )}
         </div>
-        <Button onClick={() => setCreateOpen(true)} disabled={atCommunityLimit}>
+        <Button onClick={() => setCreateOpen(true)} disabled={atCommunityLimit} data-testid="btn-create-workflow">
           <Plus className="mr-2 h-4 w-4" />
           {t('create')}
         </Button>
@@ -199,7 +199,7 @@ export function WorkflowsPage() {
       {/* Filters */}
       <div className="flex items-center gap-3 flex-wrap">
         <Select value={triggerFilter} onValueChange={(v) => { setTriggerFilter(v); setPage(1); }}>
-          <SelectTrigger className="w-[180px] h-8 text-sm">
+          <SelectTrigger className="w-[180px] h-8 text-sm" data-testid="select-trigger-filter">
             <SelectValue placeholder={t('filter_all_triggers')} />
           </SelectTrigger>
           <SelectContent>
@@ -211,7 +211,7 @@ export function WorkflowsPage() {
         </Select>
 
         <Select value={activeFilter} onValueChange={(v) => { setActiveFilter(v); setPage(1); }}>
-          <SelectTrigger className="w-[150px] h-8 text-sm">
+          <SelectTrigger className="w-[150px] h-8 text-sm" data-testid="select-active-filter">
             <SelectValue placeholder={t('filter_all_status')} />
           </SelectTrigger>
           <SelectContent>
@@ -256,7 +256,7 @@ export function WorkflowsPage() {
       ) : (
         <>
           <div className="rounded-md border">
-            <Table>
+            <Table data-testid="table-workflows">
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
                   <TableHead>{t('fields.name')}</TableHead>
@@ -274,6 +274,7 @@ export function WorkflowsPage() {
                     key={tmpl.id}
                     className="cursor-pointer"
                     onClick={() => navigate(`/workflows/${tmpl.id}`)}
+                    data-testid={`row-workflow-${tmpl.id}`}
                   >
                     <TableCell className="font-medium">{tmpl.name}</TableCell>
                     <TableCell>
@@ -349,7 +350,7 @@ export function WorkflowsPage() {
 
       {/* Create Dialog */}
       <Dialog open={createOpen} onOpenChange={(open) => { setCreateOpen(open); if (!open) resetCreateForm(); }}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg" data-testid="modal-create-workflow">
           <DialogHeader>
             <DialogTitle>{t('create')}</DialogTitle>
             <DialogDescription>{t('empty_hint')}</DialogDescription>
@@ -428,7 +429,7 @@ export function WorkflowsPage() {
 
       {/* Delete Confirm Dialog */}
       <Dialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-sm" data-testid="modal-confirm-delete">
           <DialogHeader>
             <DialogTitle>{t('delete_confirm')}</DialogTitle>
             <DialogDescription>{t('delete_confirm_detail')}</DialogDescription>
