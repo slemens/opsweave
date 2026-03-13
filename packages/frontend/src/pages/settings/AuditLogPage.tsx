@@ -158,7 +158,7 @@ export default function AuditLogPage() {
                 onKeyDown={e => { if (e.key === 'Enter') handleSearch(); }}
                 className="flex-1"
               />
-              <Button variant="outline" size="icon" data-testid="btn-audit-search" onClick={handleSearch}>
+              <Button variant="outline" size="icon" data-testid="btn-audit-search" onClick={handleSearch} aria-label={t('common:actions.search')}>
                 <Search className="h-4 w-4" />
               </Button>
             </div>
@@ -273,6 +273,7 @@ export default function AuditLogPage() {
                   data-testid="btn-audit-prev-page"
                   disabled={(params.page ?? 1) <= 1}
                   onClick={() => setParams(p => ({ ...p, page: (p.page ?? 1) - 1 }))}
+                  aria-label={t('common:pagination.previous')}
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
@@ -283,6 +284,7 @@ export default function AuditLogPage() {
                   data-testid="btn-audit-next-page"
                   disabled={(params.page ?? 1) >= totalPages}
                   onClick={() => setParams(p => ({ ...p, page: (p.page ?? 1) + 1 }))}
+                  aria-label={t('common:pagination.next')}
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>

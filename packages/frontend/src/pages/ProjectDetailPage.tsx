@@ -272,7 +272,7 @@ export default function ProjectDetailPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/projects')} data-testid="btn-back-projects">
+          <Button variant="ghost" size="icon" onClick={() => navigate('/projects')} data-testid="btn-back-projects" aria-label={t('common:actions.back')}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
@@ -393,6 +393,7 @@ export default function ProjectDetailPage() {
                               size="icon"
                               className="h-7 w-7 text-destructive"
                               onClick={() => void handleRemoveAsset(a.asset_id)}
+                              aria-label={t('common:actions.remove')}
                             >
                               <Trash2 className="h-3.5 w-3.5" />
                             </Button>

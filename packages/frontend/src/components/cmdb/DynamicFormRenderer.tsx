@@ -185,15 +185,15 @@ function FieldRenderer({
       </Label>
       {def.type === 'select' ? (
         <Select
-          value={value != null ? String(value) : ''}
-          onValueChange={onChange}
+          value={value != null && value !== '' ? String(value) : '__none__'}
+          onValueChange={(v) => onChange(v === '__none__' ? null : v)}
           disabled={disabled}
         >
           <SelectTrigger>
             <SelectValue placeholder={'\u2014'} />
           </SelectTrigger>
           <SelectContent>
-            {!def.required && <SelectItem value="">{'\u2014'}</SelectItem>}
+            {!def.required && <SelectItem value="__none__">{'\u2014'}</SelectItem>}
             {(def.options ?? []).map((opt) => (
               <SelectItem key={opt.value} value={opt.value}>
                 {getLocalizedLabel(opt.label, locale)}

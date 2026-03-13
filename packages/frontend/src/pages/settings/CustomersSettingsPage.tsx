@@ -152,7 +152,7 @@ export default function CustomersSettingsPage() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(c)}>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(c)} aria-label={t('common:actions.edit')}>
                       <Pencil className="h-4 w-4" />
                     </Button>
                   </TableCell>

@@ -200,7 +200,7 @@ export function CustomerDetailPage() {
     <div className="space-y-6" data-testid="page-customer-detail">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/customers')} data-testid="btn-back">
+        <Button variant="ghost" size="icon" onClick={() => navigate('/customers')} data-testid="btn-back" aria-label={t('common:actions.back')}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex-1">
@@ -380,7 +380,7 @@ export function CustomerDetailPage() {
               </TableHeader>
               <TableBody>
                 {assets.map((asset) => (
-                  <TableRow key={asset.id} className="cursor-pointer hover:bg-muted/40" onClick={() => navigate(`/assets/${asset.id}`)}>
+                  <TableRow key={asset.id} className="cursor-pointer hover:bg-muted/40" onClick={() => navigate(`/assets/${asset.id}`)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/assets/${asset.id}`); } }} role="button" tabIndex={0}>
                     <TableCell className="text-sm font-medium">{asset.display_name}</TableCell>
                     <TableCell className="text-xs">{t(`cmdb:types.${asset.asset_type}`)}</TableCell>
                     <TableCell>
@@ -431,7 +431,7 @@ export function CustomerDetailPage() {
               </TableHeader>
               <TableBody>
                 {recent_tickets.map((ticket) => (
-                  <TableRow key={ticket.id} className="cursor-pointer hover:bg-muted/40" onClick={() => navigate(`/tickets/${ticket.id}`)}>
+                  <TableRow key={ticket.id} className="cursor-pointer hover:bg-muted/40" onClick={() => navigate(`/tickets/${ticket.id}`)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(`/tickets/${ticket.id}`); } }} role="button" tabIndex={0}>
                     <TableCell className="text-xs font-mono">{ticket.ticket_number}</TableCell>
                     <TableCell className="text-sm max-w-[200px] truncate">{ticket.title}</TableCell>
                     <TableCell>
@@ -646,7 +646,7 @@ function PortalUsersSection({ customerId }: { customerId: string }) {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(pu)}>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(pu)} aria-label={t('common:actions.edit')}>
                           <Pencil className="h-3 w-3" />
                         </Button>
                         <Button
@@ -655,6 +655,7 @@ function PortalUsersSection({ customerId }: { customerId: string }) {
                           className="h-7 w-7"
                           onClick={() => handleToggleActive(pu)}
                           disabled={updateMutation.isPending}
+                          aria-label={t('common:actions.toggle_active')}
                         >
                           {pu.is_active ? <Trash2 className="h-3 w-3 text-destructive" /> : <Plus className="h-3 w-3 text-emerald-500" />}
                         </Button>

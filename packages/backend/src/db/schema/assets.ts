@@ -217,8 +217,7 @@ export const assetRelationHistory = sqliteTable(
   {
     id: text('id').primaryKey(),
     relation_id: text('relation_id')
-      .notNull()
-      .references(() => assetRelations.id),
+      .notNull(),
     tenant_id: text('tenant_id')
       .notNull()
       .references(() => tenants.id),

@@ -297,7 +297,7 @@ export function CrossMappingsTab() {
                       <TableCell>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" data-testid={`delete-cross-mapping-${m.id}`}>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" data-testid={`delete-cross-mapping-${m.id}`} aria-label={t('common:actions.delete')}>
                               <Trash2 className="h-3.5 w-3.5" />
                             </Button>
                           </AlertDialogTrigger>

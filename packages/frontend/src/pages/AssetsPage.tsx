@@ -438,7 +438,7 @@ export function AssetsPage() {
           </div>
         ) : (
           <>
-            <div className="rounded-md border">
+            <div className="rounded-md border overflow-x-auto">
               <Table data-testid="table-assets">
                 <TableHeader>
                   <TableRow className="hover:bg-transparent">

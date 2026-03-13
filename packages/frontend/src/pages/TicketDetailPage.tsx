@@ -1531,6 +1531,7 @@ export function TicketDetailPage() {
                               size="icon"
                               className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
                               title={tKb('ticket_tab.unlink')}
+                              aria-label={tKb('ticket_tab.unlink')}
                               onClick={() => void handleUnlinkArticle(article.id)}
                               disabled={unlinkArticleMutation.isPending}
                             >
@@ -2041,6 +2042,7 @@ export function TicketDetailPage() {
                         size="icon"
                         className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive"
                         title={tCommon('actions.remove')}
+                        aria-label={tCommon('actions.remove')}
                         onClick={() => void handleKnownErrorSelect(null)}
                       >
                         <XCircle className="h-3.5 w-3.5" />

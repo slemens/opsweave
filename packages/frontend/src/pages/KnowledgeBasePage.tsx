@@ -125,40 +125,42 @@ function formatDate(iso: string): string {
 // =============================================================================
 
 function VisibilityBadge({ visibility }: { visibility: ArticleVisibility }) {
+  const { t } = useTranslation('kb');
   if (visibility === 'public') {
     return (
       <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
         <Globe className="h-2.5 w-2.5" />
-        <span>Öffentlich</span>
+        <span>{t('visibility.public')}</span>
       </span>
     );
   }
   return (
     <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
       <Lock className="h-2.5 w-2.5" />
-      <span>Intern</span>
+      <span>{t('visibility.internal')}</span>
     </span>
   );
 }
 
 function StatusBadge({ status }: { status: ArticleStatus }) {
+  const { t } = useTranslation('kb');
   switch (status) {
     case 'published':
       return (
         <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
-          Veröffentlicht
+          {t('status.published')}
         </span>
       );
     case 'archived':
       return (
         <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
-          Archiviert
+          {t('status.archived')}
         </span>
       );
     default:
       return (
         <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
-          Entwurf
+          {t('status.draft')}
         </span>
       );
   }
@@ -332,10 +334,10 @@ function ArticleDialog({
             disabled={isSaving}
             className="dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
           >
-            Abbrechen
+            {t('actions.cancel', { ns: 'common' })}
           </Button>
           <Button onClick={onSave} disabled={isSaving || !formData.title.trim()}>
-            {isSaving ? 'Speichern...' : 'Speichern'}
+            {isSaving ? t('status.saving', { ns: 'common' }) : t('actions.save', { ns: 'common' })}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -393,7 +395,7 @@ function ArticleViewerDialog({ article, onClose, onEdit }: ArticleViewerDialogPr
 
         <div className="py-2">
           <div className="prose prose-sm dark:prose-invert max-w-none">
-            <ReactMarkdown>{article.content || '*Kein Inhalt vorhanden.*'}</ReactMarkdown>
+            <ReactMarkdown>{article.content || t('no_content')}</ReactMarkdown>
           </div>
         </div>
 
@@ -502,14 +504,14 @@ export function KnowledgeBasePage() {
     try {
       if (editingArticle) {
         await updateMutation.mutateAsync({ id: editingArticle.id, data: payload });
-        toast.success(t('edit_article') + ' — Gespeichert');
+        toast.success(t('edit_article') + ' — ' + t('toast_saved'));
       } else {
         await createMutation.mutateAsync(payload);
-        toast.success(t('new_article') + ' — Erstellt');
+        toast.success(t('new_article') + ' — ' + t('toast_created'));
       }
       setDialogOpen(false);
     } catch (err) {
-      const msg = err instanceof ApiRequestError ? err.message : 'Ein Fehler ist aufgetreten';
+      const msg = err instanceof ApiRequestError ? err.message : t('errors.generic', { ns: 'common' });
       toast.error(msg);
     }
   }, [formData, editingArticle, createMutation, updateMutation, t]);
@@ -518,10 +520,10 @@ export function KnowledgeBasePage() {
     if (!deleteTarget) return;
     try {
       await deleteMutation.mutateAsync(deleteTarget.id);
-      toast.success(t('delete_article') + ' — Gelöscht');
+      toast.success(t('delete_article') + ' — ' + t('toast_deleted'));
       setDeleteTarget(null);
     } catch (err) {
-      const msg = err instanceof ApiRequestError ? err.message : 'Ein Fehler ist aufgetreten';
+      const msg = err instanceof ApiRequestError ? err.message : t('errors.generic', { ns: 'common' });
       toast.error(msg);
       setDeleteTarget(null);
     }
@@ -537,10 +539,10 @@ export function KnowledgeBasePage() {
           data: { status: nextStatus },
         });
         toast.success(
-          nextStatus === 'published' ? t('publish_article') + ' — OK' : 'Archiviert',
+          nextStatus === 'published' ? t('publish_article') + ' — OK' : t('toast_archived'),
         );
       } catch (err) {
-        const msg = err instanceof ApiRequestError ? err.message : 'Ein Fehler ist aufgetreten';
+        const msg = err instanceof ApiRequestError ? err.message : t('errors.generic', { ns: 'common' });
         toast.error(msg);
       }
     },
@@ -595,10 +597,10 @@ export function KnowledgeBasePage() {
 
         <Select value={visibilityFilter} onValueChange={setVisibilityFilter}>
           <SelectTrigger className="w-[160px] h-9 text-sm dark:bg-slate-800 dark:border-slate-700 dark:text-white" data-testid="select-visibility-filter">
-            <SelectValue placeholder="Alle Sichtbarkeiten" />
+            <SelectValue placeholder={t('all_visibilities')} />
           </SelectTrigger>
           <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
-            <SelectItem value="all">Alle Sichtbarkeiten</SelectItem>
+            <SelectItem value="all">{t('all_visibilities')}</SelectItem>
             <SelectItem value="internal">{t('visibility.internal')}</SelectItem>
             <SelectItem value="public">{t('visibility.public')}</SelectItem>
           </SelectContent>
@@ -616,17 +618,17 @@ export function KnowledgeBasePage() {
       {isError && (
         <div className="flex flex-col items-center justify-center rounded-lg border border-destructive/30 bg-destructive/5 py-12 gap-3">
           <AlertCircle className="h-8 w-8 text-destructive/60" />
-          <p className="text-sm text-muted-foreground">Fehler beim Laden der Artikel.</p>
+          <p className="text-sm text-muted-foreground">{t('load_error')}</p>
           <Button variant="outline" size="sm" onClick={() => void refetch()}>
             <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
-            Erneut versuchen
+            {t('actions.retry', { ns: 'common' })}
           </Button>
         </div>
       )}
 
       {/* Table */}
       {!isError && (
-        <div className="rounded-lg border border-border dark:border-slate-700 overflow-hidden">
+        <div className="rounded-lg border border-border dark:border-slate-700 overflow-x-auto">
           <Table data-testid="table-articles">
             <TableHeader>
               <TableRow className="bg-muted/40 hover:bg-muted/40 dark:bg-slate-800/60 dark:hover:bg-slate-800/60">
@@ -777,6 +779,7 @@ export function KnowledgeBasePage() {
                               size="icon"
                               className="h-7 w-7 opacity-60 hover:opacity-100"
                               onClick={(e) => e.stopPropagation()}
+                              aria-label={t('common:actions.menu', { defaultValue: 'Menu' })}
                             >
                               <MoreHorizontal className="h-3.5 w-3.5" />
                             </Button>
@@ -793,7 +796,7 @@ export function KnowledgeBasePage() {
                               }}
                             >
                               <Pencil className="mr-2 h-3.5 w-3.5" />
-                              Bearbeiten
+                              {t('actions.edit', { ns: 'common' })}
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               className="dark:text-slate-300 dark:focus:bg-slate-700"
@@ -805,7 +808,7 @@ export function KnowledgeBasePage() {
                               {article.status === 'published' ? (
                                 <>
                                   <Lock className="mr-2 h-3.5 w-3.5" />
-                                  Archivieren
+                                  {t('archive_article')}
                                 </>
                               ) : (
                                 <>
@@ -873,7 +876,7 @@ export function KnowledgeBasePage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className="dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
-              Abbrechen
+              {t('actions.cancel', { ns: 'common' })}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => void handleDeleteConfirm()}

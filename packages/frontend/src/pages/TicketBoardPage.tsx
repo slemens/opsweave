@@ -912,6 +912,7 @@ function TicketListView({
               className="h-7 w-7"
               onClick={() => onPageChange(page - 1)}
               disabled={page <= 1}
+              aria-label={t('list.previous_page', { defaultValue: 'Previous page' })}
             >
               <ChevronLeft className="h-3.5 w-3.5" />
             </Button>
@@ -921,6 +922,7 @@ function TicketListView({
               className="h-7 w-7"
               onClick={() => onPageChange(page + 1)}
               disabled={page >= totalPages}
+              aria-label={t('list.next_page', { defaultValue: 'Next page' })}
             >
               <ChevronRight className="h-3.5 w-3.5" />
             </Button>
@@ -1320,6 +1322,7 @@ export function TicketBoardPage() {
                   size="icon"
                   className="h-8 w-8"
                   onClick={resetColumnFilters}
+                  aria-label={tCommon('actions.reset_filters')}
                 >
                   <FilterX className="h-4 w-4" />
                 </Button>

@@ -355,12 +355,12 @@ export default function SlaSettingsPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditDef(def)}>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditDef(def)} aria-label={t('common:actions.edit')}>
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive">
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" aria-label={t('common:actions.delete')}>
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>
                         </AlertDialogTrigger>
@@ -444,7 +444,7 @@ export default function SlaSettingsPage() {
                         <TableCell>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive">
+                              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" aria-label={t('common:actions.delete')}>
                                 <Trash2 className="h-3.5 w-3.5" />
                               </Button>
                             </AlertDialogTrigger>

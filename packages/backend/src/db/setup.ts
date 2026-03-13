@@ -890,7 +890,7 @@ CREATE TABLE IF NOT EXISTS service_scope_items (
 -- asset_relation_history (REQ-3.3b: Historical State)
 CREATE TABLE IF NOT EXISTS asset_relation_history (
   id TEXT PRIMARY KEY,
-  relation_id TEXT NOT NULL REFERENCES asset_relations(id),
+  relation_id TEXT NOT NULL,
   tenant_id TEXT NOT NULL REFERENCES tenants(id),
   action TEXT NOT NULL,
   changed_by TEXT,

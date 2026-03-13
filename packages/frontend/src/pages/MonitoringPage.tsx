@@ -345,7 +345,7 @@ export function MonitoringPage() {
 
             <Button variant="outline" size="sm" onClick={() => void refetchEvents()} data-testid="btn-refresh-events">
               <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
-              {tCommon('actions.refresh', { defaultValue: 'Aktualisieren' })}
+              {tCommon('actions.refresh')}
             </Button>
           </div>
 
@@ -355,14 +355,14 @@ export function MonitoringPage() {
               <AlertCircle className="h-8 w-8 text-destructive/60" />
               <Button variant="outline" size="sm" onClick={() => void refetchEvents()}>
                 <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
-                {tCommon('actions.retry', { defaultValue: 'Erneut versuchen' })}
+                {tCommon('actions.retry')}
               </Button>
             </div>
           )}
 
           {/* Events table */}
           {!eventsError && (
-            <div className="rounded-lg border overflow-hidden">
+            <div className="rounded-lg border overflow-x-auto">
               <Table data-testid="table-monitoring-events">
                 <TableHeader>
                   <TableRow className="bg-muted/40 hover:bg-muted/40">
@@ -424,6 +424,7 @@ export function MonitoringPage() {
                               size="icon"
                               className="h-7 w-7"
                               title={t('events.acknowledge')}
+                              aria-label={t('events.acknowledge')}
                               onClick={() => void handleAcknowledge(event.id)}
                             >
                               <CheckCircle2 className="h-3.5 w-3.5" />
@@ -477,7 +478,7 @@ export function MonitoringPage() {
             </Button>
           </div>
 
-          <div className="rounded-lg border overflow-hidden">
+          <div className="rounded-lg border overflow-x-auto">
             <Table data-testid="table-monitoring-sources">
               <TableHeader>
                 <TableRow className="bg-muted/40 hover:bg-muted/40">
@@ -539,6 +540,7 @@ export function MonitoringPage() {
                               size="icon"
                               className="h-6 w-6 shrink-0"
                               onClick={() => { void navigator.clipboard.writeText(webhookUrl); toast.success('URL kopiert'); }}
+                              aria-label={tCommon('actions.copy')}
                             >
                               <Copy className="h-3 w-3" />
                             </Button>
@@ -547,6 +549,7 @@ export function MonitoringPage() {
                               size="icon"
                               className="h-6 w-6 shrink-0"
                               onClick={() => setShowSecret(showSecret === source.id ? null : source.id)}
+                              aria-label={tCommon('actions.toggle_visibility')}
                             >
                               {showSecret === source.id ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
                             </Button>
@@ -562,7 +565,7 @@ export function MonitoringPage() {
                         <TableCell>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-7 w-7">
+                              <Button variant="ghost" size="icon" className="h-7 w-7" aria-label={tCommon('actions.menu')}>
                                 <MoreHorizontal className="h-3.5 w-3.5" />
                               </Button>
                             </DropdownMenuTrigger>

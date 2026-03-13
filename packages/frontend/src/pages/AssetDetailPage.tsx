@@ -485,7 +485,7 @@ export function AssetDetailPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/assets')} data-testid="btn-back">
+          <Button variant="ghost" size="icon" onClick={() => navigate('/assets')} data-testid="btn-back" aria-label={tCommon('actions.back')}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
@@ -806,6 +806,7 @@ export function AssetDetailPage() {
                                     className="h-7 w-7 text-muted-foreground hover:text-primary"
                                     onClick={() => handleOpenEditProperties(rel)}
                                     title={t('relations.edit_properties')}
+                                    aria-label={tCommon('actions.edit')}
                                   >
                                     <Edit className="h-3.5 w-3.5" />
                                   </Button>
@@ -815,6 +816,7 @@ export function AssetDetailPage() {
                                   size="icon"
                                   className="h-7 w-7 text-muted-foreground hover:text-destructive"
                                   onClick={() => handleDeleteRelation(rel.id)}
+                                  aria-label={tCommon('actions.delete')}
                                 >
                                   <Trash2 className="h-3.5 w-3.5" />
                                 </Button>
@@ -937,6 +939,7 @@ export function AssetDetailPage() {
                                 size="icon"
                                 className="h-7 w-7 text-muted-foreground hover:text-destructive"
                                 onClick={() => handleRemoveClassification(cls.value_id)}
+                                aria-label={tCommon('actions.delete')}
                               >
                                 <Trash2 className="h-3.5 w-3.5" />
                               </Button>
@@ -1117,6 +1120,7 @@ export function AssetDetailPage() {
                                   variant="ghost"
                                   size="icon"
                                   className="h-7 w-7"
+                                  aria-label={tCommon('actions.edit')}
                                   onClick={() => {
                                     setEditingAssignment(assign);
                                     setAssignTenantId(assign.tenant_id);
@@ -1131,6 +1135,7 @@ export function AssetDetailPage() {
                                   variant="ghost"
                                   size="icon"
                                   className="h-7 w-7 text-destructive hover:text-destructive"
+                                  aria-label={tCommon('actions.delete')}
                                   onClick={async () => {
                                     try {
                                       await removeTenantAssignment.mutateAsync({

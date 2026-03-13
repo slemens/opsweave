@@ -249,6 +249,7 @@ export default function UserImportDialog({ open, onOpenChange }: UserImportDialo
                 size="icon"
                 className="h-7 w-7"
                 onClick={() => { setStep('upload'); setCsvContent(''); setParsedRows([]); }}
+                aria-label={t('common:actions.close')}
               >
                 <X className="h-4 w-4" />
               </Button>

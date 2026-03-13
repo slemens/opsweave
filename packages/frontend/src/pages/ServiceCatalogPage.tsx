@@ -376,6 +376,7 @@ function ScopeItemsSection({ serviceId }: { serviceId: string }) {
                   disabled={idx === 0}
                   onClick={() => void handleMoveItem(item, 'up')}
                   title={tCatalog('scope.moveUp')}
+                  aria-label={tCatalog('scope.moveUp')}
                 >
                   <ArrowUp className="h-3 w-3" />
                 </Button>
@@ -386,6 +387,7 @@ function ScopeItemsSection({ serviceId }: { serviceId: string }) {
                   disabled={idx === items.length - 1}
                   onClick={() => void handleMoveItem(item, 'down')}
                   title={tCatalog('scope.moveDown')}
+                  aria-label={tCatalog('scope.moveDown')}
                 >
                   <ArrowDown className="h-3 w-3" />
                 </Button>
@@ -394,6 +396,7 @@ function ScopeItemsSection({ serviceId }: { serviceId: string }) {
                   size="icon"
                   className="h-6 w-6"
                   onClick={() => openEditDialog(item)}
+                  aria-label={tCommon('actions.edit')}
                 >
                   <Pencil className="h-3 w-3" />
                 </Button>
@@ -402,6 +405,7 @@ function ScopeItemsSection({ serviceId }: { serviceId: string }) {
                   size="icon"
                   className="h-6 w-6 text-destructive hover:text-destructive"
                   onClick={() => setDeletingScopeItem(item)}
+                  aria-label={tCommon('actions.delete')}
                 >
                   <Trash2 className="h-3 w-3" />
                 </Button>
@@ -689,7 +693,7 @@ function ServiceDescriptionsTab() {
 
       {/* Table */}
       {!isError && (
-        <div className="rounded-lg border border-border overflow-hidden">
+        <div className="rounded-lg border border-border overflow-x-auto">
           <Table data-testid="table-service-descriptions">
             <TableHeader>
               <TableRow className="bg-muted/40 hover:bg-muted/40">
@@ -786,6 +790,7 @@ function ServiceDescriptionsTab() {
                               size="icon"
                               className="h-7 w-7 opacity-60 hover:opacity-100"
                               onClick={(e) => e.stopPropagation()}
+                              aria-label={tCommon('actions.menu')}
                             >
                               <ChevronDown className="h-3.5 w-3.5" />
                             </Button>
@@ -1056,6 +1061,7 @@ function CatalogCard({ catalog, onEdit, onDelete, allDescriptions }: CatalogCard
                 size="icon"
                 className="h-7 w-7 opacity-60 hover:opacity-100"
                 onClick={() => onEdit(catalog)}
+                aria-label={tCommon('actions.edit')}
               >
                 <Pencil className="h-3.5 w-3.5" />
               </Button>
@@ -1064,6 +1070,7 @@ function CatalogCard({ catalog, onEdit, onDelete, allDescriptions }: CatalogCard
                 size="icon"
                 className="h-7 w-7 opacity-60 hover:opacity-100 text-destructive hover:text-destructive"
                 onClick={() => onDelete(catalog)}
+                aria-label={tCommon('actions.delete')}
               >
                 <Trash2 className="h-3.5 w-3.5" />
               </Button>
@@ -1143,6 +1150,7 @@ function CatalogCard({ catalog, onEdit, onDelete, allDescriptions }: CatalogCard
                               className="h-6 w-6 opacity-50 hover:opacity-100 text-destructive hover:text-destructive"
                               disabled={removeItemMutation.isPending}
                               onClick={() => void handleRemoveItem(item.service_desc_id)}
+                              aria-label={tCommon('actions.remove')}
                             >
                               <X className="h-3.5 w-3.5" />
                             </Button>
@@ -1621,6 +1629,7 @@ function VerticalCatalogsTab() {
                     size="icon"
                     className="h-8 w-8 text-destructive"
                     onClick={(e) => { e.stopPropagation(); void handleDelete(vc.id); }}
+                    aria-label={tCommon('actions.delete')}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -1794,7 +1803,7 @@ function VerticalCatalogDetail({ verticalId }: { verticalId: string }) {
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">{ov.reason ?? '—'}</TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => void handleRemoveOverride(ov.id)}>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => void handleRemoveOverride(ov.id)} aria-label={tCommon('actions.delete')}>
                         <Trash2 className="h-3 w-3" />
                       </Button>
                     </TableCell>

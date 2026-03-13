@@ -213,6 +213,7 @@ export default function EscalationSettingsPage() {
                       size="icon"
                       data-testid={`btn-edit-escalation-${rule.id}`}
                       onClick={() => openEdit(rule)}
+                      aria-label={t('common:actions.edit')}
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
@@ -221,6 +222,7 @@ export default function EscalationSettingsPage() {
                       size="icon"
                       data-testid={`btn-delete-escalation-${rule.id}`}
                       onClick={() => handleDelete(rule.id)}
+                      aria-label={t('common:actions.delete')}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

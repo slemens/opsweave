@@ -241,7 +241,7 @@ export function ControlsTab() {
                 </TableHeader>
                 <TableBody>
                   {controlList.map((c) => (
-                    <TableRow key={c.id} className="cursor-pointer hover:bg-muted/50" onClick={() => openEdit(c)}>
+                    <TableRow key={c.id} className="cursor-pointer hover:bg-muted/50" onClick={() => openEdit(c)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openEdit(c); } }} role="button" tabIndex={0}>
                       <TableCell className="font-mono text-xs font-medium">{c.code}</TableCell>
                       <TableCell>
                         <div className="font-medium">{c.title}</div>
@@ -262,7 +262,7 @@ export function ControlsTab() {
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-7 w-7">
+                            <Button variant="ghost" size="icon" className="h-7 w-7" aria-label={t('common:actions.menu')}>
                               <MoreHorizontal className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>

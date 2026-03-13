@@ -188,10 +188,10 @@ export default function KnownErrorsPage() {
                     </div>
                   </div>
                   <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditItem(item)}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditItem(item)} aria-label={t('common:actions.edit', { defaultValue: 'Edit' })}>
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setDeleteId(item.id)}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setDeleteId(item.id)} aria-label={t('common:actions.delete', { defaultValue: 'Delete' })}>
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </div>
