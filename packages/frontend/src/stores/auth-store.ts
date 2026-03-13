@@ -30,6 +30,7 @@ interface AuthState {
 
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  clearAuth: () => void;
   switchTenant: (tenantId: string) => void;
   setUser: (user: AuthUser | null) => void;
   setToken: (token: string | null) => void;
@@ -92,6 +93,11 @@ export const useAuthStore = create<AuthState>()(
             error: null,
           });
         }
+      },
+
+      // Synchronous state clear — used by the API client on 401 without calling the server
+      clearAuth: () => {
+        set({ user: null, token: null, tenants: [], tenantId: null, error: null });
       },
 
       switchTenant: (tenantId: string) => {

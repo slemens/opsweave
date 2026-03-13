@@ -136,6 +136,9 @@
     "remediation_placeholder": "Describe the planned remediation actions…",
     "due_date": "Due Date",
     "save_error": "Failed to save",
+    "export_csv": "Export as CSV",
+    "export_json": "Export as JSON",
+    "export_report": "Export Report",
     "statuses": {
       "planned": "Planned",
       "in_progress": "In Progress",
@@ -147,6 +150,53 @@
       "in_remediation": "In Remediation",
       "resolved": "Resolved",
       "accepted_risk": "Accepted Risk"
+    }
+  },
+  "cross_mappings": {
+    "title": "Cross-Mappings",
+    "create": "Create Mapping",
+    "source_framework": "Source Framework",
+    "source_requirement": "Source Requirement",
+    "target_framework": "Target Framework",
+    "target_requirement": "Target Requirement",
+    "mapping_type": "Mapping Type",
+    "notes": "Notes",
+    "types": {
+      "equal": "Equal",
+      "partial": "Partial",
+      "related": "Related"
+    },
+    "no_mappings": "No cross-mappings found",
+    "no_mappings_hint": "Create the first cross-framework mapping.",
+    "different_framework_required": "Target framework must differ from source framework.",
+    "create_success": "Mapping created successfully",
+    "delete_success": "Mapping deleted successfully",
+    "save_error": "Failed to save",
+    "delete_confirm": "Are you sure you want to delete this mapping?",
+    "export_csv": "Export CSV",
+    "import_csv": "Import CSV",
+    "import_success": "{{count}} imported",
+    "import_skipped": "{{count}} skipped",
+    "import_errors": "{{count}} errors"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "coverage_overview": "Coverage Overview",
+    "control_status": "Control Status",
+    "open_findings": "Open Findings",
+    "stale_controls": "Stale Controls",
+    "stale_controls_hint": "Controls not updated in over 12 months",
+    "recent_audits": "Recent Audits",
+    "no_stale": "No stale controls found.",
+    "no_audits": "No audits found.",
+    "no_findings": "No open findings.",
+    "coverage_pct": "{{pct}}% covered",
+    "requirements_mapped": "{{mapped}} of {{total}} requirements",
+    "severity": {
+      "critical": "Critical",
+      "major": "Major",
+      "minor": "Minor",
+      "observation": "Observation"
     }
   },
   "evidence": {

@@ -315,6 +315,9 @@ export type EvidenceTypeConst = (typeof EVIDENCE_TYPES)[number];
 export const MATURITY_LEVELS = ['initial', 'managed', 'defined', 'measured', 'optimizing'] as const;
 export type MaturityLevelConst = (typeof MATURITY_LEVELS)[number];
 
+export const CROSS_MAPPING_TYPES = ['equal', 'partial', 'related'] as const;
+export type CrossMappingTypeConst = (typeof CROSS_MAPPING_TYPES)[number];
+
 // ---------------------------------------------------------------------------
 // Monitoring Constants
 // ---------------------------------------------------------------------------

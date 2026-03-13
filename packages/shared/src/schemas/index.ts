@@ -45,6 +45,7 @@ import {
   EVIDENCE_TYPES,
   MATURITY_LEVELS,
   SCOPE_ITEM_TYPES,
+  CROSS_MAPPING_TYPES,
 } from '../constants/index.js';
 
 // ---------------------------------------------------------------------------
@@ -929,6 +930,18 @@ export const updateMappingGranularSchema = z.object({
   verified_by: z.string().max(255).nullable().optional(),
 });
 export type UpdateMappingGranularInput = z.infer<typeof updateMappingGranularSchema>;
+
+// ---------------------------------------------------------------------------
+// Cross-Framework Requirement Mapping Schemas (Evo-4D)
+// ---------------------------------------------------------------------------
+
+export const createCrossMappingSchema = z.object({
+  source_requirement_id: uuidSchema,
+  target_requirement_id: uuidSchema,
+  mapping_type: z.enum(CROSS_MAPPING_TYPES),
+  notes: z.string().max(10000).nullable().optional(),
+});
+export type CreateCrossMappingInput = z.infer<typeof createCrossMappingSchema>;
 
 // ---------------------------------------------------------------------------
 // Service Profiles & Entitlements Schemas (Evo-2A)

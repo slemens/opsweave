@@ -237,6 +237,40 @@ export const auditFindings = sqliteTable(
 // compliance_evidence (Evo-4C: Granular Coverage & Evidence)
 // =============================================================================
 
+// =============================================================================
+// framework_requirement_mappings — direct requirement-to-requirement cross-mapping
+// =============================================================================
+
+export const frameworkRequirementMappings = sqliteTable(
+  'framework_requirement_mappings',
+  {
+    id: text('id').primaryKey(),
+    tenant_id: text('tenant_id')
+      .notNull()
+      .references(() => tenants.id),
+    source_requirement_id: text('source_requirement_id')
+      .notNull()
+      .references(() => regulatoryRequirements.id),
+    target_requirement_id: text('target_requirement_id')
+      .notNull()
+      .references(() => regulatoryRequirements.id),
+    mapping_type: text('mapping_type').notNull(), // 'equal', 'partial', 'related'
+    notes: text('notes'),
+    created_by: text('created_by'),
+    created_at: text('created_at').notNull(),
+  },
+  (t) => [
+    unique('uq_frm_tenant_src_tgt').on(t.tenant_id, t.source_requirement_id, t.target_requirement_id),
+    index('idx_frm_tenant').on(t.tenant_id),
+    index('idx_frm_source').on(t.source_requirement_id),
+    index('idx_frm_target').on(t.target_requirement_id),
+  ],
+);
+
+// =============================================================================
+// compliance_evidence (Evo-4C: Granular Coverage & Evidence)
+// =============================================================================
+
 export const complianceEvidence = sqliteTable(
   'compliance_evidence',
   {

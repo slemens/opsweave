@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { ControlsTab } from '@/components/compliance/ControlsTab';
 import { AuditsTab } from '@/components/compliance/AuditsTab';
 import { EvidenceTab } from '@/components/compliance/EvidenceTab';
+import { CrossMappingsTab } from '@/components/compliance/CrossMappingsTab';
+import { ComplianceDashboardTab } from '@/components/compliance/ComplianceDashboardTab';
 import {
   AlertTriangle,
   CheckCircle2,
@@ -1337,7 +1339,7 @@ function MatrixTab({
 export function CompliancePage() {
   const { t } = useTranslation('compliance');
 
-  const [activeTab, setActiveTab] = useState('frameworks');
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedFrameworkId, setSelectedFrameworkId] = useState<string | undefined>(undefined);
 
   const { data: frameworksData } = useFrameworks({ limit: 100 });
@@ -1371,6 +1373,13 @@ export function CompliancePage() {
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="dark:bg-slate-800 dark:border-slate-700">
+          <TabsTrigger
+            value="dashboard"
+            className="dark:data-[state=active]:bg-slate-700 dark:text-slate-300 dark:data-[state=active]:text-white"
+            data-testid="tab-dashboard"
+          >
+            {t('dashboard.title')}
+          </TabsTrigger>
           <TabsTrigger
             value="frameworks"
             className="dark:data-[state=active]:bg-slate-700 dark:text-slate-300 dark:data-[state=active]:text-white"
@@ -1413,7 +1422,18 @@ export function CompliancePage() {
           >
             {t('evidence.title')}
           </TabsTrigger>
+          <TabsTrigger
+            value="cross-mappings"
+            className="dark:data-[state=active]:bg-slate-700 dark:text-slate-300 dark:data-[state=active]:text-white"
+            data-testid="tab-cross-mappings"
+          >
+            {t('cross_mappings.title')}
+          </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="dashboard" className="space-y-0 mt-0">
+          <ComplianceDashboardTab />
+        </TabsContent>
 
         <TabsContent value="frameworks" className="space-y-0 mt-0">
           <FrameworksTab onFrameworkSelect={handleFrameworkSelect} />
@@ -1445,6 +1465,10 @@ export function CompliancePage() {
 
         <TabsContent value="evidence" className="space-y-0 mt-0">
           <EvidenceTab />
+        </TabsContent>
+
+        <TabsContent value="cross-mappings" className="space-y-0 mt-0">
+          <CrossMappingsTab />
         </TabsContent>
       </Tabs>
     </div>

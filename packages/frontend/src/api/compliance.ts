@@ -112,6 +112,70 @@ export interface FlagAssetPayload {
   reason?: string | null;
 }
 
+export interface CrossMapping {
+  id: string;
+  tenant_id: string;
+  source_requirement_id: string;
+  target_requirement_id: string;
+  mapping_type: 'equal' | 'partial' | 'related';
+  notes: string | null;
+  created_at: string;
+  created_by: string | null;
+  source_requirement?: {
+    id: string;
+    code: string;
+    title: string;
+    framework_id: string;
+    framework_name?: string;
+  };
+  target_requirement?: {
+    id: string;
+    code: string;
+    title: string;
+    framework_id: string;
+    framework_name?: string;
+  };
+}
+
+export interface CreateCrossMappingPayload {
+  source_requirement_id: string;
+  target_requirement_id: string;
+  mapping_type: 'equal' | 'partial' | 'related';
+  notes?: string | null;
+}
+
+export interface ComplianceDashboardData {
+  coverage: Array<{
+    framework_id: string;
+    framework_name: string;
+    framework_version: string | null;
+    total_requirements: number;
+    mapped_requirements: number;
+    coverage_pct: number;
+  }>;
+  control_statuses: Record<string, number>;
+  open_findings: {
+    critical: number;
+    major: number;
+    minor: number;
+    observation: number;
+  };
+  stale_controls: Array<{
+    id: string;
+    code: string;
+    title: string;
+    status: string;
+    updated_at: string;
+  }>;
+  recent_audits: Array<{
+    id: string;
+    name: string;
+    status: string;
+    auditor: string | null;
+    created_at: string;
+  }>;
+}
+
 // =============================================================================
 // Query Keys
 // =============================================================================
@@ -126,6 +190,11 @@ export const complianceKeys = {
   requirement: (id: string) => [...complianceKeys.all, 'requirement', id] as const,
   matrix: (frameworkId: string) => [...complianceKeys.all, 'matrix', frameworkId] as const,
   assets: (frameworkId: string) => [...complianceKeys.all, 'assets', frameworkId] as const,
+  crossMappings: (params?: Record<string, unknown>) =>
+    [...complianceKeys.all, 'cross-mappings', params] as const,
+  frameworkCrossMappings: (frameworkId: string) =>
+    [...complianceKeys.all, 'framework-cross-mappings', frameworkId] as const,
+  dashboard: () => [...complianceKeys.all, 'dashboard'] as const,
 };
 
 // =============================================================================
@@ -345,5 +414,198 @@ export function useUnflagAsset() {
         queryKey: complianceKeys.assets(vars.frameworkId),
       });
     },
+  });
+}
+
+// =============================================================================
+// Query Hooks — Cross-Mappings
+// =============================================================================
+
+export function useCrossMappings(params: Record<string, unknown> = {}) {
+  return useQuery({
+    queryKey: complianceKeys.crossMappings(params),
+    queryFn: async () => {
+      const cleanParams: Record<string, string | number> = {};
+      for (const [k, v] of Object.entries(params)) {
+        if (v !== undefined && v !== '') cleanParams[k] = v as string | number;
+      }
+      return apiClient.get<CrossMapping[]>('/compliance/cross-mappings', {
+        params: cleanParams,
+      });
+    },
+  });
+}
+
+export function useFrameworkCrossMappings(frameworkId: string | undefined) {
+  return useQuery({
+    queryKey: complianceKeys.frameworkCrossMappings(frameworkId ?? ''),
+    queryFn: async () =>
+      apiClient.get<CrossMapping[]>(
+        `/compliance/frameworks/${frameworkId!}/cross-mappings`,
+      ),
+    enabled: !!frameworkId,
+  });
+}
+
+export interface CrossMappingImportResult {
+  imported: number;
+  skipped: number;
+  errors: string[];
+}
+
+/**
+ * Export cross-mappings as CSV. Returns the raw CSV text.
+ */
+export async function exportCrossMappingsCsv(): Promise<string> {
+  const headers: Record<string, string> = {
+    'Accept-Language': 'en',
+  };
+  const tenantId = (() => {
+    try {
+      const stored = localStorage.getItem('opsweave_auth');
+      if (stored) {
+        const parsed = JSON.parse(stored) as { state?: { tenantId?: string } };
+        return parsed.state?.tenantId ?? null;
+      }
+    } catch { /* ignore */ }
+    return null;
+  })();
+  if (tenantId) headers['X-Tenant-ID'] = tenantId;
+
+  const response = await fetch('/api/v1/compliance/cross-mappings/export', {
+    method: 'GET',
+    headers,
+    credentials: 'include',
+  });
+  if (!response.ok) {
+    throw new Error(`Export failed with status ${response.status}`);
+  }
+  return response.text();
+}
+
+/**
+ * Import cross-mappings from CSV text.
+ */
+export async function importCrossMappingsCsv(csvText: string): Promise<CrossMappingImportResult> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'text/csv',
+  };
+  const tenantId = (() => {
+    try {
+      const stored = localStorage.getItem('opsweave_auth');
+      if (stored) {
+        const parsed = JSON.parse(stored) as { state?: { tenantId?: string } };
+        return parsed.state?.tenantId ?? null;
+      }
+    } catch { /* ignore */ }
+    return null;
+  })();
+  if (tenantId) headers['X-Tenant-ID'] = tenantId;
+
+  // CSRF token
+  const csrfMatch = document.cookie.match(/(?:^|;\s*)opsweave_csrf=([^;]*)/);
+  if (csrfMatch) headers['X-CSRF-Token'] = decodeURIComponent(csrfMatch[1]!);
+
+  const response = await fetch('/api/v1/compliance/cross-mappings/import', {
+    method: 'POST',
+    headers,
+    credentials: 'include',
+    body: csvText,
+  });
+  if (!response.ok) {
+    throw new Error(`Import failed with status ${response.status}`);
+  }
+  const json = await response.json() as { data?: CrossMappingImportResult };
+  return json.data ?? (json as unknown as CrossMappingImportResult);
+}
+
+export function useCreateCrossMapping() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: CreateCrossMappingPayload) =>
+      apiClient.post<CrossMapping>('/compliance/cross-mappings', payload),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: complianceKeys.crossMappings() });
+    },
+  });
+}
+
+export function useDeleteCrossMapping() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) =>
+      apiClient.delete(`/compliance/cross-mappings/${id}`),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: complianceKeys.crossMappings() });
+    },
+  });
+}
+
+// =============================================================================
+// Audit Report Export
+// =============================================================================
+
+function getAuthHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {};
+  try {
+    const stored = localStorage.getItem('opsweave_auth');
+    if (stored) {
+      const parsed = JSON.parse(stored) as { state?: { tenantId?: string } };
+      if (parsed.state?.tenantId) {
+        headers['X-Tenant-ID'] = parsed.state.tenantId;
+      }
+    }
+  } catch { /* ignore */ }
+  return headers;
+}
+
+async function triggerDownload(url: string, fallbackFilename: string): Promise<void> {
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: getAuthHeaders(),
+    credentials: 'include',
+  });
+  if (!response.ok) {
+    throw new Error(`Export failed with status ${response.status}`);
+  }
+  const blob = await response.blob();
+  const disposition = response.headers.get('Content-Disposition');
+  let filename = fallbackFilename;
+  if (disposition) {
+    const match = disposition.match(/filename="?([^";\n]+)"?/);
+    if (match?.[1]) filename = match[1];
+  }
+  const anchor = document.createElement('a');
+  anchor.href = URL.createObjectURL(blob);
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(anchor.href);
+}
+
+export async function exportAuditCsv(auditId: string): Promise<void> {
+  await triggerDownload(
+    `/api/v1/compliance/audits/${auditId}/export/csv`,
+    'audit_report.csv',
+  );
+}
+
+export async function exportAuditJson(auditId: string): Promise<void> {
+  await triggerDownload(
+    `/api/v1/compliance/audits/${auditId}/export/json`,
+    'audit_report.json',
+  );
+}
+
+// =============================================================================
+// Query Hooks — Dashboard
+// =============================================================================
+
+export function useComplianceDashboard() {
+  return useQuery({
+    queryKey: complianceKeys.dashboard(),
+    queryFn: async () =>
+      apiClient.get<ComplianceDashboardData>('/compliance/dashboard'),
   });
 }

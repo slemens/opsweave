@@ -7,10 +7,13 @@ import {
   ClipboardCheck,
   ChevronDown,
   ChevronRight,
+  FileDown,
+  FileJson,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/api/client';
+import { exportAuditCsv, exportAuditJson } from '@/api/compliance';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -455,6 +458,18 @@ export function AuditsTab() {
                             <DropdownMenuItem onClick={() => openEdit(audit)}>
                               <Pencil className="mr-2 h-3.5 w-3.5" />
                               {t('common:actions.edit')}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => {
+                              void exportAuditCsv(audit.id).catch(() => toast.error(t('compliance:audits.save_error')));
+                            }}>
+                              <FileDown className="mr-2 h-3.5 w-3.5" />
+                              {t('compliance:audits.export_csv')}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => {
+                              void exportAuditJson(audit.id).catch(() => toast.error(t('compliance:audits.save_error')));
+                            }}>
+                              <FileJson className="mr-2 h-3.5 w-3.5" />
+                              {t('compliance:audits.export_json')}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>

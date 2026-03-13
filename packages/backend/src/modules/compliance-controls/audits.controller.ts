@@ -145,3 +145,97 @@ export async function deleteFinding(
   await auditsService.deleteFinding(tenantId, id);
   sendNoContent(res);
 }
+
+// =============================================================================
+// Audit Export
+// =============================================================================
+
+/**
+ * Escape a value for CSV (RFC 4180).
+ */
+function csvEscape(value: string | null | undefined): string {
+  if (value == null) return '';
+  const str = String(value);
+  if (str.includes('"') || str.includes(',') || str.includes('\n') || str.includes('\r')) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
+}
+
+/**
+ * GET /api/v1/compliance/audits/:id/export/csv
+ */
+export async function exportAuditCsv(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const tenantId = requireTenantId(req);
+  const { id } = req.params as { id: string };
+  const exportData = await auditsService.getAuditExportData(tenantId, id);
+
+  const safeFilename = exportData.audit.name.replace(/[^a-zA-Z0-9_-]/g, '_');
+
+  // Build CSV
+  const lines: string[] = [];
+
+  // Metadata comment lines
+  lines.push(`# Audit: ${exportData.audit.name}`);
+  if (exportData.audit.framework) {
+    lines.push(`# Framework: ${exportData.audit.framework}`);
+  }
+  lines.push(`# Status: ${exportData.audit.status}`);
+  if (exportData.audit.auditor) {
+    lines.push(`# Auditor: ${exportData.audit.auditor}`);
+  }
+  const period = [exportData.audit.start_date, exportData.audit.end_date]
+    .filter(Boolean)
+    .join(' - ');
+  if (period) {
+    lines.push(`# Period: ${period}`);
+  }
+  lines.push('');
+
+  // Header
+  lines.push('finding_title,severity,status,control_code,requirement_code,description,remediation_plan,due_date,resolved_at');
+
+  // Data rows
+  for (const f of exportData.findings) {
+    lines.push(
+      [
+        csvEscape(f.title),
+        csvEscape(f.severity),
+        csvEscape(f.status),
+        csvEscape(f.control_code),
+        csvEscape(f.requirement_code),
+        csvEscape(f.description),
+        csvEscape(f.remediation_plan),
+        csvEscape(f.due_date),
+        csvEscape(f.resolved_at),
+      ].join(','),
+    );
+  }
+
+  const csv = lines.join('\n');
+
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}_audit_report.csv"`);
+  res.send(csv);
+}
+
+/**
+ * GET /api/v1/compliance/audits/:id/export/json
+ */
+export async function exportAuditJson(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const tenantId = requireTenantId(req);
+  const { id } = req.params as { id: string };
+  const exportData = await auditsService.getAuditExportData(tenantId, id);
+
+  const safeFilename = exportData.audit.name.replace(/[^a-zA-Z0-9_-]/g, '_');
+
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}_audit_report.json"`);
+  res.json(exportData);
+}
