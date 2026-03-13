@@ -97,6 +97,14 @@ test.describe('Compliance', () => {
       // Wait for the tab content to load
       await page.waitForTimeout(1_000);
 
+      // Select our framework in the dropdown
+      const frameworkSelect = page.locator('button[role="combobox"]').first();
+      if (await frameworkSelect.isVisible().catch(() => false)) {
+        await frameworkSelect.click();
+        await page.getByRole('option', { name: new RegExp(frameworkName) }).click();
+        await page.waitForTimeout(500);
+      }
+
       // Look for a create requirement button
       const createBtn = page.getByRole('button', { name: /Erstellen|Create|Hinzufügen|Add/ }).first();
       const btnVisible = await createBtn.isVisible().catch(() => false);

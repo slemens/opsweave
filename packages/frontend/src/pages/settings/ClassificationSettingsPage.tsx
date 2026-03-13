@@ -67,7 +67,7 @@ function useCreateClassificationModel() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: { name: string; description?: string | null }) =>
-      apiClient.post<ClassificationModel>('/classification-models', data),
+      apiClient.post<ClassificationModel>('/classifications', data),
     onSuccess: () => { void qc.invalidateQueries({ queryKey: classificationKeys.models() }); },
   });
 }
@@ -76,7 +76,7 @@ function useUpdateClassificationModel() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, ...data }: { id: string; name: string; description?: string | null }) =>
-      apiClient.put<ClassificationModel>(`/classification-models/${id}`, data),
+      apiClient.put<ClassificationModel>(`/classifications/${id}`, data),
     onSuccess: () => { void qc.invalidateQueries({ queryKey: classificationKeys.models() }); },
   });
 }
@@ -84,7 +84,7 @@ function useUpdateClassificationModel() {
 function useDeleteClassificationModel() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => apiClient.delete(`/classification-models/${id}`),
+    mutationFn: (id: string) => apiClient.delete(`/classifications/${id}`),
     onSuccess: () => { void qc.invalidateQueries({ queryKey: classificationKeys.models() }); },
   });
 }
@@ -93,7 +93,7 @@ function useCreateClassificationValue() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ modelId, ...data }: { modelId: string; value: string; label: string; color?: string | null; sort_order?: number }) =>
-      apiClient.post<ClassificationValue>(`/classification-models/${modelId}/values`, data),
+      apiClient.post<ClassificationValue>(`/classifications/${modelId}/values`, data),
     onSuccess: () => { void qc.invalidateQueries({ queryKey: classificationKeys.models() }); },
   });
 }
@@ -102,7 +102,7 @@ function useDeleteClassificationValue() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ modelId, valueId }: { modelId: string; valueId: string }) =>
-      apiClient.delete(`/classification-models/${modelId}/values/${valueId}`),
+      apiClient.delete(`/classifications/${modelId}/values/${valueId}`),
     onSuccess: () => { void qc.invalidateQueries({ queryKey: classificationKeys.models() }); },
   });
 }
