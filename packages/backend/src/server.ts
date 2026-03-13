@@ -292,8 +292,8 @@ async function bootstrap(): Promise<void> {
         fontSrc: ["'self'"],
         objectSrc: ["'none'"],
         frameAncestors: ["'none'"],
-        // Only upgrade insecure requests when HTTPS is available
-        ...(forceHttps ? { upgradeInsecureRequests: [] } : {}),
+        // Disable upgrade-insecure-requests unless HTTPS is explicitly enabled
+        upgradeInsecureRequests: forceHttps ? [] : null,
       },
     } : false, // Disable CSP when frontend is served separately (dev mode)
     // Only send HSTS header when explicitly opted in (avoids breaking HTTP-only deployments)
@@ -387,7 +387,7 @@ async function bootstrap(): Promise<void> {
         language: config.defaultLanguage,
         serveStatic: config.serveStatic,
       },
-      'OpsWeave Backend v0.5.6 started',
+      'OpsWeave Backend v0.5.7 started',
     );
 
     startEmailPollingWorker().catch((err: unknown) => {
