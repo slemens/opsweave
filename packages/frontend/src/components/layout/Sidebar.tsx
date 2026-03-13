@@ -18,6 +18,7 @@ import {
   BarChart3,
   Gavel,
   FolderKanban,
+  Gauge,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -49,6 +50,7 @@ const navItems: NavItem[] = [
   { labelKey: 'nav.known_errors', href: '/known-errors', icon: Bug },
   { labelKey: 'nav.knowledge_base', href: '/knowledge-base', icon: FileText },
   { labelKey: 'nav.monitoring', href: '/monitoring', icon: Activity },
+  { labelKey: 'nav.capacity_planning', href: '/capacity-planning', icon: Gauge },
   { labelKey: 'nav.sla_reports', href: '/reports/sla', icon: BarChart3 },
   { labelKey: 'nav.cab', href: '/cab', icon: Gavel },
 ];

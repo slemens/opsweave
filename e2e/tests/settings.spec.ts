@@ -166,8 +166,8 @@ test.describe('Settings', () => {
     // Modal should close
     await expect(page.locator(byTestId('modal-sla-definition'))).not.toBeVisible({ timeout: 10_000 });
 
-    // The new SLA should appear in the table
-    await expect(page.locator(byTestId('table-sla-definitions'))).toContainText(slaName, { timeout: 10_000 });
+    // The new SLA should appear in the list
+    await expect(page.locator(byTestId('page-sla-settings'))).toContainText(slaName, { timeout: 10_000 });
 
     // Cleanup via API
     const defs = await apiContext.request.get('/api/v1/sla/definitions');

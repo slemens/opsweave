@@ -887,6 +887,33 @@ CREATE TABLE IF NOT EXISTS service_scope_items (
   updated_at TEXT NOT NULL
 );
 
+-- asset_relation_history (REQ-3.3b: Historical State)
+CREATE TABLE IF NOT EXISTS asset_relation_history (
+  id TEXT PRIMARY KEY,
+  relation_id TEXT NOT NULL REFERENCES asset_relations(id),
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  action TEXT NOT NULL,
+  changed_by TEXT,
+  changed_at TEXT NOT NULL,
+  old_values TEXT,
+  new_values TEXT
+);
+
+-- asset_capacity_history (REQ-3.3b: Historical State)
+CREATE TABLE IF NOT EXISTS asset_capacity_history (
+  id TEXT PRIMARY KEY,
+  asset_id TEXT NOT NULL REFERENCES assets(id),
+  capacity_type_id TEXT NOT NULL,
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  old_total INTEGER,
+  old_allocated INTEGER,
+  new_total INTEGER,
+  new_allocated INTEGER,
+  changed_by TEXT,
+  changed_at TEXT NOT NULL,
+  reason TEXT
+);
+
 -- ─── Feedback Board (global, no tenant_id) ────────────────────
 CREATE TABLE IF NOT EXISTS feedback_entries (
   id TEXT PRIMARY KEY,
@@ -931,6 +958,10 @@ CREATE INDEX IF NOT EXISTS idx_ata_tenant ON asset_tenant_assignments(tenant_id)
 CREATE INDEX IF NOT EXISTS idx_ata_asset ON asset_tenant_assignments(asset_id);
 CREATE INDEX IF NOT EXISTS idx_ssi_tenant_service ON service_scope_items(tenant_id, service_id);
 CREATE INDEX IF NOT EXISTS idx_ssi_service_type ON service_scope_items(service_id, scope_type);
+CREATE INDEX IF NOT EXISTS idx_arh_relation ON asset_relation_history(relation_id);
+CREATE INDEX IF NOT EXISTS idx_arh_tenant_changed ON asset_relation_history(tenant_id, changed_at);
+CREATE INDEX IF NOT EXISTS idx_ach_asset_type ON asset_capacity_history(asset_id, capacity_type_id);
+CREATE INDEX IF NOT EXISTS idx_ach_tenant_changed ON asset_capacity_history(tenant_id, changed_at);
 `;
 
 /**

@@ -168,6 +168,33 @@ export interface UpdateTenantAssignmentPayload {
   notes?: string | null;
 }
 
+// REQ-3.3b: History Types
+export interface RelationHistoryEntry {
+  id: string;
+  relation_id: string;
+  action: 'created' | 'modified' | 'deleted';
+  changed_by: string | null;
+  changed_at: string;
+  old_values: Record<string, unknown> | null;
+  new_values: Record<string, unknown> | null;
+  changed_by_name: string | null;
+}
+
+export interface CapacityHistoryEntry {
+  id: string;
+  asset_id: string;
+  capacity_type_id: string;
+  old_total: number | null;
+  old_allocated: number | null;
+  new_total: number | null;
+  new_allocated: number | null;
+  changed_by: string | null;
+  changed_at: string;
+  reason: string | null;
+  changed_by_name: string | null;
+  capacity_type_name: string | null;
+}
+
 export const assetKeys = {
   all: ['assets'] as const,
   lists: () => [...assetKeys.all, 'list'] as const,
@@ -180,6 +207,8 @@ export const assetKeys = {
   stats: () => [...assetKeys.all, 'stats'] as const,
   tickets: (id: string) => [...assetKeys.all, 'tickets', id] as const,
   tenantAssignments: (id: string) => [...assetKeys.all, 'tenant-assignments', id] as const,
+  relationHistory: (id: string) => [...assetKeys.all, 'relation-history', id] as const,
+  capacityHistory: (id: string) => [...assetKeys.all, 'capacity-history', id] as const,
 };
 
 // ---------------------------------------------------------------------------
@@ -270,6 +299,28 @@ export function useFullAssetGraph() {
   });
 }
 
+// REQ-3.3b: History Query Hooks
+
+export function useAssetRelationHistory(assetId: string) {
+  return useQuery({
+    queryKey: assetKeys.relationHistory(assetId),
+    queryFn: async () => {
+      return apiClient.get<RelationHistoryEntry[]>(`/assets/${assetId}/relation-history`);
+    },
+    enabled: !!assetId,
+  });
+}
+
+export function useAssetCapacityHistory(assetId: string) {
+  return useQuery({
+    queryKey: assetKeys.capacityHistory(assetId),
+    queryFn: async () => {
+      return apiClient.get<CapacityHistoryEntry[]>(`/assets/${assetId}/capacity-history`);
+    },
+    enabled: !!assetId,
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Mutation Hooks
 // ---------------------------------------------------------------------------
@@ -334,6 +385,27 @@ export function useDeleteAssetRelation() {
   return useMutation({
     mutationFn: async ({ assetId, relationId }: { assetId: string; relationId: string }) => {
       return apiClient.delete(`/assets/${assetId}/relations/${relationId}`);
+    },
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({ queryKey: assetKeys.relations(variables.assetId) });
+    },
+  });
+}
+
+// REQ-3.2a: Update relation properties
+export function useUpdateAssetRelation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ assetId, relationId, ...payload }: {
+      assetId: string;
+      relationId: string;
+      properties?: Record<string, unknown>;
+      valid_from?: string | null;
+      valid_until?: string | null;
+      metadata?: Record<string, unknown>;
+    }) => {
+      return apiClient.put<AssetRelation>(`/assets/${assetId}/relations/${relationId}`, payload);
     },
     onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({ queryKey: assetKeys.relations(variables.assetId) });

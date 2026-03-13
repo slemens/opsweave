@@ -17,7 +17,8 @@
     "monitoring": "Monitoring",
     "sla_reports": "SLA-Reports",
     "cab": "CAB-Board",
-    "projects": "Projekte"
+    "projects": "Projekte",
+    "capacity_planning": "Kapazitätsplanung"
   },
   "actions": {
     "save": "Speichern",

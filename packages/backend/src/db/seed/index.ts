@@ -519,6 +519,34 @@ async function doSeed(): Promise<void> {
   logger.info(`  ✓ Asset Types: ${systemAssetTypes.length} system types registered`);
 
   // ─── Relation Type Registry (Evo-3A) ──────────────────
+  // REQ-3.2a: Relation types with properties_schema definitions
+  const runsOnSchema = JSON.stringify([
+    { key: 'cpu_cores', label: { de: 'CPU-Kerne', en: 'CPU Cores' }, type: 'number', required: false, sort_order: 0 },
+    { key: 'ram_gb', label: { de: 'RAM (GB)', en: 'RAM (GB)' }, type: 'number', required: false, sort_order: 1 },
+    { key: 'storage_gb', label: { de: 'Speicher (GB)', en: 'Storage (GB)' }, type: 'number', required: false, sort_order: 2 },
+  ]);
+  const connectedToSchema = JSON.stringify([
+    { key: 'bandwidth_mbps', label: { de: 'Bandbreite (Mbps)', en: 'Bandwidth (Mbps)' }, type: 'number', required: false, sort_order: 0 },
+    { key: 'latency_ms', label: { de: 'Latenz (ms)', en: 'Latency (ms)' }, type: 'number', required: false, sort_order: 1 },
+    { key: 'vlan', label: { de: 'VLAN', en: 'VLAN' }, type: 'number', required: false, sort_order: 2 },
+  ]);
+  const dependsOnSchema = JSON.stringify([
+    { key: 'dependency_type', label: { de: 'Abhängigkeitstyp', en: 'Dependency Type' }, type: 'select', required: false, options: [{ value: 'hard', label: { de: 'Hart', en: 'Hard' } }, { value: 'soft', label: { de: 'Weich', en: 'Soft' } }], sort_order: 0 },
+    { key: 'priority', label: { de: 'Priorität', en: 'Priority' }, type: 'select', required: false, options: [{ value: 'critical', label: { de: 'Kritisch', en: 'Critical' } }, { value: 'high', label: { de: 'Hoch', en: 'High' } }, { value: 'medium', label: { de: 'Mittel', en: 'Medium' } }, { value: 'low', label: { de: 'Niedrig', en: 'Low' } }], sort_order: 1 },
+  ]);
+  const backupOfSchema = JSON.stringify([
+    { key: 'schedule', label: { de: 'Zeitplan', en: 'Schedule' }, type: 'text', required: false, sort_order: 0 },
+    { key: 'retention_days', label: { de: 'Aufbewahrung (Tage)', en: 'Retention (Days)' }, type: 'number', required: false, sort_order: 1 },
+    { key: 'backup_type', label: { de: 'Backup-Typ', en: 'Backup Type' }, type: 'select', required: false, options: [{ value: 'full', label: { de: 'Vollständig', en: 'Full' } }, { value: 'incremental', label: { de: 'Inkrementell', en: 'Incremental' } }, { value: 'differential', label: { de: 'Differenziell', en: 'Differential' } }], sort_order: 2 },
+  ]);
+
+  const relTypeSchemaLookup: Record<string, string> = {
+    runs_on: runsOnSchema,
+    connected_to: connectedToSchema,
+    depends_on: dependsOnSchema,
+    backup_of: backupOfSchema,
+  };
+
   const systemRelationTypes = [
     { slug: 'runs_on', name: 'Runs on', category: 'dependency' },
     { slug: 'connected_to', name: 'Connected to', category: 'network' },
@@ -546,7 +574,7 @@ async function doSeed(): Promise<void> {
     is_directional: 1,
     source_types: '[]',
     target_types: '[]',
-    properties_schema: '[]',
+    properties_schema: relTypeSchemaLookup[rt.slug] ?? '[]',
     is_system: 1,
     is_active: 1,
     created_at: now,
@@ -812,26 +840,26 @@ async function doSeed(): Promise<void> {
   ]);
   logger.info('  ✓ Assets: 14 CMDB assets (rack, VMs, firewall, switch, etc.)');
 
-  // ─── Asset Relations ───────────────────────────────────
+  // ─── Asset Relations (REQ-3.2a: with structured properties) ───
   await db.insert(assetRelations).values([
-    // VMs run on ESXi hosts
-    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetWeb01Id, target_asset_id: assetEsxi01Id, relation_type: 'runs_on', properties: '{}', created_at: now, created_by: adminId },
-    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetWeb02Id, target_asset_id: assetEsxi02Id, relation_type: 'runs_on', properties: '{}', created_at: now, created_by: adminId },
-    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetDb01Id, target_asset_id: assetEsxi01Id, relation_type: 'runs_on', properties: '{}', created_at: now, created_by: adminId },
+    // VMs run on ESXi hosts — with resource allocation properties
+    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetWeb01Id, target_asset_id: assetEsxi01Id, relation_type: 'runs_on', properties: JSON.stringify({ cpu_cores: 4, ram_gb: 16, storage_gb: 200 }), created_at: now, created_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetWeb02Id, target_asset_id: assetEsxi02Id, relation_type: 'runs_on', properties: JSON.stringify({ cpu_cores: 4, ram_gb: 16, storage_gb: 200 }), created_at: now, created_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetDb01Id, target_asset_id: assetEsxi01Id, relation_type: 'runs_on', properties: JSON.stringify({ cpu_cores: 8, ram_gb: 32, storage_gb: 500 }), created_at: now, created_by: adminId },
     // MySQL runs on DB server
-    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetMysqlId, target_asset_id: assetDb01Id, relation_type: 'runs_on', properties: '{}', created_at: now, created_by: adminId },
-    // OpsWeave depends on MySQL + Webserver
-    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetOpsweaveId, target_asset_id: assetMysqlId, relation_type: 'depends_on', properties: '{}', created_at: now, created_by: adminId },
-    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetOpsweaveId, target_asset_id: assetWeb01Id, relation_type: 'depends_on', properties: '{}', created_at: now, created_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetMysqlId, target_asset_id: assetDb01Id, relation_type: 'runs_on', properties: JSON.stringify({ cpu_cores: 4, ram_gb: 16, storage_gb: 100 }), created_at: now, created_by: adminId },
+    // OpsWeave depends on MySQL + Webserver — with dependency metadata
+    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetOpsweaveId, target_asset_id: assetMysqlId, relation_type: 'depends_on', properties: JSON.stringify({ dependency_type: 'hard', priority: 'critical' }), created_at: now, created_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetOpsweaveId, target_asset_id: assetWeb01Id, relation_type: 'depends_on', properties: JSON.stringify({ dependency_type: 'hard', priority: 'high' }), created_at: now, created_by: adminId },
     // Hardware in rack
     { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetEsxi01Id, target_asset_id: assetRackId, relation_type: 'member_of', properties: '{}', created_at: now, created_by: adminId },
     { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetEsxi02Id, target_asset_id: assetRackId, relation_type: 'member_of', properties: '{}', created_at: now, created_by: adminId },
     { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetSwId, target_asset_id: assetRackId, relation_type: 'member_of', properties: '{}', created_at: now, created_by: adminId },
-    // Network connections
-    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetFwId, target_asset_id: assetSwId, relation_type: 'connected_to', properties: '{}', created_at: now, created_by: adminId },
-    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetLbId, target_asset_id: assetSwId, relation_type: 'connected_to', properties: '{}', created_at: now, created_by: adminId },
-    // Backup relation
-    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetNasId, target_asset_id: assetMysqlId, relation_type: 'backup_of', properties: '{}', created_at: now, created_by: adminId },
+    // Network connections — with bandwidth/VLAN properties
+    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetFwId, target_asset_id: assetSwId, relation_type: 'connected_to', properties: JSON.stringify({ bandwidth_mbps: 10000, latency_ms: 0.5, vlan: 100 }), created_at: now, created_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetLbId, target_asset_id: assetSwId, relation_type: 'connected_to', properties: JSON.stringify({ bandwidth_mbps: 10000, latency_ms: 0.3, vlan: 200 }), created_at: now, created_by: adminId },
+    // Backup relation — with schedule properties
+    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetNasId, target_asset_id: assetMysqlId, relation_type: 'backup_of', properties: JSON.stringify({ schedule: '0 2 * * *', retention_days: 30, backup_type: 'incremental' }), created_at: now, created_by: adminId },
   ]);
   logger.info('  ✓ Asset Relations: 12 relations (runs_on, depends_on, member_of, connected_to, backup_of)');
 
@@ -2000,25 +2028,25 @@ async function doSeed(): Promise<void> {
   ]);
   logger.info('  ✓ Extended Assets: 26 additional assets');
 
-  // Extended Asset Relations
+  // Extended Asset Relations (REQ-3.2a: with structured properties)
   await db.insert(assetRelations).values([
-    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetMailGwId, target_asset_id: assetEsxi01Id, relation_type: 'runs_on', properties: '{}', created_at: now, created_by: adminId },
-    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetAdControllerId, target_asset_id: assetEsxi02Id, relation_type: 'runs_on', properties: '{}', created_at: now, created_by: adminId },
-    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetDnsId, target_asset_id: assetEsxi01Id, relation_type: 'runs_on', properties: '{}', created_at: now, created_by: adminId },
-    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetProxyId, target_asset_id: assetEsxi02Id, relation_type: 'runs_on', properties: '{}', created_at: now, created_by: adminId },
-    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetFileServerId, target_asset_id: assetEsxi01Id, relation_type: 'runs_on', properties: '{}', created_at: now, created_by: adminId },
-    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetGitlabId, target_asset_id: assetEsxi02Id, relation_type: 'runs_on', properties: '{}', created_at: now, created_by: adminId },
-    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetRedisId, target_asset_id: assetK8sClusterId, relation_type: 'runs_on', properties: '{}', created_at: now, created_by: adminId },
-    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetElasticId, target_asset_id: assetK8sClusterId, relation_type: 'runs_on', properties: '{}', created_at: now, created_by: adminId },
-    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetErpId, target_asset_id: assetMysqlId, relation_type: 'depends_on', properties: '{}', created_at: now, created_by: adminId },
-    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetErpId, target_asset_id: assetAdControllerId, relation_type: 'depends_on', properties: '{}', created_at: now, created_by: adminId },
-    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetGitlabId, target_asset_id: assetRedisId, relation_type: 'depends_on', properties: '{}', created_at: now, created_by: adminId },
-    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetCiCdId, target_asset_id: assetGitlabId, relation_type: 'depends_on', properties: '{}', created_at: now, created_by: adminId },
-    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetPrometheusId, target_asset_id: assetK8sClusterId, relation_type: 'runs_on', properties: '{}', created_at: now, created_by: adminId },
-    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetBackupSrvId, target_asset_id: assetSanId, relation_type: 'depends_on', properties: '{}', created_at: now, created_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetMailGwId, target_asset_id: assetEsxi01Id, relation_type: 'runs_on', properties: JSON.stringify({ cpu_cores: 2, ram_gb: 8, storage_gb: 100 }), created_at: now, created_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetAdControllerId, target_asset_id: assetEsxi02Id, relation_type: 'runs_on', properties: JSON.stringify({ cpu_cores: 4, ram_gb: 16, storage_gb: 200 }), created_at: now, created_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetDnsId, target_asset_id: assetEsxi01Id, relation_type: 'runs_on', properties: JSON.stringify({ cpu_cores: 2, ram_gb: 4, storage_gb: 50 }), created_at: now, created_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetProxyId, target_asset_id: assetEsxi02Id, relation_type: 'runs_on', properties: JSON.stringify({ cpu_cores: 2, ram_gb: 8, storage_gb: 80 }), created_at: now, created_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetFileServerId, target_asset_id: assetEsxi01Id, relation_type: 'runs_on', properties: JSON.stringify({ cpu_cores: 4, ram_gb: 16, storage_gb: 2000 }), created_at: now, created_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetGitlabId, target_asset_id: assetEsxi02Id, relation_type: 'runs_on', properties: JSON.stringify({ cpu_cores: 8, ram_gb: 32, storage_gb: 500 }), created_at: now, created_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetRedisId, target_asset_id: assetK8sClusterId, relation_type: 'runs_on', properties: JSON.stringify({ cpu_cores: 2, ram_gb: 8, storage_gb: 20 }), created_at: now, created_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetElasticId, target_asset_id: assetK8sClusterId, relation_type: 'runs_on', properties: JSON.stringify({ cpu_cores: 8, ram_gb: 32, storage_gb: 1000 }), created_at: now, created_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetErpId, target_asset_id: assetMysqlId, relation_type: 'depends_on', properties: JSON.stringify({ dependency_type: 'hard', priority: 'critical' }), created_at: now, created_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetErpId, target_asset_id: assetAdControllerId, relation_type: 'depends_on', properties: JSON.stringify({ dependency_type: 'hard', priority: 'high' }), created_at: now, created_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetGitlabId, target_asset_id: assetRedisId, relation_type: 'depends_on', properties: JSON.stringify({ dependency_type: 'soft', priority: 'medium' }), created_at: now, created_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetCiCdId, target_asset_id: assetGitlabId, relation_type: 'depends_on', properties: JSON.stringify({ dependency_type: 'hard', priority: 'high' }), created_at: now, created_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetPrometheusId, target_asset_id: assetK8sClusterId, relation_type: 'runs_on', properties: JSON.stringify({ cpu_cores: 4, ram_gb: 16, storage_gb: 500 }), created_at: now, created_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetBackupSrvId, target_asset_id: assetSanId, relation_type: 'depends_on', properties: JSON.stringify({ dependency_type: 'hard', priority: 'critical' }), created_at: now, created_by: adminId },
     { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetUpsId, target_asset_id: assetRackId, relation_type: 'member_of', properties: '{}', created_at: now, created_by: adminId },
     { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetPduId, target_asset_id: assetRackId, relation_type: 'member_of', properties: '{}', created_at: now, created_by: adminId },
-    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetVpnGwId, target_asset_id: assetFwId, relation_type: 'connected_to', properties: '{}', created_at: now, created_by: adminId },
+    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetVpnGwId, target_asset_id: assetFwId, relation_type: 'connected_to', properties: JSON.stringify({ bandwidth_mbps: 1000, latency_ms: 2, vlan: 50 }), created_at: now, created_by: adminId },
     { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetFileServerId, target_asset_id: assetSanId, relation_type: 'depends_on', properties: '{}', created_at: now, created_by: adminId },
   ]);
   logger.info('  ✓ Extended Relations: 18 additional relations');
@@ -2990,6 +3018,29 @@ export async function seedEvoTypes(): Promise<void> {
       .limit(1);
 
     if (existingRelTypes.length === 0) {
+      // REQ-3.2a: Relation types with properties_schema
+      const evoRelTypeSchemaLookup: Record<string, string> = {
+        runs_on: JSON.stringify([
+          { key: 'cpu_cores', label: { de: 'CPU-Kerne', en: 'CPU Cores' }, type: 'number', required: false, sort_order: 0 },
+          { key: 'ram_gb', label: { de: 'RAM (GB)', en: 'RAM (GB)' }, type: 'number', required: false, sort_order: 1 },
+          { key: 'storage_gb', label: { de: 'Speicher (GB)', en: 'Storage (GB)' }, type: 'number', required: false, sort_order: 2 },
+        ]),
+        connected_to: JSON.stringify([
+          { key: 'bandwidth_mbps', label: { de: 'Bandbreite (Mbps)', en: 'Bandwidth (Mbps)' }, type: 'number', required: false, sort_order: 0 },
+          { key: 'latency_ms', label: { de: 'Latenz (ms)', en: 'Latency (ms)' }, type: 'number', required: false, sort_order: 1 },
+          { key: 'vlan', label: { de: 'VLAN', en: 'VLAN' }, type: 'number', required: false, sort_order: 2 },
+        ]),
+        depends_on: JSON.stringify([
+          { key: 'dependency_type', label: { de: 'Abhängigkeitstyp', en: 'Dependency Type' }, type: 'select', required: false, options: [{ value: 'hard', label: { de: 'Hart', en: 'Hard' } }, { value: 'soft', label: { de: 'Weich', en: 'Soft' } }], sort_order: 0 },
+          { key: 'priority', label: { de: 'Priorität', en: 'Priority' }, type: 'select', required: false, options: [{ value: 'critical', label: { de: 'Kritisch', en: 'Critical' } }, { value: 'high', label: { de: 'Hoch', en: 'High' } }, { value: 'medium', label: { de: 'Mittel', en: 'Medium' } }, { value: 'low', label: { de: 'Niedrig', en: 'Low' } }], sort_order: 1 },
+        ]),
+        backup_of: JSON.stringify([
+          { key: 'schedule', label: { de: 'Zeitplan', en: 'Schedule' }, type: 'text', required: false, sort_order: 0 },
+          { key: 'retention_days', label: { de: 'Aufbewahrung (Tage)', en: 'Retention (Days)' }, type: 'number', required: false, sort_order: 1 },
+          { key: 'backup_type', label: { de: 'Backup-Typ', en: 'Backup Type' }, type: 'select', required: false, options: [{ value: 'full', label: { de: 'Vollständig', en: 'Full' } }, { value: 'incremental', label: { de: 'Inkrementell', en: 'Incremental' } }, { value: 'differential', label: { de: 'Differenziell', en: 'Differential' } }], sort_order: 2 },
+        ]),
+      };
+
       const systemRelTypeSlugs = [
         { slug: 'runs_on', name: 'Runs on', category: 'dependency' },
         { slug: 'connected_to', name: 'Connected to', category: 'network' },
@@ -3017,7 +3068,7 @@ export async function seedEvoTypes(): Promise<void> {
         is_directional: 1,
         source_types: '[]',
         target_types: '[]',
-        properties_schema: '[]',
+        properties_schema: evoRelTypeSchemaLookup[rt.slug] ?? '[]',
         is_system: 1,
         is_active: 1,
         created_at: seedNow,

@@ -15,6 +15,7 @@ import {
   Activity,
   Calendar,
   Eye,
+  History,
 } from 'lucide-react';
 import ReactFlow, {
   Controls,
@@ -76,17 +77,20 @@ import {
   useDeleteAsset,
   useCreateAssetRelation,
   useDeleteAssetRelation,
+  useUpdateAssetRelation,
   useAssets,
   useAssetGraph,
   useAssetTenantAssignments,
   useAssignAssetToTenant,
   useUpdateAssetTenantAssignment,
   useRemoveAssetTenantAssignment,
+  useAssetRelationHistory,
+  useAssetCapacityHistory,
 } from '@/api/assets';
 // AUDIT-FIX: M-09 — Import from domain-specific API modules
 import { useGroups } from '@/api/groups';
 import { useCustomers } from '@/api/customers';
-import type { AssetRelationWithDetails, AssetTicketSummary, AssetTenantAssignment } from '@/api/assets';
+import type { AssetRelationWithDetails, AssetTicketSummary, AssetTenantAssignment, RelationHistoryEntry, CapacityHistoryEntry } from '@/api/assets';
 import { useAuthStore } from '@/stores/auth-store';
 import {
   useClassificationModels,
@@ -221,6 +225,10 @@ export function AssetDetailPage() {
   const classifyAsset = useClassifyAsset();
   const removeClassification = useRemoveAssetClassification();
 
+  // ── History (REQ-3.3b) ──────────────────────────────────
+  const { data: relationHistoryData } = useAssetRelationHistory(id ?? '');
+  const { data: capacityHistoryData } = useAssetCapacityHistory(id ?? '');
+
   // ── Tenant Assignments (REQ-2.1) ────────────────────────
   const { data: tenantAssignmentsData } = useAssetTenantAssignments(id ?? '');
   const assignToTenant = useAssignAssetToTenant();
@@ -232,6 +240,7 @@ export function AssetDetailPage() {
   const deleteAssetMutation = useDeleteAsset();
   const createRelation = useCreateAssetRelation();
   const deleteRelation = useDeleteAssetRelation();
+  const updateRelation = useUpdateAssetRelation();
 
   // For relation dialog — need all assets to pick from
   const { data: allAssetsData } = useAssets({ limit: 100 });
@@ -245,6 +254,11 @@ export function AssetDetailPage() {
   const [relType, setRelType] = useState<string>('depends_on');
   const [relDirection, setRelDirection] = useState<'outgoing' | 'incoming'>('outgoing');
   const [relProperties, setRelProperties] = useState<Record<string, unknown>>({});
+
+  // ── Edit Properties Dialog (REQ-3.2a) ──────────────────────
+  const [editPropsOpen, setEditPropsOpen] = useState(false);
+  const [editingRelation, setEditingRelation] = useState<AssetRelationWithDetails | null>(null);
+  const [editProperties, setEditProperties] = useState<Record<string, unknown>>({});
 
   // ── Classification Dialog ──────────────────────────────────
   const [classificationOpen, setClassificationOpen] = useState(false);
@@ -365,6 +379,29 @@ export function AssetDetailPage() {
     }
   }, [id, deleteRelation, t]);
 
+  const handleOpenEditProperties = useCallback((rel: AssetRelationWithDetails) => {
+    setEditingRelation(rel);
+    setEditProperties({ ...rel.properties });
+    setEditPropsOpen(true);
+  }, []);
+
+  const handleSaveProperties = useCallback(async () => {
+    if (!id || !editingRelation) return;
+    try {
+      await updateRelation.mutateAsync({
+        assetId: id,
+        relationId: editingRelation.id,
+        properties: editProperties,
+      });
+      toast.success(t('relations.edit_properties_success'));
+      setEditPropsOpen(false);
+      setEditingRelation(null);
+      setEditProperties({});
+    } catch {
+      toast.error(t('relations.edit_properties_error'));
+    }
+  }, [id, editingRelation, editProperties, updateRelation, t]);
+
   const handleAddClassification = useCallback(async () => {
     if (!id || !selectedValueId) return;
     try {
@@ -439,6 +476,9 @@ export function AssetDetailPage() {
   const providesCapacity = capacityData.filter((c) => c.direction === 'provides');
   const requiresCapacity = capacityData.filter((c) => c.direction === 'requires');
   const tenantAssignments = tenantAssignmentsData ?? [];
+  const relationHistory = relationHistoryData ?? [];
+  const capacityHistory = capacityHistoryData ?? [];
+  const totalHistoryCount = relationHistory.length + capacityHistory.length;
 
   return (
     <div className="space-y-6" data-testid="page-asset-detail">
@@ -533,6 +573,17 @@ export function AssetDetailPage() {
                   {tenantAssignments.length > 0 && (
                     <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-[10px]">
                       {tenantAssignments.length}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+              )}
+              {(viewContext === 'all' || viewContext === 'operations') && (
+                <TabsTrigger value="history" data-testid="tab-history">
+                  <History className="mr-1 h-3.5 w-3.5" />
+                  {t('tabs.history')}
+                  {totalHistoryCount > 0 && (
+                    <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-[10px]">
+                      {totalHistoryCount}
                     </Badge>
                   )}
                 </TabsTrigger>
@@ -747,14 +798,27 @@ export function AssetDetailPage() {
                               />
                             </TableCell>
                             <TableCell>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                                onClick={() => handleDeleteRelation(rel.id)}
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
+                              <div className="flex gap-1">
+                                {relTypeSchemaMap.has(rel.relation_type) && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 text-muted-foreground hover:text-primary"
+                                    onClick={() => handleOpenEditProperties(rel)}
+                                    title={t('relations.edit_properties')}
+                                  >
+                                    <Edit className="h-3.5 w-3.5" />
+                                  </Button>
+                                )}
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                                  onClick={() => handleDeleteRelation(rel.id)}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
                             </TableCell>
                           </TableRow>
                         ))}
@@ -1091,6 +1155,123 @@ export function AssetDetailPage() {
                 </CardContent>
               </Card>
             </TabsContent>
+
+            {/* History Tab (REQ-3.3b) */}
+            <TabsContent value="history" className="mt-4">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">{t('history.title')}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {totalHistoryCount === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-10 text-center">
+                      <History className="h-8 w-8 text-muted-foreground mb-3" />
+                      <p className="text-sm text-muted-foreground">{t('history.no_history')}</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      {/* Relation History */}
+                      {relationHistory.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                            {t('history.relation_changes')}
+                          </p>
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead className="w-[160px]">{t('fields.created_at')}</TableHead>
+                                <TableHead>{t('fields.status')}</TableHead>
+                                <TableHead>{t('history.changed_by')}</TableHead>
+                                <TableHead>{t('history.old_value')}</TableHead>
+                                <TableHead>{t('history.new_value')}</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {relationHistory.map((entry: RelationHistoryEntry) => (
+                                <TableRow key={entry.id}>
+                                  <TableCell className="text-sm text-muted-foreground">
+                                    {formatDate(entry.changed_at)}
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge
+                                      variant={
+                                        entry.action === 'created' ? 'default' :
+                                        entry.action === 'deleted' ? 'destructive' : 'secondary'
+                                      }
+                                      className="text-xs"
+                                    >
+                                      {t(`history.action_${entry.action}`)}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell className="text-sm">
+                                    {entry.changed_by_name ?? '\u2014'}
+                                  </TableCell>
+                                  <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">
+                                    {entry.old_values ? (
+                                      <span title={JSON.stringify(entry.old_values, null, 2)}>
+                                        {(entry.old_values.relation_type as string) ?? ''}
+                                      </span>
+                                    ) : '\u2014'}
+                                  </TableCell>
+                                  <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">
+                                    {entry.new_values ? (
+                                      <span title={JSON.stringify(entry.new_values, null, 2)}>
+                                        {(entry.new_values.relation_type as string) ?? ''}
+                                      </span>
+                                    ) : '\u2014'}
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      )}
+
+                      {/* Capacity History */}
+                      {capacityHistory.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                            {t('history.capacity_changes')}
+                          </p>
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead className="w-[160px]">{t('fields.created_at')}</TableHead>
+                                <TableHead>{t('history.capacity_type')}</TableHead>
+                                <TableHead>{t('history.old_value')}</TableHead>
+                                <TableHead>{t('history.new_value')}</TableHead>
+                                <TableHead>{t('history.changed_by')}</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {capacityHistory.map((entry: CapacityHistoryEntry) => (
+                                <TableRow key={entry.id}>
+                                  <TableCell className="text-sm text-muted-foreground">
+                                    {formatDate(entry.changed_at)}
+                                  </TableCell>
+                                  <TableCell className="text-sm">
+                                    {entry.capacity_type_name ?? entry.capacity_type_id}
+                                  </TableCell>
+                                  <TableCell className="text-sm text-muted-foreground">
+                                    {entry.old_total != null ? `${entry.old_total}` : '\u2014'}
+                                  </TableCell>
+                                  <TableCell className="text-sm text-muted-foreground">
+                                    {entry.new_total != null ? `${entry.new_total}` : '\u2014'}
+                                  </TableCell>
+                                  <TableCell className="text-sm">
+                                    {entry.changed_by_name ?? '\u2014'}
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
           </Tabs>
         </div>
 
@@ -1346,6 +1527,48 @@ export function AssetDetailPage() {
               disabled={!relTarget || createRelation.isPending}
             >
               {createRelation.isPending ? tCommon('status.loading') : t('relations.add')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Properties Dialog (REQ-3.2a) */}
+      <Dialog open={editPropsOpen} onOpenChange={setEditPropsOpen}>
+        <DialogContent className="sm:max-w-[460px]">
+          <DialogHeader>
+            <DialogTitle>{t('relations.edit_properties')}</DialogTitle>
+            {editingRelation && (
+              <DialogDescription>
+                {editingRelation.direction === 'outgoing' ? asset.display_name : editingRelation.related_asset.display_name}
+                {' \u2192 '}
+                {editingRelation.direction === 'outgoing' ? editingRelation.related_asset.display_name : asset.display_name}
+              </DialogDescription>
+            )}
+          </DialogHeader>
+
+          <div className="grid gap-4 py-4">
+            {editingRelation && relTypeSchemaMap.has(editingRelation.relation_type) ? (
+              <div className="rounded-md border p-3">
+                <DynamicFormRenderer
+                  schema={relTypeSchemaMap.get(editingRelation.relation_type)!}
+                  values={editProperties}
+                  onChange={setEditProperties}
+                />
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">{t('relations.no_properties')}</p>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditPropsOpen(false)}>
+              {tCommon('actions.cancel')}
+            </Button>
+            <Button
+              onClick={handleSaveProperties}
+              disabled={updateRelation.isPending}
+            >
+              {updateRelation.isPending ? tCommon('status.loading') : tCommon('actions.save')}
             </Button>
           </DialogFooter>
         </DialogContent>

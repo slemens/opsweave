@@ -209,6 +209,61 @@ export const assetTenantAssignments = sqliteTable(
 );
 
 // =============================================================================
+// asset_relation_history — History of relation changes (REQ-3.3b)
+// =============================================================================
+
+export const assetRelationHistory = sqliteTable(
+  'asset_relation_history',
+  {
+    id: text('id').primaryKey(),
+    relation_id: text('relation_id')
+      .notNull()
+      .references(() => assetRelations.id),
+    tenant_id: text('tenant_id')
+      .notNull()
+      .references(() => tenants.id),
+    action: text('action').notNull(), // 'created' | 'modified' | 'deleted'
+    changed_by: text('changed_by'),
+    changed_at: text('changed_at').notNull(),
+    old_values: text('old_values'), // JSON
+    new_values: text('new_values'), // JSON
+  },
+  (t) => [
+    index('idx_arh_relation').on(t.relation_id),
+    index('idx_arh_tenant_changed').on(t.tenant_id, t.changed_at),
+  ],
+);
+
+// =============================================================================
+// asset_capacity_history — History of capacity changes (REQ-3.3b)
+// =============================================================================
+
+export const assetCapacityHistory = sqliteTable(
+  'asset_capacity_history',
+  {
+    id: text('id').primaryKey(),
+    asset_id: text('asset_id')
+      .notNull()
+      .references(() => assets.id),
+    capacity_type_id: text('capacity_type_id').notNull(),
+    tenant_id: text('tenant_id')
+      .notNull()
+      .references(() => tenants.id),
+    old_total: integer('old_total'),
+    old_allocated: integer('old_allocated'),
+    new_total: integer('new_total'),
+    new_allocated: integer('new_allocated'),
+    changed_by: text('changed_by'),
+    changed_at: text('changed_at').notNull(),
+    reason: text('reason'),
+  },
+  (t) => [
+    index('idx_ach_asset_type').on(t.asset_id, t.capacity_type_id),
+    index('idx_ach_tenant_changed').on(t.tenant_id, t.changed_at),
+  ],
+);
+
+// =============================================================================
 // assets — Central CMDB entity
 // =============================================================================
 

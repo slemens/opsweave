@@ -2,7 +2,7 @@
 // OpsWeave — Capacity API Hooks (TanStack Query)
 // =============================================================================
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { apiClient } from '@/api/client';
 
 // ---------------------------------------------------------------------------
@@ -87,5 +87,147 @@ export function useAssetCapacityUtilization(assetId: string) {
       );
     },
     enabled: !!assetId,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Capacity Planning Types (REQ-3.4a / REQ-3.4b)
+// ---------------------------------------------------------------------------
+
+export interface CapacityUtilizationItem {
+  capacityTypeId: string;
+  type: string;
+  unit: string;
+  total: number;
+  allocated: number;
+  reserved: number;
+  available: number;
+  utilizationPct: number;
+}
+
+export interface UtilizationOverviewEntry {
+  assetId: string;
+  assetName: string;
+  assetType: string;
+  capacities: CapacityUtilizationItem[];
+}
+
+export interface CapacityRequirement {
+  capacityTypeId: string;
+  value: number;
+}
+
+export interface CompatibleHostEntry {
+  assetId: string;
+  assetName: string;
+  assetType: string;
+  capacities: Array<{
+    capacityTypeId: string;
+    type: string;
+    unit: string;
+    total: number;
+    allocated: number;
+    reserved: number;
+    available: number;
+    required: number;
+    remainingAfter: number;
+  }>;
+  fitScore: number;
+}
+
+export interface MigrationFeasibilityDetail {
+  capacityTypeId: string;
+  type: string;
+  unit: string;
+  required: number;
+  available: number;
+  sufficient: boolean;
+}
+
+export interface MigrationFeasibilityResult {
+  feasible: boolean;
+  workloadAssetId: string;
+  workloadAssetName: string;
+  targetAssetId: string;
+  targetAssetName: string;
+  details: MigrationFeasibilityDetail[];
+}
+
+export interface OverprovisionedEntry {
+  assetId: string;
+  assetName: string;
+  assetType: string;
+  underutilizedCapacities: Array<{
+    capacityTypeId: string;
+    type: string;
+    unit: string;
+    total: number;
+    allocated: number;
+    reserved: number;
+    utilizationPct: number;
+  }>;
+}
+
+// ---------------------------------------------------------------------------
+// Capacity Planning Query Keys
+// ---------------------------------------------------------------------------
+
+export const capacityPlanningKeys = {
+  utilization: () => [...capacityKeys.all, 'planning', 'utilization'] as const,
+  compatible: (requirements: CapacityRequirement[]) =>
+    [...capacityKeys.all, 'planning', 'compatible', requirements] as const,
+  migrationCheck: (workloadId: string, targetId: string) =>
+    [...capacityKeys.all, 'planning', 'migration', workloadId, targetId] as const,
+  overprovisioned: (threshold: number) =>
+    [...capacityKeys.all, 'planning', 'overprovisioned', threshold] as const,
+};
+
+// ---------------------------------------------------------------------------
+// Capacity Planning Hooks
+// ---------------------------------------------------------------------------
+
+export function useCapacityUtilization() {
+  return useQuery({
+    queryKey: capacityPlanningKeys.utilization(),
+    queryFn: async () => {
+      return apiClient.get<UtilizationOverviewEntry[]>('/capacity/utilization');
+    },
+  });
+}
+
+export function useCompatibleHosts(requirements: CapacityRequirement[]) {
+  return useQuery({
+    queryKey: capacityPlanningKeys.compatible(requirements),
+    queryFn: async () => {
+      const params = requirements.length > 0
+        ? { requirements: JSON.stringify(requirements) }
+        : {};
+      return apiClient.get<CompatibleHostEntry[]>('/capacity/compatible', { params });
+    },
+    enabled: requirements.length > 0,
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useMigrationCheck(workloadId: string, targetId: string) {
+  return useQuery({
+    queryKey: capacityPlanningKeys.migrationCheck(workloadId, targetId),
+    queryFn: async () => {
+      return apiClient.get<MigrationFeasibilityResult>('/capacity/migration-check', {
+        params: { workload: workloadId, target: targetId },
+      });
+    },
+    enabled: !!workloadId && !!targetId,
+  });
+}
+
+export function useOverprovisionedAssets(threshold: number = 30) {
+  return useQuery({
+    queryKey: capacityPlanningKeys.overprovisioned(threshold),
+    queryFn: async () => {
+      return apiClient.get<OverprovisionedEntry[]>('/capacity/overprovisioned', {
+        params: { threshold },
+      });
+    },
   });
 }

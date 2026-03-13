@@ -93,8 +93,8 @@ test.describe('Assets Relations — UI & Graph Tests', () => {
     await expect(page.locator(byTestId('page-asset-detail'))).toBeVisible({ timeout: 15_000 });
     await page.locator(byTestId('tab-relations')).click();
 
-    // Verify that the relation target asset name appears
-    await expect(page.getByText(`E2E RelView B ${ts}`)).toBeVisible({ timeout: 10_000 });
+    // Verify that the relation target asset name appears (may be in table + graph)
+    await expect(page.getByText(`E2E RelView B ${ts}`).first()).toBeVisible({ timeout: 10_000 });
   });
 
   test('remove relation via API and verify it disappears', async ({ authenticatedPage: page, testData, apiContext }) => {

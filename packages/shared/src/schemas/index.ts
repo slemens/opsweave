@@ -387,6 +387,15 @@ export const createAssetRelationSchema = z
 
 export type CreateAssetRelationInput = z.infer<typeof createAssetRelationSchema>;
 
+export const updateAssetRelationSchema = z.object({
+  properties: z.record(z.unknown()).optional(),
+  valid_from: z.string().nullable().optional(),
+  valid_until: z.string().nullable().optional(),
+  metadata: z.record(z.unknown()).optional(),
+});
+
+export type UpdateAssetRelationInput = z.infer<typeof updateAssetRelationSchema>;
+
 // ---------------------------------------------------------------------------
 // Ticket Filter Schemas
 // ---------------------------------------------------------------------------

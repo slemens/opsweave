@@ -108,7 +108,11 @@
     "governed_by": "Reguliert durch",
     "licensed_to": "Lizenziert für",
     "encrypts": "Verschlüsselt",
-    "properties": "Eigenschaften"
+    "properties": "Eigenschaften",
+    "edit_properties": "Eigenschaften bearbeiten",
+    "no_properties": "Keine Eigenschaften",
+    "edit_properties_success": "Eigenschaften erfolgreich aktualisiert",
+    "edit_properties_error": "Fehler beim Aktualisieren der Eigenschaften"
   },
   "fields": {
     "name": "Technischer Name",
@@ -150,7 +154,8 @@
     "tickets": "Tickets",
     "classifications": "Klassifizierungen",
     "capacity": "Kapazität",
-    "tenantAssignments": "Mandanten"
+    "tenantAssignments": "Mandanten",
+    "history": "Historie"
   },
   "linked_tickets": {
     "title": "Verknüpfte Tickets",
@@ -183,6 +188,39 @@
     "available": "Verfügbar",
     "utilization": "Auslastung",
     "no_capacity": "Keine Kapazitätsdaten"
+  },
+  "capacity_planning": {
+    "title": "Kapazitätsplanung",
+    "utilization": "Auslastungsübersicht",
+    "compatibility": "Kompatibilitätsprüfung",
+    "overprovisioned": "Überbereitstellung",
+    "find_hosts": "Kompatible Hosts finden",
+    "migration_check": "Migrationsprüfung",
+    "feasible": "Machbar",
+    "not_feasible": "Nicht machbar",
+    "threshold": "Schwellwert",
+    "utilization_pct": "Auslastung (%)",
+    "available": "Verfügbar",
+    "no_results": "Keine Ergebnisse",
+    "add_requirement": "Anforderung hinzufügen",
+    "remove_requirement": "Anforderung entfernen",
+    "select_type": "Kapazitätstyp wählen",
+    "value": "Wert",
+    "required": "Benötigt",
+    "remaining": "Verbleibend",
+    "fit_score": "Passungswert",
+    "workload": "Workload",
+    "target": "Ziel-Host",
+    "select_asset": "Asset auswählen",
+    "check": "Prüfen",
+    "sufficient": "Ausreichend",
+    "insufficient": "Nicht ausreichend",
+    "underutilized": "Unterausgelastet",
+    "asset": "Asset",
+    "type": "Typ",
+    "unit": "Einheit",
+    "all_types": "Alle Typen",
+    "filter_utilization": "Auslastung filtern"
   },
   "dynamic_fields": {
     "no_attributes": "Keine typspezifischen Attribute definiert",
@@ -229,5 +267,19 @@
     "as_of": "Stichtag",
     "current": "Aktuell",
     "show_all": "Alle anzeigen (inkl. abgelaufen)"
+  },
+  "history": {
+    "title": "Änderungshistorie",
+    "action_created": "Erstellt",
+    "action_modified": "Geändert",
+    "action_deleted": "Gelöscht",
+    "changed_by": "Geändert von",
+    "no_history": "Keine Änderungshistorie vorhanden",
+    "reason": "Grund",
+    "relation_changes": "Relation-Änderungen",
+    "capacity_changes": "Kapazitäts-Änderungen",
+    "old_value": "Alter Wert",
+    "new_value": "Neuer Wert",
+    "capacity_type": "Kapazitätstyp"
   }
 }

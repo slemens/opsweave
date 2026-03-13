@@ -108,7 +108,11 @@
     "governed_by": "Governed by",
     "licensed_to": "Licensed to",
     "encrypts": "Encrypts",
-    "properties": "Properties"
+    "properties": "Properties",
+    "edit_properties": "Edit Properties",
+    "no_properties": "No properties",
+    "edit_properties_success": "Properties updated successfully",
+    "edit_properties_error": "Failed to update properties"
   },
   "fields": {
     "name": "Technical Name",
@@ -150,7 +154,8 @@
     "tickets": "Tickets",
     "classifications": "Classifications",
     "capacity": "Capacity",
-    "tenantAssignments": "Tenants"
+    "tenantAssignments": "Tenants",
+    "history": "History"
   },
   "linked_tickets": {
     "title": "Linked Tickets",
@@ -183,6 +188,39 @@
     "available": "Available",
     "utilization": "Utilization",
     "no_capacity": "No capacity data"
+  },
+  "capacity_planning": {
+    "title": "Capacity Planning",
+    "utilization": "Utilization Overview",
+    "compatibility": "Compatibility Check",
+    "overprovisioned": "Overprovisioned",
+    "find_hosts": "Find Compatible Hosts",
+    "migration_check": "Migration Check",
+    "feasible": "Feasible",
+    "not_feasible": "Not Feasible",
+    "threshold": "Threshold",
+    "utilization_pct": "Utilization (%)",
+    "available": "Available",
+    "no_results": "No Results",
+    "add_requirement": "Add Requirement",
+    "remove_requirement": "Remove Requirement",
+    "select_type": "Select capacity type",
+    "value": "Value",
+    "required": "Required",
+    "remaining": "Remaining",
+    "fit_score": "Fit Score",
+    "workload": "Workload",
+    "target": "Target Host",
+    "select_asset": "Select asset",
+    "check": "Check",
+    "sufficient": "Sufficient",
+    "insufficient": "Insufficient",
+    "underutilized": "Underutilized",
+    "asset": "Asset",
+    "type": "Type",
+    "unit": "Unit",
+    "all_types": "All Types",
+    "filter_utilization": "Filter utilization"
   },
   "dynamic_fields": {
     "no_attributes": "No type-specific attributes defined",
@@ -229,5 +267,19 @@
     "as_of": "As of",
     "current": "Current",
     "show_all": "Show all (incl. expired)"
+  },
+  "history": {
+    "title": "Change History",
+    "action_created": "Created",
+    "action_modified": "Modified",
+    "action_deleted": "Deleted",
+    "changed_by": "Changed by",
+    "no_history": "No change history available",
+    "reason": "Reason",
+    "relation_changes": "Relation Changes",
+    "capacity_changes": "Capacity Changes",
+    "old_value": "Old Value",
+    "new_value": "New Value",
+    "capacity_type": "Capacity Type"
   }
 }
