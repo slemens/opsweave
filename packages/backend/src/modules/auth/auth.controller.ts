@@ -1,8 +1,10 @@
 import type { Request, Response } from 'express';
+import { randomBytes } from 'node:crypto';
 
 import { sendSuccess } from '../../lib/response.js';
 // AUDIT-FIX: M-04 — Safe context accessors instead of non-null assertions
 import { requireUserId, requireTenantId } from '../../lib/context.js';
+import { setAuthCookies, clearAuthCookies } from '../../lib/cookie.js';
 import * as authService from './auth.service.js';
 import { writeAuditLog } from '../audit/audit.service.js';
 import type { LoginInput, SwitchTenantInput } from '@opsweave/shared';
@@ -30,6 +32,10 @@ export async function login(req: Request, res: Response): Promise<void> {
     req.headers['user-agent'] ?? null,
   );
 
+  // Set httpOnly auth cookie + CSRF cookie
+  const csrfToken = randomBytes(32).toString('hex');
+  setAuthCookies(res, result.token, csrfToken);
+
   sendSuccess(res, result);
 }
 
@@ -41,6 +47,7 @@ export async function login(req: Request, res: Response): Promise<void> {
  * discards the token. Returns success for API consistency.
  */
 export function logout(_req: Request, res: Response): void {
+  clearAuthCookies(res);
   sendSuccess(res, { message: 'Logged out successfully' });
 }
 
@@ -71,6 +78,10 @@ export async function switchTenant(
   const { tenant_id: tenantId } = req.body as SwitchTenantInput;
 
   const result = await authService.switchTenant(userId, tenantId);
+
+  // Set httpOnly auth cookie + CSRF cookie with new token
+  const csrfToken = randomBytes(32).toString('hex');
+  setAuthCookies(res, result.token, csrfToken);
 
   sendSuccess(res, result);
 }

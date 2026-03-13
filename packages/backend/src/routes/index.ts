@@ -2,6 +2,7 @@ import { Router } from 'express';
 
 import { requireAuth } from '../middleware/auth.js';
 import { tenantMiddleware } from '../middleware/tenant.js';
+import { auditMiddleware } from '../middleware/audit.js';
 import { systemRouter } from '../modules/system/system.routes.js';
 import { authRouter } from '../modules/auth/auth.routes.js';
 import { tenantRouter } from '../modules/tenants/tenants.routes.js';
@@ -51,6 +52,7 @@ apiRouter.use('/tenants', tenantRouter);
 const protectedRouter = Router();
 protectedRouter.use(requireAuth);
 protectedRouter.use(tenantMiddleware);
+protectedRouter.use(auditMiddleware);
 
 // Core modules
 protectedRouter.use('/users', userRouter);

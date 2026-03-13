@@ -5,6 +5,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import cookieParser from 'cookie-parser';
 import { rateLimit } from 'express-rate-limit';
 import { createServer } from 'node:http';
 import { Server as SocketIOServer } from 'socket.io';
@@ -170,6 +171,31 @@ async function runEvoMigrations(db: TypedDb): Promise<void> {
     }
   }
 
+  // Ensure system user exists (required by SLA-breach + escalation workers)
+  const SYSTEM_USER_ID = '00000000-0000-0000-0000-000000000000';
+  try {
+    const existing = await db.select({ id: users.id }).from(users)
+      .where(eq(users.id, SYSTEM_USER_ID)).limit(1);
+    if (existing.length === 0) {
+      await db.insert(users).values({
+        id: SYSTEM_USER_ID,
+        email: 'system@opsweave.internal',
+        display_name: 'System',
+        password_hash: null,
+        auth_provider: 'local',
+        external_id: null,
+        language: 'de',
+        is_active: 0,
+        is_superadmin: 0,
+        last_login: null,
+        created_at: new Date().toISOString(),
+      });
+      logger.info('System user created (for automated actions)');
+    }
+  } catch {
+    // System user already exists or table not ready
+  }
+
   // Seed system asset types + relation types if not present
   try {
     const { seedEvoTypes } = await import('./db/seed/index.js');
@@ -223,7 +249,22 @@ async function bootstrap(): Promise<void> {
 
   // Security headers
   app.use(helmet({
-    contentSecurityPolicy: false,
+    contentSecurityPolicy: config.serveStatic ? {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", 'data:', 'blob:'],
+        connectSrc: ["'self'", 'ws:', 'wss:'],
+        fontSrc: ["'self'"],
+        objectSrc: ["'none'"],
+        frameAncestors: ["'none'"],
+      },
+    } : false, // Disable CSP when frontend is served separately (dev mode)
+    hsts: {
+      maxAge: 31536000,
+      includeSubDomains: false, // Avoid forcing HTTPS on subdomains (e.g. 3as.opsweave.de)
+    },
   }));
 
   // CORS
@@ -238,6 +279,9 @@ async function bootstrap(): Promise<void> {
   // Body parsing
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true }));
+
+  // Cookie parsing (for httpOnly JWT auth)
+  app.use(cookieParser());
 
   // Request ID
   app.use(requestIdMiddleware);

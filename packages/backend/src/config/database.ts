@@ -39,6 +39,7 @@ export async function initDatabase(): Promise<DbInstance> {
     // Enable WAL mode for better concurrency
     sqlite.pragma('journal_mode = WAL');
     sqlite.pragma('foreign_keys = ON');
+    sqlite.pragma('busy_timeout = 5000');
 
     _db = drizzle(sqlite);
   } else {

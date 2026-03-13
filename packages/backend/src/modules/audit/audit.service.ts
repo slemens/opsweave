@@ -1,5 +1,6 @@
-import { eq, and, desc, like, or, count, gte, lte } from 'drizzle-orm';
+import { eq, and, desc, like, or, count, gte, lte, asc } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
+import { createHash } from 'node:crypto';
 
 import { getDb, type TypedDb } from '../../config/database.js';
 import { auditLogs, users } from '../../db/schema/index.js';
@@ -10,6 +11,14 @@ import logger from '../../lib/logger.js';
 function db(): TypedDb {
   return getDb() as TypedDb;
 }
+
+// ─── State ────────────────────────────────────────────────
+
+/**
+ * In-memory cache of the last integrity hash per tenant.
+ * Avoids a DB read on every audit log write for hash chaining.
+ */
+const lastHashCache = new Map<string, string>();
 
 // ─── Types ────────────────────────────────────────────────
 
@@ -24,6 +33,7 @@ export interface AuditLogEntry {
   details: Record<string, unknown>;
   ip_address: string | null;
   user_agent: string | null;
+  integrity_hash: string | null;
   created_at: string;
 }
 
@@ -38,10 +48,64 @@ export interface AuditLogParams {
   to?: string;
 }
 
+// ─── Hash Chain ───────────────────────────────────────────
+
+/**
+ * Compute SHA-256 integrity hash for an audit log entry.
+ * Hash = SHA-256(previousHash + tenantId + actorId + eventType + resourceType + resourceId + details + createdAt)
+ */
+function computeHash(
+  previousHash: string,
+  tenantId: string,
+  actorId: string,
+  eventType: string,
+  resourceType: string,
+  resourceId: string | null,
+  details: string,
+  createdAt: string,
+): string {
+  const payload = [
+    previousHash,
+    tenantId,
+    actorId,
+    eventType,
+    resourceType,
+    resourceId ?? '',
+    details,
+    createdAt,
+  ].join('|');
+
+  return createHash('sha256').update(payload).digest('hex');
+}
+
+/**
+ * Get the last integrity hash for a tenant (from cache or DB).
+ */
+async function getLastHash(tenantId: string): Promise<string> {
+  const cached = lastHashCache.get(tenantId);
+  if (cached) return cached;
+
+  try {
+    const d = db();
+    const [last] = await d
+      .select({ integrity_hash: auditLogs.integrity_hash })
+      .from(auditLogs)
+      .where(eq(auditLogs.tenant_id, tenantId))
+      .orderBy(desc(auditLogs.created_at))
+      .limit(1);
+
+    const hash = last?.integrity_hash ?? 'genesis';
+    lastHashCache.set(tenantId, hash);
+    return hash;
+  } catch {
+    return 'genesis';
+  }
+}
+
 // ─── Service ──────────────────────────────────────────────
 
 /**
- * Write an audit log entry.
+ * Write an audit log entry with integrity hash chain.
  * Fire-and-forget — errors are logged but never thrown.
  */
 export async function writeAuditLog(
@@ -58,6 +122,10 @@ export async function writeAuditLog(
   try {
     const d = db();
     const now = new Date().toISOString();
+    const detailsStr = JSON.stringify(details);
+
+    const previousHash = await getLastHash(tenantId);
+    const hash = computeHash(previousHash, tenantId, actorId, eventType, resourceType, resourceId, detailsStr, now);
 
     await d.insert(auditLogs).values({
       id: uuidv4(),
@@ -67,11 +135,14 @@ export async function writeAuditLog(
       event_type: eventType,
       resource_type: resourceType,
       resource_id: resourceId,
-      details: JSON.stringify(details),
+      details: detailsStr,
       ip_address: ipAddress ?? null,
       user_agent: userAgent ?? null,
+      integrity_hash: hash,
       created_at: now,
     });
+
+    lastHashCache.set(tenantId, hash);
   } catch (err) {
     logger.error({ err, tenantId, eventType, resourceType }, 'Failed to write audit log');
   }
@@ -135,6 +206,50 @@ export async function listAuditLogs(
   }));
 
   return { logs, total };
+}
+
+/**
+ * Verify integrity of the audit log hash chain for a tenant.
+ * Returns { valid, totalChecked, firstInvalidIndex } where firstInvalidIndex is -1 if all valid.
+ */
+export async function verifyIntegrity(
+  tenantId: string,
+): Promise<{ valid: boolean; totalChecked: number; firstInvalidIndex: number }> {
+  const d = db();
+
+  const rows = await d
+    .select()
+    .from(auditLogs)
+    .where(eq(auditLogs.tenant_id, tenantId))
+    .orderBy(asc(auditLogs.created_at));
+
+  let previousHash = 'genesis';
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i]!;
+
+    // Skip entries without integrity hash (pre-migration)
+    if (!row.integrity_hash) continue;
+
+    const expected = computeHash(
+      previousHash,
+      row.tenant_id,
+      row.actor_id,
+      row.event_type,
+      row.resource_type,
+      row.resource_id,
+      row.details,
+      row.created_at,
+    );
+
+    if (expected !== row.integrity_hash) {
+      return { valid: false, totalChecked: i + 1, firstInvalidIndex: i };
+    }
+
+    previousHash = row.integrity_hash;
+  }
+
+  return { valid: true, totalChecked: rows.length, firstInvalidIndex: -1 };
 }
 
 /**

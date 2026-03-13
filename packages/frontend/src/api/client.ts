@@ -20,17 +20,13 @@ export class ApiRequestError extends Error {
   }
 }
 
-function getAuthToken(): string | null {
-  try {
-    const stored = localStorage.getItem('opsweave_auth');
-    if (stored) {
-      const parsed = JSON.parse(stored) as { state?: { token?: string } };
-      return parsed.state?.token ?? null;
-    }
-  } catch {
-    // Ignore parse errors
-  }
-  return null;
+/**
+ * Read the CSRF token from the `opsweave_csrf` cookie.
+ * This cookie is NOT httpOnly and is set by the backend on login.
+ */
+function getCsrfToken(): string | null {
+  const match = document.cookie.match(/(?:^|;\s*)opsweave_csrf=([^;]*)/);
+  return match ? decodeURIComponent(match[1]!) : null;
 }
 
 function getTenantId(): string | null {
@@ -79,9 +75,13 @@ async function request<T>(
     ...(customHeaders as Record<string, string>),
   };
 
-  const token = getAuthToken();
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+  // CSRF token for mutating requests (cookie-based auth)
+  const method = (init.method ?? 'GET').toUpperCase();
+  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+    const csrf = getCsrfToken();
+    if (csrf) {
+      headers['X-CSRF-Token'] = csrf;
+    }
   }
 
   const tenantId = getTenantId();
@@ -92,6 +92,7 @@ async function request<T>(
   const response = await fetch(url, {
     ...init,
     headers,
+    credentials: 'include', // Send httpOnly cookies
     body: body ? JSON.stringify(body) : undefined,
   });
 

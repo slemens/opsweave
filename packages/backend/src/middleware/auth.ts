@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 
 import { config } from '../config/index.js';
 import { UnauthorizedError, ForbiddenError } from '../lib/errors.js';
+import { getTokenFromCookie, CSRF_HEADER } from '../lib/cookie.js';
 import type { RequestUser } from '../lib/context.js';
 
 // ─── JWT payload shape ─────────────────────────────────────
@@ -21,21 +22,48 @@ interface JwtPayload {
 // ─── Middleware: require authentication ─────────────────────
 
 /**
- * Verifies the JWT from the `Authorization: Bearer <token>` header
- * and attaches the decoded user to `req.user`.
+ * Verifies the JWT from either:
+ * 1. httpOnly cookie `opsweave_token` (preferred, with CSRF validation)
+ * 2. `Authorization: Bearer <token>` header (API clients, backward compat)
+ *
+ * When the token comes from a cookie, mutating requests (POST/PUT/PATCH/DELETE)
+ * must include a valid `X-CSRF-Token` header matching the CSRF cookie.
  */
 export function requireAuth(
   req: Request,
   _res: Response,
   next: NextFunction,
 ): void {
-  const header = req.headers.authorization;
+  let token: string | null = null;
+  let fromCookie = false;
 
-  if (!header?.startsWith('Bearer ')) {
-    throw new UnauthorizedError('Missing or invalid Authorization header');
+  // 1. Try httpOnly cookie
+  const cookieToken = getTokenFromCookie(req.cookies as Record<string, string>);
+  if (cookieToken) {
+    token = cookieToken;
+    fromCookie = true;
   }
 
-  const token = header.slice(7); // strip "Bearer "
+  // 2. Fall back to Authorization header
+  if (!token) {
+    const header = req.headers.authorization;
+    if (header?.startsWith('Bearer ')) {
+      token = header.slice(7);
+    }
+  }
+
+  if (!token) {
+    throw new UnauthorizedError('Missing authentication');
+  }
+
+  // CSRF validation for cookie-based auth on mutating requests
+  if (fromCookie && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
+    const csrfHeader = req.headers[CSRF_HEADER] as string | undefined;
+    const csrfCookie = (req.cookies as Record<string, string>)?.['opsweave_csrf'];
+    if (!csrfHeader || !csrfCookie || csrfHeader !== csrfCookie) {
+      throw new ForbiddenError('CSRF token mismatch');
+    }
+  }
 
   try {
     const decoded = jwt.verify(token, config.jwtSecret) as JwtPayload;

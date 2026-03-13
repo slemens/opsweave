@@ -20,6 +20,7 @@ export const auditLogs = sqliteTable(
     details: text('details').notNull().default('{}'),
     ip_address: text('ip_address'),
     user_agent: text('user_agent'),
+    integrity_hash: text('integrity_hash'),
     created_at: text('created_at').notNull(),
   },
   (t) => [

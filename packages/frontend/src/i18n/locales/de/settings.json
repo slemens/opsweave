@@ -300,7 +300,10 @@
       "ip": "IP-Adresse",
       "details": "Details"
     },
-    "page_info": "Seite {{page}} von {{total}} ({{count}} Einträge)"
+    "page_info": "Seite {{page}} von {{total}} ({{count}} Einträge)",
+    "verify_integrity": "Integrität prüfen",
+    "integrity_valid": "Hash-Chain intakt ({{count}} Einträge geprüft)",
+    "integrity_invalid": "Hash-Chain Bruch bei Eintrag {{index}}"
   },
   "asset_types": {
     "title": "Asset-Typen",
