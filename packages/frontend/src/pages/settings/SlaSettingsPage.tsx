@@ -287,145 +287,102 @@ export default function SlaSettingsPage() {
               <p className="text-xs">{t('settings:sla.empty_hint')}</p>
             </div>
           ) : (
-            <div className="rounded-md border">
-              <Table data-testid="table-sla-definitions">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t('settings:sla.name')}</TableHead>
-                    <TableHead>{t('settings:sla.response_time')}</TableHead>
-                    <TableHead>{t('settings:sla.resolution_time')}</TableHead>
-                    <TableHead>{t('settings:sla.business_hours')}</TableHead>
-                    <TableHead>{t('settings:sla.availability_pct')}</TableHead>
-                    <TableHead>{t('settings:sla.business_criticality')}</TableHead>
-                    <TableHead>{t('settings:sla.rpo')}</TableHead>
-                    <TableHead>{t('settings:sla.rto')}</TableHead>
-                    <TableHead className="w-[80px]" />
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {defList.map((def) => (
-                    <TableRow key={def.id}>
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-2">
-                          {def.name}
-                          {!!def.is_default && (
-                            <Badge variant="secondary" className="text-[10px]">
-                              {t('settings:sla.is_default')}
-                            </Badge>
-                          )}
-                          {!def.is_active && (
-                            <Badge variant="outline" className="text-[10px] text-muted-foreground">
-                              {t('common:status.inactive')}
-                            </Badge>
-                          )}
-                        </div>
-                        {def.description && (
-                          <p className="text-xs text-muted-foreground mt-0.5">{def.description}</p>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="font-mono text-xs">
-                          {formatMinutes(def.response_time_minutes)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="font-mono text-xs">
-                          {formatMinutes(def.resolution_time_minutes)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm">
-                          {t(`settings:sla.business_hours_${def.business_hours.replace('/', '_')}`)}
-                        </span>
-                        {def.business_hours !== '24/7' && def.business_hours_start && (
-                          <span className="text-xs text-muted-foreground ml-1">
-                            ({def.business_hours_start}–{def.business_hours_end})
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {def.availability_pct ? (
-                          <Badge variant="outline" className="font-mono text-xs">
-                            {def.availability_pct}%
+            <div className="space-y-3">
+              {defList.map((def) => (
+                <div
+                  key={def.id}
+                  className="rounded-lg border p-4 hover:bg-muted/50 transition-colors cursor-pointer"
+                  onClick={() => openEditDef(def)}
+                  data-testid={`sla-def-${def.id}`}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className="font-medium text-sm">{def.name}</h4>
+                        {!!def.is_default && (
+                          <Badge variant="secondary" className="text-[10px]">
+                            {t('settings:sla.is_default')}
                           </Badge>
-                        ) : (
-                          <span className="text-muted-foreground text-xs">{'\u2014'}</span>
                         )}
-                      </TableCell>
-                      <TableCell>
-                        {def.business_criticality ? (
+                        {!def.is_active && (
+                          <Badge variant="outline" className="text-[10px] text-muted-foreground">
+                            {t('common:status.inactive')}
+                          </Badge>
+                        )}
+                        {def.business_criticality && (
                           <Badge
                             variant={def.business_criticality === 'critical' ? 'destructive' : 'outline'}
-                            className="text-xs"
+                            className="text-[10px]"
                           >
                             {t(`settings:sla.criticality_${def.business_criticality}`)}
                           </Badge>
-                        ) : (
-                          <span className="text-muted-foreground text-xs">{'\u2014'}</span>
                         )}
-                      </TableCell>
-                      <TableCell>
-                        {def.rpo_minutes != null ? (
-                          <Badge variant="outline" className="font-mono text-xs">
-                            {formatMinutes(def.rpo_minutes)}
-                          </Badge>
-                        ) : (
-                          <span className="text-muted-foreground text-xs">{'\u2014'}</span>
+                      </div>
+                      {def.description && (
+                        <p className="text-xs text-muted-foreground mt-0.5">{def.description}</p>
+                      )}
+                      <div className="flex items-center gap-4 mt-2 flex-wrap">
+                        <span className="text-xs text-muted-foreground">
+                          {t('settings:sla.response_time')}: <Badge variant="outline" className="font-mono text-[10px] ml-0.5">{formatMinutes(def.response_time_minutes)}</Badge>
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {t('settings:sla.resolution_time')}: <Badge variant="outline" className="font-mono text-[10px] ml-0.5">{formatMinutes(def.resolution_time_minutes)}</Badge>
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {t(`settings:sla.business_hours_${def.business_hours.replace('/', '_')}`)}
+                          {def.business_hours !== '24/7' && def.business_hours_start && ` (${def.business_hours_start}–${def.business_hours_end})`}
+                        </span>
+                        {def.availability_pct && (
+                          <span className="text-xs text-muted-foreground">
+                            {t('settings:sla.availability_pct')}: <Badge variant="outline" className="font-mono text-[10px] ml-0.5">{def.availability_pct}%</Badge>
+                          </span>
                         )}
-                      </TableCell>
-                      <TableCell>
-                        {def.rto_minutes != null ? (
-                          <Badge variant="outline" className="font-mono text-xs">
-                            {formatMinutes(def.rto_minutes)}
-                          </Badge>
-                        ) : (
-                          <span className="text-muted-foreground text-xs">{'\u2014'}</span>
+                        {def.rpo_minutes != null && (
+                          <span className="text-xs text-muted-foreground">
+                            RPO: <Badge variant="outline" className="font-mono text-[10px] ml-0.5">{formatMinutes(def.rpo_minutes)}</Badge>
+                          </span>
                         )}
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-7 w-7">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => openEditDef(def)}>
-                              <Pencil className="mr-2 h-3.5 w-3.5" />
-                              {t('common:actions.edit')}
-                            </DropdownMenuItem>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <DropdownMenuItem
-                                  onSelect={(e) => e.preventDefault()}
-                                  className="text-destructive"
-                                >
-                                  <Trash2 className="mr-2 h-3.5 w-3.5" />
-                                  {t('common:actions.delete')}
-                                </DropdownMenuItem>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>{t('common:actions.delete')}</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    {t('settings:sla.delete_confirm')}
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>{t('common:actions.cancel')}</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleDeleteDef(def.id)}>
-                                    {t('common:actions.delete')}
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                        {def.rto_minutes != null && (
+                          <span className="text-xs text-muted-foreground">
+                            RTO: <Badge variant="outline" className="font-mono text-[10px] ml-0.5">{formatMinutes(def.rto_minutes)}</Badge>
+                          </span>
+                        )}
+                        {def.support_level && (
+                          <span className="text-xs text-muted-foreground">
+                            {t('settings:sla.support_level')}: {t(`settings:sla.support_level_${def.support_level.replace('-', '_')}`)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditDef(def)}>
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>{t('common:actions.delete')}</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              {t('settings:sla.delete_confirm')}
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>{t('common:actions.cancel')}</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDeleteDef(def.id)}>
+                              {t('common:actions.delete')}
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </CardContent>
