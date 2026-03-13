@@ -11,7 +11,6 @@ import { sendSuccess } from '../../lib/response.js';
 import { COMMUNITY_LIMITS, validateLicenseKey } from '../../middleware/license.js';
 import { getTenantLicenseKey } from '../tenants/tenants.service.js';
 
-// AUDIT-FIX: C-06 — Read version from package.json at startup (cached)
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const APP_VERSION = (() => {
   try {
@@ -35,7 +34,6 @@ interface HealthResponse {
   timestamp: string;
 }
 
-// AUDIT-FIX: C-04 — Real DB connectivity check with timeout
 async function checkDbConnection(): Promise<{ status: 'connected' | 'degraded'; error?: string }> {
   try {
     const db = getDb() as TypedDb;
@@ -65,7 +63,6 @@ export async function healthCheck(
   _req: Request,
   res: Response,
 ): Promise<void> {
-  // AUDIT-FIX: C-04 — Execute real SELECT 1 instead of hardcoded 'connected'
   const dbCheck = await checkDbConnection();
 
   const health: HealthResponse = {
@@ -103,7 +100,6 @@ interface InfoResponse {
   limits: EditionLimits;
 }
 
-// AUDIT-FIX: C-05 — Determine edition from tenant license
 // Editions:
 //   'community' — No license key, or invalid/expired license → default COMMUNITY_LIMITS apply
 //   'enterprise' — Valid RS256-signed JWT with edition='enterprise' → limits from JWT payload

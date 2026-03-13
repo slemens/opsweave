@@ -1,4 +1,3 @@
-// AUDIT-FIX: C-06 — System info API hook
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from './client';
 

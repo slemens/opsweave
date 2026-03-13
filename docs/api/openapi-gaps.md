@@ -1,6 +1,5 @@
 # OpsWeave — OpenAPI Spec Gaps
 
-**AUDIT-FIX: L-10** — Endpoints present in the codebase but missing or outdated in `docs/api/openapi.yaml`.
 
 **Spec version:** 0.3.2 (Tags aktualisiert, einzelne Endpoint-Definitionen noch ausstehend)
 

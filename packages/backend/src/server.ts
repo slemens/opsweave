@@ -39,16 +39,13 @@ import {
   startEventToIncidentWorker,
   stopEventToIncidentWorker,
 } from './workers/event-to-incident.worker.js';
-// AUDIT-FIX: H-11 — Structured logging
 import logger from './lib/logger.js';
-// AUDIT-FIX: H-02 — Warn if default admin password unchanged in production
 import bcrypt from 'bcryptjs';
 import { eq, sql } from 'drizzle-orm';
 import { users, tenants } from './db/schema/index.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// ─── AUDIT-FIX: H-02 — Warn about default seed password ────
 
 async function checkDefaultAdminPassword(): Promise<void> {
   try {
@@ -264,7 +261,6 @@ async function bootstrap(): Promise<void> {
   // Make io available to routes via app.locals
   app.locals['io'] = io;
 
-  // AUDIT-FIX: H-11 — Structured logging
   io.on('connection', (socket) => {
     logger.debug({ socketId: socket.id }, 'Socket.IO client connected');
     socket.on('disconnect', () => {
@@ -376,7 +372,6 @@ async function bootstrap(): Promise<void> {
   app.use(errorHandler);
 
   // ── Start server ───────────────────────────────────────────
-  // AUDIT-FIX: H-11 — Structured logging
   httpServer.listen(config.port, () => {
     logger.info(
       {
@@ -406,14 +401,12 @@ async function bootstrap(): Promise<void> {
     // Event-to-incident auto-creation worker
     startEventToIncidentWorker();
 
-    // AUDIT-FIX: H-02 — Check default admin password in production
     if (config.nodeEnv === 'production') {
       checkDefaultAdminPassword().catch(() => { /* non-fatal */ });
     }
   });
 
   // ── Graceful shutdown ──────────────────────────────────────
-  // AUDIT-FIX: H-11 — Structured logging
   const shutdown = (signal: string) => {
     logger.info({ signal }, 'Received shutdown signal, shutting down gracefully');
 
@@ -442,7 +435,6 @@ async function bootstrap(): Promise<void> {
 }
 
 // ─── Run ───────────────────────────────────────────────────
-// AUDIT-FIX: H-11 — Structured logging
 bootstrap().catch((err: unknown) => {
   logger.fatal({ err }, 'Failed to start server');
   process.exit(1);

@@ -12,7 +12,6 @@ import { eq } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcryptjs';
 import { initDatabase, getDb, type TypedDb } from '../../config/database.js';
-// AUDIT-FIX: H-11 — Structured logging
 import logger from '../../lib/logger.js';
 import {
   tenants,
@@ -278,7 +277,6 @@ async function doSeed(): Promise<void> {
 
   const portalUserHash = await bcrypt.hash('changeme', BCRYPT_ROUNDS);
 
-  // AUDIT-FIX: M-07 — Use proper UUID instead of hardcoded placeholder
   await db.insert(customerPortalUsers).values({
     id: uuidv4(),
     tenant_id: tenantId,

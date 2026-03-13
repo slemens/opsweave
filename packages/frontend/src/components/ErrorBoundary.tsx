@@ -1,4 +1,3 @@
-// AUDIT-FIX: M-18 — React Error Boundary (class component required for componentDidCatch)
 import { Component } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
 import { Translation } from 'react-i18next';

@@ -28,7 +28,6 @@ const activateLicenseSchema = z.object({
   license_key: z.string().min(1, 'License key is required'),
 });
 
-// AUDIT-FIX: M-03 — Validate settings key param to prevent path traversal
 const settingsKeyParamSchema = z.object({
   key: z.string().regex(/^[a-zA-Z0-9._-]+$/),
 });
@@ -82,14 +81,12 @@ settingsRouter.put(
  * GET /api/v1/settings/:key
  * Get a single setting by key.
  */
-// AUDIT-FIX: M-03 — Validate key param format
 settingsRouter.get('/:key', validateParams(settingsKeyParamSchema), getSettingByKey);
 
 /**
  * PUT /api/v1/settings/:key
  * Create or update a setting (admin only).
  */
-// AUDIT-FIX: M-03 — Validate key param format
 settingsRouter.put(
   '/:key',
   requireRole('admin'),
@@ -102,7 +99,6 @@ settingsRouter.put(
  * DELETE /api/v1/settings/:key
  * Delete a setting (admin only).
  */
-// AUDIT-FIX: M-03 — Validate key param format
 settingsRouter.delete('/:key', requireRole('admin'), validateParams(settingsKeyParamSchema), deleteSettingByKey);
 
 // ─── License Router ──────────────────────────────────────

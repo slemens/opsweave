@@ -1,4 +1,3 @@
-// AUDIT-FIX: C-12 — "Neuer Kunde" create button with Dialog
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -26,7 +25,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-// AUDIT-FIX: M-09 — Import from domain-specific API module
 import { useCustomers, useCreateCustomer } from '@/api/customers';
 import type { CustomerSummary } from '@/api/customers';
 

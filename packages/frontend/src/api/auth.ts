@@ -32,7 +32,6 @@ export const authApi = {
   },
 };
 
-// AUDIT-FIX: H-07 — Password change mutation hook
 export function useChangePassword() {
   return useMutation({
     mutationFn: (data: { current_password: string; new_password: string }) =>
@@ -40,7 +39,6 @@ export function useChangePassword() {
   });
 }
 
-// AUDIT-FIX: H-08 — Portal user CRUD hooks
 
 export interface PortalUser {
   id: string;

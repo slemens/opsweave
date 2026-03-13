@@ -63,7 +63,6 @@ import {
   useCategories,
   useBatchUpdateTickets,
 } from '@/api/tickets';
-// AUDIT-FIX: M-09 — Import from domain-specific API modules
 import { useGroups } from '@/api/groups';
 import { useUsers } from '@/api/users';
 import { useCustomers } from '@/api/customers';
@@ -499,7 +498,6 @@ function TicketListView({
   const { t: tCommon } = useTranslation();
   const navigate = useNavigate();
 
-  // AUDIT-FIX: M-16 — CSV export for filtered ticket list (hook must be before early returns)
   const handleExportCsv = useCallback(() => {
     const headers = [
       t('fields.ticket_number'),
@@ -686,7 +684,6 @@ function TicketListView({
         <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-yellow-500 inline-block" />{t('sla.warning')}</span>
         <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-red-500 inline-block" />{t('sla.breached')}</span>
         <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-gray-300 inline-block" />{t('sla.none')}</span>
-        {/* AUDIT-FIX: M-16 — CSV export button */}
         <Button
           variant="outline"
           size="sm"

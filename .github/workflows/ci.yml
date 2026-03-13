@@ -37,7 +37,6 @@ jobs:
       - name: Build backend
         run: npm run build:backend
 
-      # AUDIT-FIX: L-12 — i18n completeness check (warning only)
       - name: Check i18n completeness
         run: npm run check-i18n
         continue-on-error: true

@@ -5,7 +5,6 @@ import {
   sendCreated,
   sendPaginated,
 } from '../../lib/response.js';
-// AUDIT-FIX: M-04 — Safe context accessors instead of non-null assertions
 import { requireTenantId, requireUserId } from '../../lib/context.js';
 import * as ticketsService from './tickets.service.js';
 import type {
@@ -327,7 +326,6 @@ export async function updateCategoryCtrl(
   sendSuccess(res, category);
 }
 
-// AUDIT-FIX: H-06 — Delete category controller
 /**
  * DELETE /api/v1/tickets/categories/:id
  */
@@ -372,7 +370,6 @@ export async function batchUpdateTickets(
   sendSuccess(res, result);
 }
 
-// AUDIT-FIX: H-05 — Archive ticket controller
 /**
  * PATCH /api/v1/tickets/:id/archive
  */

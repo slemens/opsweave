@@ -1,5 +1,4 @@
 import 'dotenv/config';
-// AUDIT-FIX: H-11 — Structured logging (lazy import to avoid circular dep with logger)
 // Config is loaded before logger is initialised, so we use a deferred approach:
 // console.warn calls here run at module-load time before pino is ready.
 // We keep them as-is since they fire only once at startup and pino may not be initialised yet.
@@ -77,7 +76,6 @@ function resolveQueueDriver(): QueueDriver {
   return 'bullmq';
 }
 
-// AUDIT-FIX: C-02 — Insecure default secrets not allowed in production
 const INSECURE_SECRETS = ['change-me-in-production', 'opsweave-dev-secret-change-in-production', ''];
 
 function resolveSecret(envKey: string, devFallback: string, nodeEnv: string): string {
@@ -94,7 +92,6 @@ function resolveSecret(envKey: string, devFallback: string, nodeEnv: string): st
 const nodeEnv = envStr('NODE_ENV', 'development');
 const dbDriver = resolveDbDriver();
 
-// AUDIT-FIX: H-03 — No DATABASE_URL fallback in production
 function resolveDatabaseUrl(): string {
   const explicit = process.env['DATABASE_URL'];
   if (explicit) return explicit;
@@ -111,13 +108,11 @@ function resolveDatabaseUrl(): string {
     : 'postgresql://opsweave:opsweave_secret@localhost:5432/opsweave_db';
 }
 
-// AUDIT-FIX: M-02 — Redis URL warning in production
 function resolveRedisUrl(): string {
   const explicit = process.env['REDIS_URL'];
   if (explicit) return explicit;
 
   if (nodeEnv === 'production') {
-    // AUDIT-FIX: H-11 — Structured logging
     logger.warn('REDIS_URL is not set in production, falling back to redis://localhost:6379');
   }
   return 'redis://localhost:6379';
@@ -148,15 +143,12 @@ export const config: AppConfig = {
 
   defaultLanguage: envStr('DEFAULT_LANGUAGE', 'de'),
 
-  // AUDIT-FIX: C-08 — Webhook secret for email provider signature validation
   emailWebhookSecret: envStr('EMAIL_WEBHOOK_SECRET', ''),
 
   serveStatic: envBool('SERVE_STATIC', false),
   staticPath: envStr('STATIC_PATH', '../frontend/dist'),
 };
 
-// AUDIT-FIX: M-01 — Warn about localhost URIs in production
-// AUDIT-FIX: H-11 — Structured logging
 if (nodeEnv === 'production') {
   if (config.oidcRedirectUri.includes('localhost')) {
     logger.warn('OIDC_REDIRECT_URI contains "localhost" in production — set to your public domain');

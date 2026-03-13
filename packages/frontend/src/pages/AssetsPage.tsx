@@ -45,7 +45,6 @@ import { cn } from '@/lib/utils';
 import {
   useAssets,
 } from '@/api/assets';
-// AUDIT-FIX: M-09 — Import from domain-specific API module
 import { useCustomers } from '@/api/customers';
 import type { AssetListParams, AssetWithRelations } from '@/api/assets';
 import type { AssetStatus } from '@opsweave/shared';

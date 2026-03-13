@@ -41,7 +41,6 @@ import {
   listCabAll,
   setCabDecision,
 } from './tickets.controller.js';
-// AUDIT-FIX: M-14 — Alias GET /tickets/:id/workflow → workflow controller
 import { getTicketWorkflow as _getTicketWorkflow } from '../workflows/workflows.controller.js';
 
 const ticketRouter = Router();
@@ -57,7 +56,6 @@ const cabDecisionSchema = z.object({
   notes: z.string().max(5000).optional(),
 });
 
-// AUDIT-FIX: C-10 — Zod schema for ticket categories
 const categorySchema = z.object({
   name: z.string().min(1).max(100),
   description: z.string().optional(),
@@ -130,17 +128,14 @@ ticketRouter.get('/categories', listCategoriesCtrl);
  * POST /api/v1/tickets/categories
  * Create a ticket category.
  */
-// AUDIT-FIX: C-10 — Validate category body
 ticketRouter.post('/categories', validate(categorySchema), createCategoryCtrl);
 
 /**
  * PUT /api/v1/tickets/categories/:id
  * Update a ticket category.
  */
-// AUDIT-FIX: C-10 — Validate category body
 ticketRouter.put('/categories/:id', validateParams(idParamSchema), validate(categorySchema), updateCategoryCtrl);
 
-// AUDIT-FIX: H-06 — Delete a ticket category (hard delete, 409 if tickets assigned)
 /**
  * DELETE /api/v1/tickets/categories/:id
  * Delete a ticket category.
@@ -227,7 +222,6 @@ ticketRouter.patch(
   updateTicketPriority,
 );
 
-// AUDIT-FIX: H-05 — Archive a ticket (only closed/resolved → archived)
 /**
  * PATCH /api/v1/tickets/:id/archive
  * Archive a ticket.
@@ -279,7 +273,6 @@ ticketRouter.get(
   getChildTickets,
 );
 
-// AUDIT-FIX: M-14 — Convenience alias so the frontend can call GET /tickets/:id/workflow
 // The workflow controller expects req.params.ticketId, so we remap :id → ticketId.
 ticketRouter.get(
   '/:id/workflow',

@@ -5,7 +5,6 @@ import {
   sendCreated,
   sendNoContent,
 } from '../../lib/response.js';
-// AUDIT-FIX: M-04 — Safe context accessors instead of non-null assertions
 import { requireTenantId, requireUserId } from '../../lib/context.js';
 import * as settingsService from './settings.service.js';
 import type { PasswordPolicy } from '../../lib/password-policy.js';

@@ -1,4 +1,3 @@
-// AUDIT-FIX: H-11 — Structured logging with pino
 import pino from 'pino';
 
 const isProduction = process.env.NODE_ENV === 'production';

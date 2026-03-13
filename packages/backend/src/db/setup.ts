@@ -10,7 +10,6 @@
 import 'dotenv/config';
 import { sql } from 'drizzle-orm';
 import { initDatabase, getDb, type TypedDb } from '../config/database.js';
-// AUDIT-FIX: H-11 — Structured logging
 import logger from '../lib/logger.js';
 
 export const TABLES_SQL = `

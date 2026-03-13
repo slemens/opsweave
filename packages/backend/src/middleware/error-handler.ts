@@ -4,7 +4,6 @@ import { StatusCodes } from 'http-status-codes';
 
 import { AppError } from '../lib/errors.js';
 import { sendError } from '../lib/response.js';
-// AUDIT-FIX: H-11 — Structured logging
 import logger from '../lib/logger.js';
 
 /**
@@ -49,7 +48,6 @@ export function errorHandler(
   const message =
     err instanceof Error ? err.message : 'An unexpected error occurred';
 
-  // AUDIT-FIX: H-11 — Structured logging
   logger.error({ err }, 'Unhandled error');
 
   sendError(

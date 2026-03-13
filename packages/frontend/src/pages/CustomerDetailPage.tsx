@@ -1,4 +1,3 @@
-// AUDIT-FIX: C-13 — Edit + Delete buttons on CustomerDetailPage
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -56,9 +55,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-// AUDIT-FIX: M-09 — Import from domain-specific API module
 import { useCustomerOverview, useUpdateCustomer, useDeleteCustomer } from '@/api/customers';
-// AUDIT-FIX: H-08 — Portal user management
 import { usePortalUsers, useCreatePortalUser, useUpdatePortalUser } from '@/api/auth';
 import type { PortalUser } from '@/api/auth';
 
@@ -105,7 +102,6 @@ export function CustomerDetailPage() {
   const navigate = useNavigate();
   const { t } = useTranslation(['common', 'tickets', 'cmdb', 'catalog']);
 
-  // AUDIT-FIX: M-11 — Destructure refetch for retry button on error state
   const { data: overview, isLoading, isError, refetch } = useCustomerOverview(id);
   const updateMutation = useUpdateCustomer();
   const deleteMutation = useDeleteCustomer();
@@ -171,7 +167,6 @@ export function CustomerDetailPage() {
     );
   }
 
-  {/* AUDIT-FIX: M-11 — Consistent error state with retry button */}
   if (isError || !overview) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -462,7 +457,6 @@ export function CustomerDetailPage() {
         </CardContent>
       </Card>
 
-      {/* AUDIT-FIX: H-08 — Portal Users Section */}
       <PortalUsersSection customerId={id!} />
 
       {/* Edit Dialog */}
@@ -534,7 +528,6 @@ export function CustomerDetailPage() {
 }
 
 // ---------------------------------------------------------------------------
-// AUDIT-FIX: H-08 — Portal Users Section
 // ---------------------------------------------------------------------------
 
 function PortalUsersSection({ customerId }: { customerId: string }) {

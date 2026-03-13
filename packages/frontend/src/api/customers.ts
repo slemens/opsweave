@@ -1,6 +1,5 @@
 // =============================================================================
 // OpsWeave — Customer API Hooks (TanStack Query)
-// AUDIT-FIX: M-09 — Extracted from tickets.ts for domain separation
 // =============================================================================
 
 import {
@@ -134,7 +133,6 @@ export function useUpdateCustomer() {
   });
 }
 
-// AUDIT-FIX: C-14 — Delete (deactivate) customer mutation
 export function useDeleteCustomer() {
   const queryClient = useQueryClient();
   return useMutation({

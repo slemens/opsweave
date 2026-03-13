@@ -6,7 +6,6 @@ import {
   sendPaginated,
   sendNoContent,
 } from '../../lib/response.js';
-// AUDIT-FIX: M-04 — Safe context accessors instead of non-null assertions
 import { requireTenantId, requireUserId } from '../../lib/context.js';
 import * as assetsService from './assets.service.js';
 import type {
@@ -224,7 +223,6 @@ export async function getAssetTickets(
   sendSuccess(res, tickets);
 }
 
-// ─── AUDIT-FIX: H-10 — Missing Asset Sub-Endpoints ──────
 
 /**
  * GET /api/v1/assets/:id/sla-chain

@@ -2,7 +2,6 @@ import type { Request, Response } from 'express';
 import { randomBytes } from 'node:crypto';
 
 import { sendSuccess } from '../../lib/response.js';
-// AUDIT-FIX: M-04 — Safe context accessors instead of non-null assertions
 import { requireUserId, requireTenantId } from '../../lib/context.js';
 import { setAuthCookies, clearAuthCookies } from '../../lib/cookie.js';
 import * as authService from './auth.service.js';

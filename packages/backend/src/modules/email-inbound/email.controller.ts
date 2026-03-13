@@ -7,14 +7,12 @@ import {
   sendPaginated,
   sendNoContent,
 } from '../../lib/response.js';
-// AUDIT-FIX: M-04 — Safe context accessors instead of non-null assertions
 import { requireTenantId } from '../../lib/context.js';
 import { getDb, type TypedDb } from '../../config/database.js';
 import { emailInboundConfigs } from '../../db/schema/index.js';
 import * as emailService from './email.service.js';
 import type { InboundEmailData } from './email.service.js';
 import { ImapPoller } from './imap-poller.js';
-// AUDIT-FIX: H-14 — Use i18n instead of hardcoded German strings
 import { t } from '../../i18n/index.js';
 import type {
   PaginationParams,
@@ -146,7 +144,6 @@ export async function testConnection(
 
   const config = await emailService.getEmailConfig(tenantId, id);
 
-  // AUDIT-FIX: H-14 — Replace hardcoded German string with i18n
   if (config.provider !== 'imap') {
     sendSuccess(res, {
       success: true,
