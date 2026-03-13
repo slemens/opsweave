@@ -19,6 +19,14 @@ const createDefinitionSchema = z.object({
   rto_minutes: z.number().int().min(0).nullable().optional(),
   service_window: z.record(z.unknown()).optional(),
   escalation_matrix: z.array(z.unknown()).optional(),
+  availability_pct: z.string().max(10).nullable().optional(),
+  support_level: z.enum(['8x5', '24x7', 'best-effort']).nullable().optional(),
+  recovery_class: z.string().max(100).nullable().optional(),
+  business_criticality: z.enum(['low', 'medium', 'high', 'critical']).nullable().optional(),
+  penalty_clause: z.string().max(5000).nullable().optional(),
+  contract_reference: z.string().max(500).nullable().optional(),
+  valid_from: z.string().regex(/^\d{4}-\d{2}-\d{2}/).nullable().optional(),
+  valid_until: z.string().regex(/^\d{4}-\d{2}-\d{2}/).nullable().optional(),
   is_default: z.union([z.boolean(), z.number()]).transform((v) => (typeof v === 'number' ? v !== 0 : v)).optional(),
 });
 

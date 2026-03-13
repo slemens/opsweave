@@ -36,6 +36,14 @@ export interface SlaDefinitionRow {
   rto_minutes: number | null;
   service_window: string | null;
   escalation_matrix: string | null;
+  availability_pct: string | null;
+  support_level: string | null;
+  recovery_class: string | null;
+  business_criticality: string | null;
+  penalty_clause: string | null;
+  contract_reference: string | null;
+  valid_from: string | null;
+  valid_until: string | null;
   is_default: number;
   is_active: number;
   created_at: string;
@@ -91,6 +99,14 @@ export interface CreateSlaDefinitionInput {
   rto_minutes?: number | null;
   service_window?: Record<string, unknown>;
   escalation_matrix?: unknown[];
+  availability_pct?: string | null;
+  support_level?: string | null;
+  recovery_class?: string | null;
+  business_criticality?: string | null;
+  penalty_clause?: string | null;
+  contract_reference?: string | null;
+  valid_from?: string | null;
+  valid_until?: string | null;
   is_default?: boolean;
 }
 
@@ -127,6 +143,14 @@ export async function createSlaDefinition(
       rto_minutes: data.rto_minutes ?? null,
       service_window: JSON.stringify(data.service_window ?? {}),
       escalation_matrix: JSON.stringify(data.escalation_matrix ?? []),
+      availability_pct: data.availability_pct ?? null,
+      support_level: data.support_level ?? null,
+      recovery_class: data.recovery_class ?? null,
+      business_criticality: data.business_criticality ?? null,
+      penalty_clause: data.penalty_clause ?? null,
+      contract_reference: data.contract_reference ?? null,
+      valid_from: data.valid_from ?? null,
+      valid_until: data.valid_until ?? null,
       is_default: data.is_default ? 1 : 0,
       is_active: 1,
       created_at: now,
@@ -150,6 +174,14 @@ export interface UpdateSlaDefinitionInput {
   rto_minutes?: number | null;
   service_window?: Record<string, unknown>;
   escalation_matrix?: unknown[];
+  availability_pct?: string | null;
+  support_level?: string | null;
+  recovery_class?: string | null;
+  business_criticality?: string | null;
+  penalty_clause?: string | null;
+  contract_reference?: string | null;
+  valid_from?: string | null;
+  valid_until?: string | null;
   is_default?: boolean;
   is_active?: boolean;
 }
@@ -184,6 +216,14 @@ export async function updateSlaDefinition(
   if (data.rto_minutes !== undefined) updateData.rto_minutes = data.rto_minutes;
   if (data.service_window !== undefined) updateData.service_window = JSON.stringify(data.service_window);
   if (data.escalation_matrix !== undefined) updateData.escalation_matrix = JSON.stringify(data.escalation_matrix);
+  if (data.availability_pct !== undefined) updateData.availability_pct = data.availability_pct;
+  if (data.support_level !== undefined) updateData.support_level = data.support_level;
+  if (data.recovery_class !== undefined) updateData.recovery_class = data.recovery_class;
+  if (data.business_criticality !== undefined) updateData.business_criticality = data.business_criticality;
+  if (data.penalty_clause !== undefined) updateData.penalty_clause = data.penalty_clause;
+  if (data.contract_reference !== undefined) updateData.contract_reference = data.contract_reference;
+  if (data.valid_from !== undefined) updateData.valid_from = data.valid_from;
+  if (data.valid_until !== undefined) updateData.valid_until = data.valid_until;
   if (data.is_default !== undefined) updateData.is_default = data.is_default ? 1 : 0;
   if (data.is_active !== undefined) updateData.is_active = data.is_active ? 1 : 0;
 

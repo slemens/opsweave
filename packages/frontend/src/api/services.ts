@@ -81,6 +81,18 @@ export interface EffectiveService {
   original_code: string | null;
 }
 
+export interface ServiceScopeItem {
+  id: string;
+  tenant_id: string;
+  service_id: string;
+  item_description: string;
+  scope_type: 'included' | 'excluded' | 'addon' | 'optional';
+  sort_order: number;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // =============================================================================
 // Query Keys
 // =============================================================================
@@ -95,6 +107,7 @@ const serviceKeys = {
   catalog: (id: string) => [...serviceKeys.catalogs(), id] as const,
   verticalCatalogs: () => [...serviceKeys.all, 'catalogs', 'vertical'] as const,
   verticalCatalog: (id: string) => [...serviceKeys.verticalCatalogs(), id] as const,
+  scopeItems: (serviceId: string) => [...serviceKeys.all, 'scope-items', serviceId] as const,
 };
 
 // =============================================================================
@@ -361,6 +374,104 @@ export function useRemoveVerticalOverride() {
     onSuccess: (_result, vars) => {
       void queryClient.invalidateQueries({ queryKey: serviceKeys.verticalCatalog(vars.verticalId) });
       void queryClient.invalidateQueries({ queryKey: serviceKeys.verticalCatalogs() });
+    },
+  });
+}
+
+// =============================================================================
+// Query Hooks — Service Scope Items (REQ-2.2c)
+// =============================================================================
+
+export function useServiceScopeItems(serviceId: string | undefined) {
+  return useQuery({
+    queryKey: serviceKeys.scopeItems(serviceId ?? ''),
+    queryFn: async () =>
+      apiClient.get<ServiceScopeItem[]>(`/services/descriptions/${serviceId!}/scope-items`),
+    enabled: !!serviceId,
+  });
+}
+
+// =============================================================================
+// Mutation Hooks — Service Scope Items
+// =============================================================================
+
+export function useCreateServiceScopeItem() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      serviceId,
+      data,
+    }: {
+      serviceId: string;
+      data: Record<string, unknown>;
+    }) =>
+      apiClient.post<ServiceScopeItem>(
+        `/services/descriptions/${serviceId}/scope-items`,
+        data,
+      ),
+    onSuccess: (_result, vars) => {
+      void queryClient.invalidateQueries({ queryKey: serviceKeys.scopeItems(vars.serviceId) });
+    },
+  });
+}
+
+export function useUpdateServiceScopeItem() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      serviceId,
+      itemId,
+      data,
+    }: {
+      serviceId: string;
+      itemId: string;
+      data: Record<string, unknown>;
+    }) =>
+      apiClient.put<ServiceScopeItem>(
+        `/services/descriptions/${serviceId}/scope-items/${itemId}`,
+        data,
+      ),
+    onSuccess: (_result, vars) => {
+      void queryClient.invalidateQueries({ queryKey: serviceKeys.scopeItems(vars.serviceId) });
+    },
+  });
+}
+
+export function useDeleteServiceScopeItem() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      serviceId,
+      itemId,
+    }: {
+      serviceId: string;
+      itemId: string;
+    }) =>
+      apiClient.delete<void>(
+        `/services/descriptions/${serviceId}/scope-items/${itemId}`,
+      ),
+    onSuccess: (_result, vars) => {
+      void queryClient.invalidateQueries({ queryKey: serviceKeys.scopeItems(vars.serviceId) });
+    },
+  });
+}
+
+export function useReorderServiceScopeItems() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      serviceId,
+      itemIds,
+    }: {
+      serviceId: string;
+      itemIds: string[];
+    }) =>
+      apiClient.post<ServiceScopeItem[]>(
+        `/services/descriptions/${serviceId}/scope-items/reorder`,
+        { item_ids: itemIds },
+      ),
+    onSuccess: (_result, vars) => {
+      void queryClient.invalidateQueries({ queryKey: serviceKeys.scopeItems(vars.serviceId) });
     },
   });
 }

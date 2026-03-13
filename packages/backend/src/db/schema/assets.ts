@@ -182,6 +182,33 @@ export const assetCapacities = sqliteTable(
 );
 
 // =============================================================================
+// asset_tenant_assignments — Multi-Tenant Asset Assignment (REQ-2.1)
+// =============================================================================
+
+export const assetTenantAssignments = sqliteTable(
+  'asset_tenant_assignments',
+  {
+    id: text('id').primaryKey(),
+    asset_id: text('asset_id')
+      .notNull()
+      .references(() => assets.id),
+    tenant_id: text('tenant_id')
+      .notNull()
+      .references(() => tenants.id),
+    assignment_type: text('assignment_type').notNull().default('dedicated'),
+    inherited_from_asset_id: text('inherited_from_asset_id').references(() => assets.id),
+    notes: text('notes'),
+    created_at: text('created_at').notNull(),
+    created_by: text('created_by'),
+  },
+  (t) => [
+    unique('uq_asset_tenant_assign').on(t.asset_id, t.tenant_id),
+    index('idx_ata_tenant').on(t.tenant_id),
+    index('idx_ata_asset').on(t.asset_id),
+  ],
+);
+
+// =============================================================================
 // assets — Central CMDB entity
 // =============================================================================
 

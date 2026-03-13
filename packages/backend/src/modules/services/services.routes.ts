@@ -10,6 +10,9 @@ import {
   createHorizontalCatalogSchema,
   updateHorizontalCatalogSchema,
   addCatalogItemSchema,
+  createServiceScopeItemSchema,
+  updateServiceScopeItemSchema,
+  reorderServiceScopeItemsSchema,
 } from '@opsweave/shared';
 
 import {
@@ -33,6 +36,14 @@ import {
   addVerticalOverride,
   removeVerticalOverride,
 } from './services.controller.js';
+
+import {
+  listScopeItems,
+  createScopeItem,
+  updateScopeItem,
+  deleteScopeItem,
+  reorderScopeItems,
+} from './service-scope.controller.js';
 
 const serviceCatalogRouter = Router();
 
@@ -87,6 +98,61 @@ serviceCatalogRouter.delete(
   '/descriptions/:id',
   validateParams(idParamSchema),
   deleteServiceDescription,
+);
+
+// ─── Service Scope Items (REQ-2.2c) ──────────────────────
+
+/**
+ * GET /api/v1/services/descriptions/:id/scope-items
+ * List all scope items for a service description.
+ */
+serviceCatalogRouter.get(
+  '/descriptions/:id/scope-items',
+  validateParams(idParamSchema),
+  listScopeItems,
+);
+
+/**
+ * POST /api/v1/services/descriptions/:id/scope-items
+ * Create a new scope item for a service description.
+ */
+serviceCatalogRouter.post(
+  '/descriptions/:id/scope-items',
+  validateParams(idParamSchema),
+  validate(createServiceScopeItemSchema),
+  createScopeItem,
+);
+
+/**
+ * POST /api/v1/services/descriptions/:id/scope-items/reorder
+ * Reorder scope items for a service description.
+ */
+serviceCatalogRouter.post(
+  '/descriptions/:id/scope-items/reorder',
+  validateParams(idParamSchema),
+  validate(reorderServiceScopeItemsSchema),
+  reorderScopeItems,
+);
+
+/**
+ * PUT /api/v1/services/descriptions/:id/scope-items/:sid
+ * Update a scope item.
+ */
+serviceCatalogRouter.put(
+  '/descriptions/:id/scope-items/:sid',
+  validateParams(idParamSchema),
+  validate(updateServiceScopeItemSchema),
+  updateScopeItem,
+);
+
+/**
+ * DELETE /api/v1/services/descriptions/:id/scope-items/:sid
+ * Delete a scope item.
+ */
+serviceCatalogRouter.delete(
+  '/descriptions/:id/scope-items/:sid',
+  validateParams(idParamSchema),
+  deleteScopeItem,
 );
 
 // ─── Horizontal Catalogs ──────────────────────────────────

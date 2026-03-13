@@ -33,6 +33,12 @@ import {
   classifyAsset,
   removeAssetClassification,
 } from '../classifications/classifications.controller.js';
+import {
+  listAssetTenantAssignments,
+  createAssetTenantAssignment,
+  updateAssetTenantAssignment,
+  removeAssetTenantAssignment,
+} from './asset-tenant-assignments.controller.js';
 
 const assetRouter = Router();
 
@@ -45,6 +51,25 @@ const assetRelationParamsSchema = z.object({
 const assetClassificationParamsSchema = z.object({
   id: z.string().uuid(),
   vid: z.string().uuid(),
+});
+
+// REQ-2.1 — Param schemas for tenant assignment routes
+const assetTenantAssignmentParamsSchema = z.object({
+  id: z.string().uuid(),
+  aid: z.string().uuid(),
+});
+
+const createTenantAssignmentSchema = z.object({
+  tenant_id: z.string().uuid(),
+  assignment_type: z.enum(['dedicated', 'shared', 'inherited']),
+  inherited_from_asset_id: z.string().uuid().nullable().optional(),
+  notes: z.string().nullable().optional(),
+});
+
+const updateTenantAssignmentSchema = z.object({
+  assignment_type: z.enum(['dedicated', 'shared', 'inherited']).optional(),
+  inherited_from_asset_id: z.string().uuid().nullable().optional(),
+  notes: z.string().nullable().optional(),
 });
 
 // ─── Routes ─────────────────────────────────────────────
@@ -236,6 +261,50 @@ assetRouter.delete(
   '/:id/classifications/:vid',
   validateParams(assetClassificationParamsSchema),
   removeAssetClassification,
+);
+
+// ─── Asset Tenant Assignments (REQ-2.1) ─────────────────
+
+/**
+ * GET /api/v1/assets/:id/tenant-assignments
+ * List all tenant assignments for an asset.
+ */
+assetRouter.get(
+  '/:id/tenant-assignments',
+  validateParams(idParamSchema),
+  listAssetTenantAssignments,
+);
+
+/**
+ * POST /api/v1/assets/:id/tenant-assignments
+ * Assign an asset to a tenant.
+ */
+assetRouter.post(
+  '/:id/tenant-assignments',
+  validateParams(idParamSchema),
+  validate(createTenantAssignmentSchema),
+  createAssetTenantAssignment,
+);
+
+/**
+ * PUT /api/v1/assets/:id/tenant-assignments/:aid
+ * Update a tenant assignment.
+ */
+assetRouter.put(
+  '/:id/tenant-assignments/:aid',
+  validateParams(assetTenantAssignmentParamsSchema),
+  validate(updateTenantAssignmentSchema),
+  updateAssetTenantAssignment,
+);
+
+/**
+ * DELETE /api/v1/assets/:id/tenant-assignments/:aid
+ * Remove a tenant assignment.
+ */
+assetRouter.delete(
+  '/:id/tenant-assignments/:aid',
+  validateParams(assetTenantAssignmentParamsSchema),
+  removeAssetTenantAssignment,
 );
 
 export { assetRouter };

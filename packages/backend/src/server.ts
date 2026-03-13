@@ -121,13 +121,13 @@ async function runEvoMigrations(db: TypedDb): Promise<void> {
   const evoTableNames = [
     'asset_types', 'relation_types', 'classification_models',
     'classification_values', 'asset_classifications', 'capacity_types',
-    'asset_capacities',
+    'asset_capacities', 'asset_tenant_assignments', 'service_scope_items',
   ];
 
   const evoIndexPrefixes = [
     'idx_asset_types', 'idx_relation_types', 'idx_classification',
     'idx_asset_classifications', 'idx_capacity_types', 'idx_asset_capacities',
-    'idx_asset_relations_temporal',
+    'idx_asset_relations_temporal', 'idx_ata_', 'idx_ssi_',
   ];
 
   // Phase 1: CREATE TABLE (new evo tables)

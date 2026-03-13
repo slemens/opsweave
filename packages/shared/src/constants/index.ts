@@ -265,6 +265,9 @@ export type CatalogStatusConst = (typeof CATALOG_STATUSES)[number];
 export const OVERRIDE_TYPES = ['replace', 'extend', 'restrict'] as const;
 export type OverrideTypeConst = (typeof OVERRIDE_TYPES)[number];
 
+export const SCOPE_ITEM_TYPES = ['included', 'excluded', 'addon', 'optional'] as const;
+export type ScopeItemTypeConst = (typeof SCOPE_ITEM_TYPES)[number];
+
 // ---------------------------------------------------------------------------
 // Compliance Constants
 // ---------------------------------------------------------------------------

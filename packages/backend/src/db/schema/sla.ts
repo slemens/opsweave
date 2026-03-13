@@ -32,6 +32,15 @@ export const slaDefinitions = sqliteTable(
     rto_minutes: integer('rto_minutes'), // Recovery Time Objective
     service_window: text('service_window').default('{}'), // JSON: { maintenance_window, change_window }
     escalation_matrix: text('escalation_matrix').default('[]'), // JSON: escalation levels with contacts/timeouts
+    // Evo-2.2a: Extended SLA fields
+    availability_pct: text('availability_pct'), // e.g. "99.9"
+    support_level: text('support_level'), // "8x5" | "24x7" | "best-effort"
+    recovery_class: text('recovery_class'),
+    business_criticality: text('business_criticality'), // "low" | "medium" | "high" | "critical"
+    penalty_clause: text('penalty_clause'), // markdown
+    contract_reference: text('contract_reference'),
+    valid_from: text('valid_from'), // ISO date
+    valid_until: text('valid_until'), // ISO date
     is_default: integer('is_default').notNull().default(0), // 0|1 — tenant-wide default SLA
     is_active: integer('is_active').notNull().default(1),
     created_at: text('created_at').notNull(),

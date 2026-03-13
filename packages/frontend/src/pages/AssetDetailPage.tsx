@@ -78,11 +78,16 @@ import {
   useDeleteAssetRelation,
   useAssets,
   useAssetGraph,
+  useAssetTenantAssignments,
+  useAssignAssetToTenant,
+  useUpdateAssetTenantAssignment,
+  useRemoveAssetTenantAssignment,
 } from '@/api/assets';
 // AUDIT-FIX: M-09 — Import from domain-specific API modules
 import { useGroups } from '@/api/groups';
 import { useCustomers } from '@/api/customers';
-import type { AssetRelationWithDetails, AssetTicketSummary } from '@/api/assets';
+import type { AssetRelationWithDetails, AssetTicketSummary, AssetTenantAssignment } from '@/api/assets';
+import { useAuthStore } from '@/stores/auth-store';
 import {
   useClassificationModels,
   useAssetClassifications,
@@ -102,7 +107,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Info } from 'lucide-react';
+import { Building2, Edit, Info } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -216,6 +221,13 @@ export function AssetDetailPage() {
   const classifyAsset = useClassifyAsset();
   const removeClassification = useRemoveAssetClassification();
 
+  // ── Tenant Assignments (REQ-2.1) ────────────────────────
+  const { data: tenantAssignmentsData } = useAssetTenantAssignments(id ?? '');
+  const assignToTenant = useAssignAssetToTenant();
+  const updateTenantAssignment = useUpdateAssetTenantAssignment();
+  const removeTenantAssignment = useRemoveAssetTenantAssignment();
+  const tenants = useAuthStore((s) => s.tenants);
+
   const updateAsset = useUpdateAsset();
   const deleteAssetMutation = useDeleteAsset();
   const createRelation = useCreateAssetRelation();
@@ -239,6 +251,13 @@ export function AssetDetailPage() {
   const [selectedModelId, setSelectedModelId] = useState('');
   const [selectedValueId, setSelectedValueId] = useState('');
   const [justification, setJustification] = useState('');
+
+  // REQ-2.1: Tenant assignment dialog state
+  const [tenantAssignOpen, setTenantAssignOpen] = useState(false);
+  const [editingAssignment, setEditingAssignment] = useState<AssetTenantAssignment | null>(null);
+  const [assignTenantId, setAssignTenantId] = useState('');
+  const [assignType, setAssignType] = useState<'dedicated' | 'shared' | 'inherited'>('dedicated');
+  const [assignNotes, setAssignNotes] = useState('');
 
   const selectedModelValues = useMemo(() => {
     if (!selectedModelId || !classificationModels) return [];
@@ -419,6 +438,7 @@ export function AssetDetailPage() {
   const capacityData = capacityUtilization?.capacities ?? [];
   const providesCapacity = capacityData.filter((c) => c.direction === 'provides');
   const requiresCapacity = capacityData.filter((c) => c.direction === 'requires');
+  const tenantAssignments = tenantAssignmentsData ?? [];
 
   return (
     <div className="space-y-6" data-testid="page-asset-detail">
@@ -502,6 +522,17 @@ export function AssetDetailPage() {
                   {capacityData.length > 0 && (
                     <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-[10px]">
                       {capacityData.length}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+              )}
+              {(viewContext === 'all' || viewContext === 'operations') && (
+                <TabsTrigger value="tenantAssignments" data-testid="tab-tenant-assignments">
+                  <Building2 className="mr-1 h-3.5 w-3.5" />
+                  {t('tabs.tenantAssignments')}
+                  {tenantAssignments.length > 0 && (
+                    <Badge variant="secondary" className="ml-1.5 h-5 px-1.5 text-[10px]">
+                      {tenantAssignments.length}
                     </Badge>
                   )}
                 </TabsTrigger>
@@ -946,6 +977,120 @@ export function AssetDetailPage() {
                 </CardContent>
               </Card>
             </TabsContent>
+
+            {/* Tenant Assignments Tab (REQ-2.1) */}
+            <TabsContent value="tenantAssignments" className="mt-4">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-3">
+                  <CardTitle className="text-base">{t('tenantAssignments.title')}</CardTitle>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setEditingAssignment(null);
+                      setAssignTenantId('');
+                      setAssignType('dedicated');
+                      setAssignNotes('');
+                      setTenantAssignOpen(true);
+                    }}
+                    data-testid="btn-add-tenant-assignment"
+                  >
+                    <Plus className="mr-1 h-3.5 w-3.5" />
+                    {t('tenantAssignments.add')}
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  {tenantAssignments.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-8">
+                      {t('tenantAssignments.no_assignments')}
+                    </p>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>{t('tenantAssignments.tenant')}</TableHead>
+                          <TableHead>{t('tenantAssignments.type')}</TableHead>
+                          <TableHead>{t('tenantAssignments.inherited_from')}</TableHead>
+                          <TableHead>{t('tenantAssignments.notes')}</TableHead>
+                          <TableHead>{t('tenantAssignments.created_at')}</TableHead>
+                          <TableHead className="w-[80px]" />
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {tenantAssignments.map((assign) => (
+                          <TableRow key={assign.id}>
+                            <TableCell className="font-medium">{assign.tenant_name ?? assign.tenant_id}</TableCell>
+                            <TableCell>
+                              <Badge
+                                variant={
+                                  assign.assignment_type === 'dedicated' ? 'default' :
+                                  assign.assignment_type === 'shared' ? 'secondary' : 'outline'
+                                }
+                              >
+                                {t(`tenantAssignments.type_${assign.assignment_type}`)}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {assign.inherited_from_asset_id ? (
+                                <Link
+                                  to={`/assets/${assign.inherited_from_asset_id}`}
+                                  className="text-primary hover:underline text-sm"
+                                >
+                                  {assign.inherited_from_asset_name ?? assign.inherited_from_asset_id}
+                                </Link>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
+                              {assign.notes ?? '—'}
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {formatDate(assign.created_at)}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  onClick={() => {
+                                    setEditingAssignment(assign);
+                                    setAssignTenantId(assign.tenant_id);
+                                    setAssignType(assign.assignment_type as 'dedicated' | 'shared' | 'inherited');
+                                    setAssignNotes(assign.notes ?? '');
+                                    setTenantAssignOpen(true);
+                                  }}
+                                >
+                                  <Edit className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 text-destructive hover:text-destructive"
+                                  onClick={async () => {
+                                    try {
+                                      await removeTenantAssignment.mutateAsync({
+                                        assetId: id!,
+                                        assignmentId: assign.id,
+                                      });
+                                      toast.success(t('tenantAssignments.remove_success'));
+                                    } catch {
+                                      toast.error(t('tenantAssignments.remove_error'));
+                                    }
+                                  }}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
           </Tabs>
         </div>
 
@@ -1247,6 +1392,111 @@ export function AssetDetailPage() {
               disabled={!selectedValueId || classifyAsset.isPending}
             >
               {classifyAsset.isPending ? tCommon('status.loading') : t('classifications.add')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Tenant Assignment Dialog (REQ-2.1) */}
+      <Dialog open={tenantAssignOpen} onOpenChange={setTenantAssignOpen}>
+        <DialogContent className="sm:max-w-[460px]">
+          <DialogHeader>
+            <DialogTitle>
+              {editingAssignment ? t('tenantAssignments.edit') : t('tenantAssignments.add')}
+            </DialogTitle>
+            <DialogDescription>
+              {asset.display_name}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label>{t('tenantAssignments.tenant')}</Label>
+              <Select
+                value={assignTenantId}
+                onValueChange={setAssignTenantId}
+                disabled={!!editingAssignment}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={t('tenantAssignments.select_tenant')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {tenants.map((tn) => (
+                    <SelectItem key={tn.id} value={tn.id}>
+                      {tn.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid gap-2">
+              <Label>{t('tenantAssignments.type')}</Label>
+              <Select
+                value={assignType}
+                onValueChange={(v) => setAssignType(v as 'dedicated' | 'shared' | 'inherited')}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={t('tenantAssignments.select_type')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="dedicated">{t('tenantAssignments.type_dedicated')}</SelectItem>
+                  <SelectItem value="shared">{t('tenantAssignments.type_shared')}</SelectItem>
+                  <SelectItem value="inherited">{t('tenantAssignments.type_inherited')}</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {assignType === 'dedicated' && t('tenantAssignments.type_dedicated_desc')}
+                {assignType === 'shared' && t('tenantAssignments.type_shared_desc')}
+                {assignType === 'inherited' && t('tenantAssignments.type_inherited_desc')}
+              </p>
+            </div>
+
+            <div className="grid gap-2">
+              <Label>{t('tenantAssignments.notes')}</Label>
+              <Textarea
+                value={assignNotes}
+                onChange={(e) => setAssignNotes(e.target.value)}
+                placeholder={t('tenantAssignments.notes')}
+                rows={3}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTenantAssignOpen(false)}>
+              {tCommon('actions.cancel')}
+            </Button>
+            <Button
+              onClick={async () => {
+                try {
+                  if (editingAssignment) {
+                    await updateTenantAssignment.mutateAsync({
+                      assetId: id!,
+                      assignmentId: editingAssignment.id,
+                      assignment_type: assignType,
+                      notes: assignNotes || null,
+                    });
+                    toast.success(t('tenantAssignments.update_success'));
+                  } else {
+                    await assignToTenant.mutateAsync({
+                      assetId: id!,
+                      tenant_id: assignTenantId,
+                      assignment_type: assignType,
+                      notes: assignNotes || null,
+                    });
+                    toast.success(t('tenantAssignments.add_success'));
+                  }
+                  setTenantAssignOpen(false);
+                } catch {
+                  toast.error(editingAssignment ? t('tenantAssignments.update_error') : t('tenantAssignments.add_error'));
+                }
+              }}
+              disabled={(!editingAssignment && !assignTenantId) || assignToTenant.isPending || updateTenantAssignment.isPending}
+            >
+              {(assignToTenant.isPending || updateTenantAssignment.isPending)
+                ? tCommon('status.loading')
+                : editingAssignment ? t('tenantAssignments.edit') : t('tenantAssignments.add')}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -44,6 +44,7 @@ import {
   FINDING_STATUSES,
   EVIDENCE_TYPES,
   MATURITY_LEVELS,
+  SCOPE_ITEM_TYPES,
 } from '../constants/index.js';
 
 // ---------------------------------------------------------------------------
@@ -531,6 +532,26 @@ export const catalogFilterSchema = paginationSchema.extend({
   status: z.enum(CATALOG_STATUSES).optional(),
 });
 export type CatalogFilterParams = z.infer<typeof catalogFilterSchema>;
+
+// ---------------------------------------------------------------------------
+// Service Scope Item Schemas
+// ---------------------------------------------------------------------------
+
+export const createServiceScopeItemSchema = z.object({
+  item_description: z.string().min(1).max(2000),
+  scope_type: z.enum(SCOPE_ITEM_TYPES).default('included'),
+  sort_order: z.number().int().min(0).default(0),
+  notes: z.string().max(5000).nullable().default(null),
+});
+export type CreateServiceScopeItemInput = z.infer<typeof createServiceScopeItemSchema>;
+
+export const updateServiceScopeItemSchema = createServiceScopeItemSchema.partial();
+export type UpdateServiceScopeItemInput = z.infer<typeof updateServiceScopeItemSchema>;
+
+export const reorderServiceScopeItemsSchema = z.object({
+  item_ids: z.array(uuidSchema).min(1),
+});
+export type ReorderServiceScopeItemsInput = z.infer<typeof reorderServiceScopeItemsSchema>;
 
 // ---------------------------------------------------------------------------
 // Compliance Schemas
