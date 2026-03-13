@@ -75,7 +75,7 @@ export function CustomersPage() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5" data-testid="page-customers">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -84,7 +84,7 @@ export function CustomersPage() {
             {filtered.length} {t('common:nav.customers')}
           </p>
         </div>
-        <Button onClick={() => setCreateOpen(true)} size="sm">
+        <Button onClick={() => setCreateOpen(true)} size="sm" data-testid="btn-create-customer">
           <Plus className="mr-2 h-4 w-4" />
           {t('common:customers.create')}
         </Button>
@@ -98,6 +98,7 @@ export function CustomersPage() {
           placeholder={t('common:search')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
+          data-testid="input-search-customers"
         />
       </div>
 
@@ -118,6 +119,7 @@ export function CustomersPage() {
               key={customer.id}
               className="group cursor-pointer transition-all hover:shadow-md hover:border-primary/30"
               onClick={() => navigate(`/customers/${customer.id}`)}
+              data-testid={`card-customer-${customer.id}`}
             >
               <CardContent className="py-4">
                 <div className="flex items-start justify-between">
@@ -151,7 +153,7 @@ export function CustomersPage() {
 
       {/* Empty State */}
       {!isLoading && filtered.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-20 gap-3">
+        <div className="flex flex-col items-center justify-center py-20 gap-3" data-testid="empty-customers">
           <Building2 className="h-10 w-10 text-muted-foreground" />
           <p className="text-sm text-muted-foreground">{t('common:no_results')}</p>
         </div>
@@ -159,7 +161,7 @@ export function CustomersPage() {
 
       {/* Create Dialog */}
       <Dialog open={createOpen} onOpenChange={(open) => { setCreateOpen(open); if (!open) resetForm(); }}>
-        <DialogContent>
+        <DialogContent data-testid="modal-create-customer">
           <DialogHeader>
             <DialogTitle>{t('common:customers.create_title')}</DialogTitle>
           </DialogHeader>

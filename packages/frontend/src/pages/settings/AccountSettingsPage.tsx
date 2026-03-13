@@ -64,7 +64,7 @@ export default function AccountSettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="page-account-settings">
       {/* Profile */}
       <Card>
         <CardHeader>
@@ -79,6 +79,7 @@ export default function AccountSettingsPage() {
             </Label>
             <Input
               id="display-name"
+              data-testid="input-display-name"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               className="max-w-md"
@@ -90,6 +91,7 @@ export default function AccountSettingsPage() {
             </Label>
             <Input
               id="email"
+              data-testid="input-email"
               value={user?.email ?? ''}
               readOnly
               disabled
@@ -98,7 +100,7 @@ export default function AccountSettingsPage() {
           </div>
         </CardContent>
         <CardFooter className="justify-end border-t pt-6">
-          <Button>{t('settings:account.save_profile')}</Button>
+          <Button data-testid="btn-save-profile">{t('settings:account.save_profile')}</Button>
         </CardFooter>
       </Card>
 
@@ -116,6 +118,7 @@ export default function AccountSettingsPage() {
             </Label>
             <Input
               id="current-password"
+              data-testid="input-current-password"
               type="password"
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
@@ -128,6 +131,7 @@ export default function AccountSettingsPage() {
             </Label>
             <Input
               id="new-password"
+              data-testid="input-new-password"
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
@@ -141,6 +145,7 @@ export default function AccountSettingsPage() {
             </Label>
             <Input
               id="confirm-password"
+              data-testid="input-confirm-password"
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
@@ -154,6 +159,7 @@ export default function AccountSettingsPage() {
         <CardFooter className="justify-end border-t pt-6">
           <Button
             variant="outline"
+            data-testid="btn-save-password"
             onClick={handleChangePassword}
             disabled={changePasswordMutation.isPending || !currentPassword || !newPassword || !confirmPassword}
           >

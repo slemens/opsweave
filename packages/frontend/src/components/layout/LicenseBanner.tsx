@@ -65,7 +65,7 @@ export function LicenseBanner() {
   }
 
   return (
-    <div className="relative flex items-center gap-3 border-b border-warning/30 bg-warning/10 px-4 py-2.5 text-sm">
+    <div className="relative flex items-center gap-3 border-b border-warning/30 bg-warning/10 px-4 py-2.5 text-sm" data-testid="banner-license">
       <AlertTriangle className="h-4 w-4 shrink-0 text-warning" />
       <div className="flex flex-1 flex-wrap items-center gap-x-1">
         {warnings.map((w, idx) => (
@@ -87,6 +87,7 @@ export function LicenseBanner() {
         className="h-6 w-6 shrink-0 text-muted-foreground hover:text-foreground"
         onClick={() => setDismissed(true)}
         aria-label={t('settings:banner.dismiss')}
+        data-testid="btn-dismiss-license-banner"
       >
         <X className="h-4 w-4" />
       </Button>

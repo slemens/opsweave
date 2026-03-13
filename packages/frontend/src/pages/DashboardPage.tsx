@@ -73,6 +73,7 @@ function StatCard({
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
       onKeyDown={onClick ? (e) => { if (e.key === 'Enter') onClick(); } : undefined}
+      data-testid={`card-stat-${titleKey.replace(/\./g, '-')}`}
     >
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -142,7 +143,7 @@ export function DashboardPage() {
   const customerChartData = customerData ?? [];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="page-dashboard">
       {/* Welcome message */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
@@ -158,6 +159,7 @@ export function DashboardPage() {
           size="sm"
           onClick={() => void refetch()}
           aria-label={t('actions.refresh')}
+          data-testid="btn-refresh"
         >
           <RefreshCw className="mr-2 h-3.5 w-3.5" />
           {t('actions.refresh')}
@@ -166,7 +168,7 @@ export function DashboardPage() {
 
       {/* Error state */}
       {isError && (
-        <Card className="border-destructive/30 bg-destructive/5">
+        <Card className="border-destructive/30 bg-destructive/5" data-testid="error-dashboard">
           <CardContent className="flex items-center gap-3 py-4">
             <AlertCircle className="h-5 w-5 text-destructive shrink-0" />
             <p className="text-sm text-destructive">{t('errors.generic')}</p>
@@ -219,7 +221,7 @@ export function DashboardPage() {
       {/* Chart cards */}
       <div className="grid gap-4 md:grid-cols-2">
         {/* Timeline chart */}
-        <Card>
+        <Card data-testid="card-ticket-timeline">
           <CardHeader>
             <CardTitle className="text-base">{t('dashboard.ticket_timeline')}</CardTitle>
           </CardHeader>
@@ -265,7 +267,7 @@ export function DashboardPage() {
         </Card>
 
         {/* Top customers chart */}
-        <Card>
+        <Card data-testid="card-top-customers">
           <CardHeader>
             <CardTitle className="text-base">{t('dashboard.top_customers')}</CardTitle>
           </CardHeader>
@@ -310,7 +312,7 @@ export function DashboardPage() {
       {/* Quick overview cards */}
       <div className="grid gap-4 md:grid-cols-2">
         {/* Ticket status overview */}
-        <Card>
+        <Card data-testid="card-ticket-status-overview">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-base">{t('nav.tickets')}</CardTitle>
             <Button
@@ -372,7 +374,7 @@ export function DashboardPage() {
         </Card>
 
         {/* Recent tickets */}
-        <Card>
+        <Card data-testid="card-recent-tickets">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-base">{t('dashboard.recent_tickets')}</CardTitle>
             <Button

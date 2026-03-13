@@ -157,7 +157,7 @@ export default function SlaReportsPage() {
   const complianceRate = report ? (100 - report.summary.breach_rate) : 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="page-sla-reports">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -165,7 +165,7 @@ export default function SlaReportsPage() {
           <p className="mt-0.5 text-sm text-muted-foreground">{t('reports.subtitle')}</p>
         </div>
         <Select value={String(days)} onValueChange={(v) => setDays(Number(v))}>
-          <SelectTrigger className="w-40">
+          <SelectTrigger className="w-40" data-testid="select-sla-period">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -214,7 +214,7 @@ export default function SlaReportsPage() {
           {/* Charts Row */}
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Breach Trend Chart */}
-            <Card>
+            <Card data-testid="card-breach-trend">
               <CardHeader className="pb-2">
                 <CardTitle className="text-base font-semibold">{t('reports.breach_trend')}</CardTitle>
               </CardHeader>
@@ -265,7 +265,7 @@ export default function SlaReportsPage() {
             </Card>
 
             {/* By Type Chart */}
-            <Card>
+            <Card data-testid="card-sla-by-type">
               <CardHeader className="pb-2">
                 <CardTitle className="text-base font-semibold">{t('reports.by_type')}</CardTitle>
               </CardHeader>
@@ -306,12 +306,12 @@ export default function SlaReportsPage() {
           </div>
 
           {/* By Priority Table */}
-          <Card>
+          <Card data-testid="card-sla-by-priority">
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-semibold">{t('reports.by_priority')}</CardTitle>
             </CardHeader>
             <CardContent>
-              <Table>
+              <Table data-testid="table-sla-priority">
                 <TableHeader>
                   <TableRow className="hover:bg-transparent">
                     <TableHead className="font-semibold">{t('reports.col_priority')}</TableHead>

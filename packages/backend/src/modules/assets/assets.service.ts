@@ -209,17 +209,26 @@ export async function createAsset(
 ): Promise<unknown> {
   const d = db();
 
-  // Community Edition limit check
-  const [countResult] = await d
-    .select({ count: count() })
-    .from(assets)
-    .where(eq(assets.tenant_id, tenantId));
+  // License-aware limit check
+  const { validateLicenseKey } = await import('../../middleware/license.js');
+  const { getTenantLicenseKey } = await import('../tenants/tenants.service.js');
+  const licenseKey = await getTenantLicenseKey(tenantId);
+  const licensePayload = validateLicenseKey(licenseKey);
+  const maxAssets = licensePayload?.limits?.maxAssets ?? COMMUNITY_LIMITS.maxAssets;
 
-  const currentCount = countResult?.count ?? 0;
-  if (currentCount >= COMMUNITY_LIMITS.maxAssets) {
-    throw new LicenseLimitError(
-      `Asset limit reached (${COMMUNITY_LIMITS.maxAssets}). Upgrade to Enterprise for unlimited assets.`,
-    );
+  // -1 = unlimited (Enterprise)
+  if (maxAssets !== -1) {
+    const [countResult] = await d
+      .select({ count: count() })
+      .from(assets)
+      .where(eq(assets.tenant_id, tenantId));
+
+    const currentCount = countResult?.count ?? 0;
+    if (currentCount >= maxAssets) {
+      throw new LicenseLimitError(
+        `Asset limit reached (${maxAssets}). Upgrade to Enterprise for unlimited assets.`,
+      );
+    }
   }
 
   const now = new Date().toISOString();

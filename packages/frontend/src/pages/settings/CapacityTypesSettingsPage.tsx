@@ -170,7 +170,7 @@ export default function CapacityTypesSettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="page-capacity-types-settings">
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -181,7 +181,7 @@ export default function CapacityTypesSettingsPage() {
               </CardTitle>
               <CardDescription>{t('settings:capacity_types.description')}</CardDescription>
             </div>
-            <Button size="sm" onClick={() => { resetForm(); setDialogOpen(true); }}>
+            <Button size="sm" data-testid="btn-create-capacity-type" onClick={() => { resetForm(); setDialogOpen(true); }}>
               <Plus className="mr-1.5 h-3.5 w-3.5" />
               {t('settings:capacity_types.create')}
             </Button>
@@ -196,7 +196,7 @@ export default function CapacityTypesSettingsPage() {
             </div>
           ) : (
             <div className="rounded-md border">
-              <Table>
+              <Table data-testid="table-capacity-types">
                 <TableHeader>
                   <TableRow>
                     <TableHead>{t('settings:capacity_types.name_col')}</TableHead>
@@ -262,7 +262,7 @@ export default function CapacityTypesSettingsPage() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
-        <DialogContent className="sm:max-w-[450px]">
+        <DialogContent className="sm:max-w-[450px]" data-testid="modal-capacity-type">
           <DialogHeader>
             <DialogTitle>
               {editing ? t('settings:capacity_types.edit') : t('settings:capacity_types.create')}
@@ -281,11 +281,11 @@ export default function CapacityTypesSettingsPage() {
             )}
             <div className="grid gap-2">
               <Label>{t('settings:capacity_types.name_col')}</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Custom Metric" />
+              <Input data-testid="input-capacity-type-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Custom Metric" />
             </div>
             <div className="grid gap-2">
               <Label>{t('settings:capacity_types.unit_col')}</Label>
-              <Input value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="GB" />
+              <Input data-testid="input-capacity-type-unit" value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="GB" />
             </div>
             <div className="grid gap-2">
               <Label>{t('settings:capacity_types.category_field')}</Label>
@@ -297,6 +297,7 @@ export default function CapacityTypesSettingsPage() {
               {t('common:actions.cancel')}
             </Button>
             <Button
+              data-testid="btn-save-capacity-type"
               onClick={() => void handleSave()}
               disabled={!name.trim() || createType.isPending || updateType.isPending}
             >

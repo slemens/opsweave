@@ -93,7 +93,7 @@ function DecisionDialog({ item, onClose }: DecisionDialogProps) {
 
   return (
     <Dialog open={!!item} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg" data-testid="modal-cab-decision">
         <DialogHeader>
           <DialogTitle>{t('cab.decision_title')}</DialogTitle>
           <DialogDescription>
@@ -117,6 +117,7 @@ function DecisionDialog({ item, onClose }: DecisionDialogProps) {
             placeholder={t('cab.notes_placeholder')}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
+            data-testid="input-cab-notes"
             rows={3}
             className="resize-none"
           />
@@ -128,6 +129,7 @@ function DecisionDialog({ item, onClose }: DecisionDialogProps) {
             size="sm"
             onClick={() => void handleDecision('deferred')}
             disabled={cabDecision.isPending}
+            data-testid="btn-cab-defer"
           >
             <PauseCircle className="mr-1.5 h-4 w-4" />
             {t('cab.defer')}
@@ -137,6 +139,7 @@ function DecisionDialog({ item, onClose }: DecisionDialogProps) {
             size="sm"
             onClick={() => void handleDecision('rejected')}
             disabled={cabDecision.isPending}
+            data-testid="btn-cab-reject"
           >
             {cabDecision.isPending ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <XCircle className="mr-1.5 h-4 w-4" />}
             {t('cab.reject')}
@@ -145,6 +148,7 @@ function DecisionDialog({ item, onClose }: DecisionDialogProps) {
             size="sm"
             onClick={() => void handleDecision('approved')}
             disabled={cabDecision.isPending}
+            data-testid="btn-cab-approve"
           >
             {cabDecision.isPending ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-1.5 h-4 w-4" />}
             {t('cab.approve')}
@@ -173,7 +177,7 @@ function CabTable({ items, showDecision, onDecide }: { items: CabItem[]; showDec
 
   return (
     <div className="rounded-xl border border-border bg-card shadow-sm">
-      <Table>
+      <Table data-testid="table-cab-changes">
         <TableHeader>
           <TableRow className="hover:bg-transparent">
             <TableHead className="w-32 font-semibold">{t('cab.col_number')}</TableHead>
@@ -217,7 +221,7 @@ function CabTable({ items, showDecision, onDecide }: { items: CabItem[]; showDec
               )}
               {onDecide && (
                 <TableCell>
-                  <Button variant="outline" size="sm" onClick={() => onDecide(item)}>
+                  <Button variant="outline" size="sm" onClick={() => onDecide(item)} data-testid="btn-cab-decide">
                     {t('cab.decide')}
                   </Button>
                 </TableCell>
@@ -241,7 +245,7 @@ export default function CabBoardPage() {
   const [decidingItem, setDecidingItem] = useState<CabItem | null>(null);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="page-cab-board">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -269,7 +273,7 @@ export default function CabBoardPage() {
 
       <Tabs defaultValue="pending">
         <TabsList>
-          <TabsTrigger value="pending" className="gap-1.5">
+          <TabsTrigger value="pending" className="gap-1.5" data-testid="tab-cab-pending">
             <Clock className="h-4 w-4" />
             {t('cab.tab_pending')}
             {pending && pending.length > 0 && (
@@ -278,7 +282,7 @@ export default function CabBoardPage() {
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="all" className="gap-1.5">
+          <TabsTrigger value="all" className="gap-1.5" data-testid="tab-cab-all">
             <ShieldCheck className="h-4 w-4" />
             {t('cab.tab_all')}
           </TabsTrigger>

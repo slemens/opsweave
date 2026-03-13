@@ -104,7 +104,7 @@ export function Header() {
     );
 
   return (
-    <header className="flex h-14 items-center justify-between border-b border-border bg-background px-6">
+    <header className="flex h-14 items-center justify-between border-b border-border bg-background px-6" data-testid="header">
       {/* Left: Page title */}
       <div className="flex items-center gap-4">
         <h1 className="text-lg font-semibold">{pageTitle}</h1>
@@ -119,6 +119,7 @@ export function Header() {
             type="search"
             placeholder={`${t('actions.search')}...`}
             className="h-8 w-64 pl-8 text-sm"
+            data-testid="input-global-search"
           />
         </div>
 
@@ -127,7 +128,7 @@ export function Header() {
           <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
+                <Button variant="ghost" size="icon" className="h-8 w-8" data-testid="btn-theme-toggle">
                   {themeIcon}
                 </Button>
               </DropdownMenuTrigger>
@@ -165,6 +166,7 @@ export function Header() {
               onClick={() =>
                 handleLanguageChange(i18n.language === 'de' ? 'en' : 'de')
               }
+              data-testid="btn-language-toggle"
             >
               {i18n.language === 'de' ? 'DE' : 'EN'}
             </Button>
@@ -175,7 +177,7 @@ export function Header() {
         {/* Notifications */}
         <Tooltip delayDuration={0}>
           <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8 relative">
+            <Button variant="ghost" size="icon" className="h-8 w-8 relative" data-testid="btn-notifications">
               <Bell className="h-4 w-4" />
             </Button>
           </TooltipTrigger>
@@ -185,7 +187,7 @@ export function Header() {
         {/* User menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+            <Button variant="ghost" className="relative h-8 w-8 rounded-full" data-testid="btn-user-menu">
               <Avatar className="h-8 w-8">
                 <AvatarFallback className="bg-primary/10 text-primary text-xs">
                   {userInitials}
@@ -205,11 +207,11 @@ export function Header() {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => navigate('/settings/account')}>
+            <DropdownMenuItem onClick={() => navigate('/settings/account')} data-testid="nav-user-profile">
               <User className="mr-2 h-4 w-4" />
               {t('user_menu.profile')}
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate('/settings')}>
+            <DropdownMenuItem onClick={() => navigate('/settings')} data-testid="nav-user-settings">
               <Settings className="mr-2 h-4 w-4" />
               {t('user_menu.settings')}
             </DropdownMenuItem>
@@ -232,12 +234,12 @@ export function Header() {
                 </DropdownMenuRadioGroup>
               </DropdownMenuSubContent>
             </DropdownMenuSub>
-            <DropdownMenuItem>
+            <DropdownMenuItem data-testid="btn-switch-tenant">
               <Building2 className="mr-2 h-4 w-4" />
               {t('user_menu.switch_tenant')}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout}>
+            <DropdownMenuItem onClick={handleLogout} data-testid="btn-logout">
               <LogOut className="mr-2 h-4 w-4" />
               {t('auth.logout')}
             </DropdownMenuItem>

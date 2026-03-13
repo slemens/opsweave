@@ -165,13 +165,13 @@ function CreateTicketDialog({ open, onOpenChange, onCreated }: CreateTicketDialo
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg" data-testid="modal-create-portal-ticket">
         <DialogHeader>
           <DialogTitle>{t('create.title')}</DialogTitle>
           <DialogDescription>{t('create.description')}</DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4" data-testid="form-create-portal-ticket">
           {error && (
             <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
               {error}
@@ -215,6 +215,7 @@ function CreateTicketDialog({ open, onOpenChange, onCreated }: CreateTicketDialo
               required
               disabled={isSubmitting}
               autoFocus
+              data-testid="input-portal-ticket-title"
             />
           </div>
 
@@ -281,7 +282,7 @@ function CreateTicketDialog({ open, onOpenChange, onCreated }: CreateTicketDialo
             >
               Abbrechen
             </Button>
-            <Button type="submit" disabled={isSubmitting || !title.trim()}>
+            <Button type="submit" disabled={isSubmitting || !title.trim()} data-testid="btn-submit-portal-ticket">
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -379,12 +380,12 @@ export function PortalTicketsPage() {
   return (
     <>
       {/* Page header */}
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between" data-testid="page-portal-tickets">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">{t('tickets.title')}</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">{t('tickets.subtitle')}</p>
         </div>
-        <Button onClick={() => setCreateOpen(true)} className="sm:shrink-0">
+        <Button onClick={() => setCreateOpen(true)} className="sm:shrink-0" data-testid="btn-create-portal-ticket">
           <Plus className="mr-2 h-4 w-4" />
           {t('tickets.create_button')}
         </Button>
@@ -412,7 +413,7 @@ export function PortalTicketsPage() {
         <EmptyState onCreateClick={() => setCreateOpen(true)} />
       ) : (
         <div className="rounded-xl border border-border bg-card shadow-sm">
-          <Table>
+          <Table data-testid="table-portal-tickets">
             <TableHeader>
               <TableRow className="hover:bg-transparent">
                 <TableHead className="w-36 font-semibold">{t('tickets.col_number')}</TableHead>

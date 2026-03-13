@@ -228,7 +228,7 @@ export default function SlaSettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="page-sla-settings">
       {/* SLA Definitions */}
       <Card>
         <CardHeader>
@@ -240,7 +240,7 @@ export default function SlaSettingsPage() {
               </CardTitle>
               <CardDescription>{t('settings:sla.description')}</CardDescription>
             </div>
-            <Button size="sm" onClick={() => { resetDefForm(); setDefDialogOpen(true); }}>
+            <Button size="sm" data-testid="btn-create-sla" onClick={() => { resetDefForm(); setDefDialogOpen(true); }}>
               <Plus className="mr-1.5 h-3.5 w-3.5" />
               {t('settings:sla.create')}
             </Button>
@@ -255,7 +255,7 @@ export default function SlaSettingsPage() {
             </div>
           ) : (
             <div className="rounded-md border">
-              <Table>
+              <Table data-testid="table-sla-definitions">
                 <TableHeader>
                   <TableRow>
                     <TableHead>{t('settings:sla.name')}</TableHead>
@@ -386,6 +386,7 @@ export default function SlaSettingsPage() {
             <Button
               size="sm"
               variant="outline"
+              data-testid="btn-create-sla-assignment"
               onClick={() => setAssignDialogOpen(true)}
               disabled={defList.length === 0}
             >
@@ -401,7 +402,7 @@ export default function SlaSettingsPage() {
             </p>
           ) : (
             <div className="rounded-md border">
-              <Table>
+              <Table data-testid="table-sla-assignments">
                 <TableHeader>
                   <TableRow>
                     <TableHead>{t('settings:sla.name')}</TableHead>
@@ -462,7 +463,7 @@ export default function SlaSettingsPage() {
 
       {/* Create/Edit Definition Dialog */}
       <Dialog open={defDialogOpen} onOpenChange={(open) => { setDefDialogOpen(open); if (!open) resetDefForm(); }}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[500px]" data-testid="modal-sla-definition">
           <DialogHeader>
             <DialogTitle>
               {editingDef ? t('settings:sla.edit') : t('settings:sla.create')}
@@ -471,7 +472,7 @@ export default function SlaSettingsPage() {
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label>{t('settings:sla.name')}</Label>
-              <Input value={defName} onChange={(e) => setDefName(e.target.value)} placeholder="z.B. Gold 24/7" />
+              <Input data-testid="input-sla-name" value={defName} onChange={(e) => setDefName(e.target.value)} placeholder="z.B. Gold 24/7" />
             </div>
             <div className="grid gap-2">
               <Label>{t('settings:sla.description_field')}</Label>
@@ -538,7 +539,7 @@ export default function SlaSettingsPage() {
             <Button variant="outline" onClick={() => setDefDialogOpen(false)}>
               {t('common:actions.cancel')}
             </Button>
-            <Button onClick={handleSaveDef} disabled={!defName.trim() || createDef.isPending || updateDef.isPending}>
+            <Button data-testid="btn-save-sla" onClick={handleSaveDef} disabled={!defName.trim() || createDef.isPending || updateDef.isPending}>
               {createDef.isPending || updateDef.isPending ? t('common:status.loading') : t('common:actions.save')}
             </Button>
           </DialogFooter>
@@ -547,7 +548,7 @@ export default function SlaSettingsPage() {
 
       {/* Create Assignment Dialog */}
       <Dialog open={assignDialogOpen} onOpenChange={setAssignDialogOpen}>
-        <DialogContent className="sm:max-w-[450px]">
+        <DialogContent className="sm:max-w-[450px]" data-testid="modal-sla-assignment">
           <DialogHeader>
             <DialogTitle>{t('settings:sla.create_assignment')}</DialogTitle>
           </DialogHeader>
@@ -600,6 +601,7 @@ export default function SlaSettingsPage() {
               {t('common:actions.cancel')}
             </Button>
             <Button
+              data-testid="btn-save-sla-assignment"
               onClick={handleCreateAssign}
               disabled={!assignDefId || !assignScopeId || createAssign.isPending}
             >

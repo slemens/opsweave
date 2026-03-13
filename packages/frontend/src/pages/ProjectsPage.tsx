@@ -159,14 +159,14 @@ export default function ProjectsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="mx-auto max-w-6xl space-y-6" data-testid="page-projects">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">{t('projects:title')}</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">{t('projects:description')}</p>
         </div>
-        <Button onClick={() => { resetForm(); setDialogOpen(true); }}>
+        <Button onClick={() => { resetForm(); setDialogOpen(true); }} data-testid="btn-create-project">
           <Plus className="mr-1.5 h-4 w-4" />
           {t('projects:create')}
         </Button>
@@ -180,6 +180,7 @@ export default function ProjectsPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="pl-9"
+          data-testid="input-project-search"
         />
       </div>
 
@@ -194,7 +195,7 @@ export default function ProjectsPage() {
             </div>
           ) : (
             <div className="rounded-md border">
-              <Table>
+              <Table data-testid="table-projects">
                 <TableHeader>
                   <TableRow>
                     <TableHead>{t('projects:code')}</TableHead>
@@ -240,7 +241,7 @@ export default function ProjectsPage() {
 
       {/* Create Dialog */}
       <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[500px]" data-testid="modal-create-project">
           <DialogHeader>
             <DialogTitle>{t('projects:create')}</DialogTitle>
           </DialogHeader>
@@ -248,7 +249,7 @@ export default function ProjectsPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label>{t('projects:name_col')}</Label>
-                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Cloud Migration" />
+                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Cloud Migration" data-testid="input-project-name" />
               </div>
               <div className="grid gap-2">
                 <Label>{t('projects:code')}</Label>
@@ -256,6 +257,7 @@ export default function ProjectsPage() {
                   value={code}
                   onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, ''))}
                   placeholder="PRJ-001"
+                  data-testid="input-project-code"
                 />
               </div>
             </div>
@@ -296,6 +298,7 @@ export default function ProjectsPage() {
             <Button
               onClick={() => void handleCreate()}
               disabled={!name.trim() || !code.trim() || createProject.isPending}
+              data-testid="btn-submit-project"
             >
               {createProject.isPending ? t('common:status.loading') : t('common:actions.create')}
             </Button>

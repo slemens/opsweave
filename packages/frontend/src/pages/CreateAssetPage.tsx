@@ -115,10 +115,10 @@ export default function CreateAssetPage() {
 
   // ── Render ─────────────────────────────────────────────
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6" data-testid="page-create-asset">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/assets')}>
+        <Button variant="ghost" size="icon" onClick={() => navigate('/assets')} data-testid="btn-back">
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
@@ -141,7 +141,7 @@ export default function CreateAssetPage() {
                 const newType = (assetTypesData ?? []).find((at) => at.slug === v);
                 setCreateAttributes(getDefaultValues(newType?.attribute_schema ?? []));
               }}>
-                <SelectTrigger>
+                <SelectTrigger data-testid="select-asset-type">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -173,6 +173,7 @@ export default function CreateAssetPage() {
                     placeholder={t('placeholder_name')}
                     value={createName}
                     onChange={(e) => setCreateName(e.target.value)}
+                    data-testid="input-asset-name"
                   />
                 </div>
                 <div className="space-y-2">
@@ -181,6 +182,7 @@ export default function CreateAssetPage() {
                     placeholder={t('placeholder_display_name')}
                     value={createDisplayName}
                     onChange={(e) => setCreateDisplayName(e.target.value)}
+                    data-testid="input-asset-display-name"
                   />
                 </div>
               </div>
@@ -194,6 +196,7 @@ export default function CreateAssetPage() {
                     placeholder="10.0.0.1"
                     value={createIp}
                     onChange={(e) => setCreateIp(e.target.value)}
+                    data-testid="input-asset-ip"
                   />
                 </div>
                 <div className="space-y-2">
@@ -202,6 +205,7 @@ export default function CreateAssetPage() {
                     placeholder="DC-01 / Rack A3"
                     value={createLocation}
                     onChange={(e) => setCreateLocation(e.target.value)}
+                    data-testid="input-asset-location"
                   />
                 </div>
               </div>
@@ -236,7 +240,7 @@ export default function CreateAssetPage() {
               <div className="space-y-2">
                 <Label>{t('fields.sla_tier')}</Label>
                 <Select value={createSla} onValueChange={setCreateSla}>
-                  <SelectTrigger>
+                  <SelectTrigger data-testid="select-sla-tier">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -253,7 +257,7 @@ export default function CreateAssetPage() {
               <div className="space-y-2">
                 <Label>{t('fields.environment')}</Label>
                 <Select value={createEnv} onValueChange={setCreateEnv}>
-                  <SelectTrigger>
+                  <SelectTrigger data-testid="select-environment">
                     <SelectValue placeholder="—" />
                   </SelectTrigger>
                   <SelectContent>
@@ -271,7 +275,7 @@ export default function CreateAssetPage() {
               <div className="space-y-2">
                 <Label>{t('fields.customer')}</Label>
                 <Select value={createCustomer} onValueChange={setCreateCustomer}>
-                  <SelectTrigger>
+                  <SelectTrigger data-testid="select-customer">
                     <SelectValue placeholder="\u2014" />
                   </SelectTrigger>
                   <SelectContent>
@@ -293,11 +297,12 @@ export default function CreateAssetPage() {
               onClick={() => void handleCreate()}
               disabled={!createName.trim() || !createDisplayName.trim() || createAsset.isPending}
               className="w-full"
+              data-testid="btn-submit"
             >
               {createAsset.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {t('create')}
             </Button>
-            <Button variant="outline" onClick={() => navigate('/assets')} className="w-full">
+            <Button variant="outline" onClick={() => navigate('/assets')} className="w-full" data-testid="btn-cancel">
               {tCommon('actions.cancel')}
             </Button>
           </div>

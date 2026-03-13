@@ -146,11 +146,11 @@ function GroupsSection() {
           <CardTitle className="text-base">{t('settings:groups.title')}</CardTitle>
         </div>
         <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
+          <Button size="sm" variant="outline" data-testid="btn-import-users" onClick={() => setImportOpen(true)}>
             <Upload className="h-4 w-4 mr-2" />
             {t('settings:users.import.button')}
           </Button>
-          <Button size="sm" onClick={openCreate}>
+          <Button size="sm" data-testid="btn-create-group" onClick={openCreate}>
             <Plus className="h-4 w-4 mr-2" />
             {t('settings:groups.create')}
           </Button>
@@ -168,7 +168,7 @@ function GroupsSection() {
             <p className="text-xs mt-1">{t('settings:groups.empty_hint')}</p>
           </div>
         ) : (
-          <Table>
+          <Table data-testid="table-groups">
             <TableHeader>
               <TableRow>
                 <TableHead>{t('settings:groups.name')}</TableHead>
@@ -217,7 +217,7 @@ function GroupsSection() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" data-testid="modal-group">
           <DialogHeader>
             <DialogTitle>
               {editing ? t('settings:groups.edit') : t('settings:groups.create')}
@@ -227,6 +227,7 @@ function GroupsSection() {
             <div className="space-y-1.5">
               <Label>{t('settings:groups.name')}</Label>
               <Input
+                data-testid="input-group-name"
                 value={form.name}
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                 placeholder="Support Team"
@@ -235,7 +236,7 @@ function GroupsSection() {
             <div className="space-y-1.5">
               <Label>{t('settings:groups.type')}</Label>
               <Select value={form.group_type} onValueChange={v => setForm(f => ({ ...f, group_type: v as GroupType }))}>
-                <SelectTrigger>
+                <SelectTrigger data-testid="select-group-type">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -250,6 +251,7 @@ function GroupsSection() {
             <div className="space-y-1.5">
               <Label>{t('settings:groups.description')}</Label>
               <Textarea
+                data-testid="input-group-description"
                 value={form.description}
                 onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                 rows={2}
@@ -258,8 +260,8 @@ function GroupsSection() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>{tCommon('cancel')}</Button>
-            <Button onClick={() => { void handleSave(); }} disabled={!form.name || createGroup.isPending || updateGroup.isPending}>
+            <Button variant="outline" data-testid="btn-cancel-group" onClick={() => setDialogOpen(false)}>{tCommon('cancel')}</Button>
+            <Button data-testid="btn-save-group" onClick={() => { void handleSave(); }} disabled={!form.name || createGroup.isPending || updateGroup.isPending}>
               {tCommon('save')}
             </Button>
           </DialogFooter>
@@ -350,7 +352,7 @@ function CategoriesSection() {
         <div>
           <CardTitle className="text-base">{t('settings:categories.title')}</CardTitle>
         </div>
-        <Button size="sm" onClick={openCreate}>
+        <Button size="sm" data-testid="btn-create-category" onClick={openCreate}>
           <Plus className="h-4 w-4 mr-2" />
           {t('settings:categories.create')}
         </Button>
@@ -367,7 +369,7 @@ function CategoriesSection() {
             <p className="text-xs mt-1">{t('settings:categories.empty_hint')}</p>
           </div>
         ) : (
-          <Table>
+          <Table data-testid="table-categories">
             <TableHeader>
               <TableRow>
                 <TableHead>{t('settings:categories.name')}</TableHead>
@@ -398,7 +400,7 @@ function CategoriesSection() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-sm" data-testid="modal-category">
           <DialogHeader>
             <DialogTitle>
               {editing ? t('settings:categories.edit') : t('settings:categories.create')}
@@ -408,6 +410,7 @@ function CategoriesSection() {
             <div className="space-y-1.5">
               <Label>{t('settings:categories.name')}</Label>
               <Input
+                data-testid="input-category-name"
                 value={form.name}
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                 placeholder="Hardware"
@@ -416,7 +419,7 @@ function CategoriesSection() {
             <div className="space-y-1.5">
               <Label>{t('settings:categories.applies_to')}</Label>
               <Select value={form.applies_to} onValueChange={v => setForm(f => ({ ...f, applies_to: v }))}>
-                <SelectTrigger>
+                <SelectTrigger data-testid="select-category-applies-to">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -430,8 +433,8 @@ function CategoriesSection() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>{tCommon('cancel')}</Button>
-            <Button onClick={() => { void handleSave(); }} disabled={!form.name || createCategory.isPending || updateCategory.isPending}>
+            <Button variant="outline" data-testid="btn-cancel-category" onClick={() => setDialogOpen(false)}>{tCommon('cancel')}</Button>
+            <Button data-testid="btn-save-category" onClick={() => { void handleSave(); }} disabled={!form.name || createCategory.isPending || updateCategory.isPending}>
               {tCommon('save')}
             </Button>
           </DialogFooter>
@@ -446,7 +449,7 @@ function CategoriesSection() {
 // ============================================================
 export default function UsersSettingsPage() {
   return (
-    <div className="space-y-8">
+    <div className="space-y-8" data-testid="page-users-settings">
       <GroupsSection />
       <CategoriesSection />
     </div>

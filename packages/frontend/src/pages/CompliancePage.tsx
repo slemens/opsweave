@@ -248,7 +248,7 @@ function FrameworkDialog({ open, onClose, initial }: FrameworkDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>
-      <DialogContent className="sm:max-w-md dark:bg-slate-900 dark:border-slate-700">
+      <DialogContent className="sm:max-w-md dark:bg-slate-900 dark:border-slate-700" data-testid="modal-framework">
         <DialogHeader>
           <DialogTitle className="dark:text-white">
             {isEdit
@@ -262,7 +262,7 @@ function FrameworkDialog({ open, onClose, initial }: FrameworkDialogProps) {
           </DialogDescription>
         </DialogHeader>
 
-        <form id="framework-form" onSubmit={(e) => void handleSubmit(e)} className="space-y-4 py-2">
+        <form id="framework-form" onSubmit={(e) => void handleSubmit(e)} className="space-y-4 py-2" data-testid="form-framework">
           <div className="space-y-1.5">
             <Label className="dark:text-slate-300">{t('fields.name')} *</Label>
             <Input
@@ -388,7 +388,7 @@ function RequirementDialog({ open, onClose, frameworkId, initial }: RequirementD
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>
-      <DialogContent className="sm:max-w-md dark:bg-slate-900 dark:border-slate-700">
+      <DialogContent className="sm:max-w-md dark:bg-slate-900 dark:border-slate-700" data-testid="modal-requirement">
         <DialogHeader>
           <DialogTitle className="dark:text-white">
             {isEdit
@@ -402,7 +402,7 @@ function RequirementDialog({ open, onClose, frameworkId, initial }: RequirementD
           </DialogDescription>
         </DialogHeader>
 
-        <form id="requirement-form" onSubmit={(e) => void handleSubmit(e)} className="space-y-4 py-2">
+        <form id="requirement-form" onSubmit={(e) => void handleSubmit(e)} className="space-y-4 py-2" data-testid="form-requirement">
           <div className="space-y-1.5">
             <Label className="dark:text-slate-300">{t('fields.code')} *</Label>
             <Input
@@ -712,6 +712,7 @@ function FrameworksTab({
                   size="sm"
                   disabled={atCommunityLimit}
                   onClick={() => setCreateOpen(true)}
+                  data-testid="btn-create-framework"
                 >
                   <Plus className="mr-2 h-4 w-4" />
                   {t('frameworks.create')}
@@ -729,7 +730,7 @@ function FrameworksTab({
 
       {/* Table */}
       <div className="rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
-        <Table>
+        <Table data-testid="table-frameworks">
           <TableHeader>
             <TableRow className="dark:border-slate-700 dark:bg-slate-800/50">
               <TableHead className="dark:text-slate-400">{t('fields.name')}</TableHead>
@@ -832,7 +833,7 @@ function FrameworksTab({
 
       {/* Delete Confirmation */}
       <Dialog open={!!deleteTarget} onOpenChange={(v) => !v && setDeleteTarget(null)}>
-        <DialogContent className="sm:max-w-sm dark:bg-slate-900 dark:border-slate-700">
+        <DialogContent className="sm:max-w-sm dark:bg-slate-900 dark:border-slate-700" data-testid="modal-delete-framework">
           <DialogHeader>
             <DialogTitle className="dark:text-white">{tCommon('confirm_delete')}</DialogTitle>
             <DialogDescription className="dark:text-slate-400">
@@ -851,6 +852,7 @@ function FrameworksTab({
               variant="destructive"
               disabled={deleteMutation.isPending}
               onClick={() => void handleDelete()}
+              data-testid="btn-confirm-delete-framework"
             >
               {deleteMutation.isPending && <RefreshCw className="mr-2 h-4 w-4 animate-spin" />}
               {tCommon('delete')}
@@ -1354,7 +1356,7 @@ export function CompliancePage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 p-6 max-w-7xl mx-auto">
+    <div className="flex flex-col gap-6 p-6 max-w-7xl mx-auto" data-testid="page-compliance">
       {/* Page header */}
       <div className="flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600/10 dark:bg-blue-500/10">
@@ -1372,36 +1374,42 @@ export function CompliancePage() {
           <TabsTrigger
             value="frameworks"
             className="dark:data-[state=active]:bg-slate-700 dark:text-slate-300 dark:data-[state=active]:text-white"
+            data-testid="tab-frameworks"
           >
             {t('frameworks.title')}
           </TabsTrigger>
           <TabsTrigger
             value="requirements"
             className="dark:data-[state=active]:bg-slate-700 dark:text-slate-300 dark:data-[state=active]:text-white"
+            data-testid="tab-requirements"
           >
             {t('requirements.title')}
           </TabsTrigger>
           <TabsTrigger
             value="matrix"
             className="dark:data-[state=active]:bg-slate-700 dark:text-slate-300 dark:data-[state=active]:text-white"
+            data-testid="tab-matrix"
           >
             {t('matrix.title')}
           </TabsTrigger>
           <TabsTrigger
             value="controls"
             className="dark:data-[state=active]:bg-slate-700 dark:text-slate-300 dark:data-[state=active]:text-white"
+            data-testid="tab-controls"
           >
             {t('controls.title')}
           </TabsTrigger>
           <TabsTrigger
             value="audits"
             className="dark:data-[state=active]:bg-slate-700 dark:text-slate-300 dark:data-[state=active]:text-white"
+            data-testid="tab-audits"
           >
             {t('audits.title')}
           </TabsTrigger>
           <TabsTrigger
             value="evidence"
             className="dark:data-[state=active]:bg-slate-700 dark:text-slate-300 dark:data-[state=active]:text-white"
+            data-testid="tab-evidence"
           >
             {t('evidence.title')}
           </TabsTrigger>

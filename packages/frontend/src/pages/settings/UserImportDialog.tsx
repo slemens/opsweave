@@ -180,7 +180,7 @@ export default function UserImportDialog({ open, onOpenChange }: UserImportDialo
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl" data-testid="modal-import-users">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Upload className="h-5 w-5" />
@@ -222,13 +222,14 @@ export default function UserImportDialog({ open, onOpenChange }: UserImportDialo
                 type="file"
                 accept=".csv"
                 className="hidden"
+                data-testid="input-csv-file"
                 onChange={onFileChange}
               />
             </div>
 
             {/* Template download */}
             <div className="flex justify-center">
-              <Button variant="ghost" size="sm" onClick={downloadTemplate}>
+              <Button variant="ghost" size="sm" data-testid="btn-download-template" onClick={downloadTemplate}>
                 <Download className="h-4 w-4 mr-2" />
                 {t('settings:users.import.template')}
               </Button>
@@ -254,7 +255,7 @@ export default function UserImportDialog({ open, onOpenChange }: UserImportDialo
             </div>
 
             <div className="rounded-md border overflow-hidden">
-              <Table>
+              <Table data-testid="table-import-preview">
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-12">#</TableHead>
@@ -367,7 +368,7 @@ export default function UserImportDialog({ open, onOpenChange }: UserImportDialo
                   {t('settings:users.import.credentials_hint')}
                 </p>
                 <div className="rounded-md border overflow-hidden max-h-48 overflow-y-auto">
-                  <Table>
+                  <Table data-testid="table-import-credentials">
                     <TableHeader>
                       <TableRow>
                         <TableHead>Email</TableHead>
@@ -405,6 +406,7 @@ export default function UserImportDialog({ open, onOpenChange }: UserImportDialo
                 {tCommon('back')}
               </Button>
               <Button
+                data-testid="btn-import-submit"
                 onClick={() => { void handleImport(); }}
                 disabled={parsedRows.length === 0 || importUsers.isPending}
               >

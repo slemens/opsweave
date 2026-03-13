@@ -149,7 +149,7 @@ export default function EscalationSettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="page-escalation-settings">
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -162,7 +162,7 @@ export default function EscalationSettingsPage() {
                 {t('settings:escalation.description')}
               </CardDescription>
             </div>
-            <Button size="sm" onClick={openCreate}>
+            <Button size="sm" data-testid="btn-create-escalation" onClick={openCreate}>
               <Plus className="mr-1 h-4 w-4" />
               {t('settings:escalation.create')}
             </Button>
@@ -204,12 +204,14 @@ export default function EscalationSettingsPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Switch
+                      data-testid={`input-escalation-active-${rule.id}`}
                       checked={rule.is_active === 1}
                       onCheckedChange={() => handleToggleActive(rule)}
                     />
                     <Button
                       variant="ghost"
                       size="icon"
+                      data-testid={`btn-edit-escalation-${rule.id}`}
                       onClick={() => openEdit(rule)}
                     >
                       <Pencil className="h-4 w-4" />
@@ -217,6 +219,7 @@ export default function EscalationSettingsPage() {
                     <Button
                       variant="ghost"
                       size="icon"
+                      data-testid={`btn-delete-escalation-${rule.id}`}
                       onClick={() => handleDelete(rule.id)}
                     >
                       <Trash2 className="h-4 w-4" />
@@ -231,7 +234,7 @@ export default function EscalationSettingsPage() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
+        <DialogContent data-testid="modal-escalation">
           <DialogHeader>
             <DialogTitle>
               {editingRule
@@ -243,6 +246,7 @@ export default function EscalationSettingsPage() {
             <div className="space-y-2">
               <Label>{t('settings:escalation.name')}</Label>
               <Input
+                data-testid="input-escalation-name"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
               />
@@ -334,6 +338,7 @@ export default function EscalationSettingsPage() {
               {t('common:actions.cancel')}
             </Button>
             <Button
+              data-testid="btn-save-escalation"
               onClick={handleSave}
               disabled={
                 !form.name ||

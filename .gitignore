@@ -26,3 +26,5 @@ packages/frontend/playwright.config.d.ts.map
 scripts/generate-license.ts
 playwright-report/
 test-results/
+e2e/report/
+e2e/results/

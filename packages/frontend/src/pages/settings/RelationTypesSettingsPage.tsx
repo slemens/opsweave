@@ -144,7 +144,7 @@ export default function RelationTypesSettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="page-relation-types-settings">
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -155,7 +155,7 @@ export default function RelationTypesSettingsPage() {
               </CardTitle>
               <CardDescription>{t('settings:relation_types.description')}</CardDescription>
             </div>
-            <Button size="sm" onClick={() => { resetForm(); setDialogOpen(true); }}>
+            <Button size="sm" data-testid="btn-create-relation-type" onClick={() => { resetForm(); setDialogOpen(true); }}>
               <Plus className="mr-1.5 h-3.5 w-3.5" />
               {t('settings:relation_types.create')}
             </Button>
@@ -170,7 +170,7 @@ export default function RelationTypesSettingsPage() {
             </div>
           ) : (
             <div className="rounded-md border">
-              <Table>
+              <Table data-testid="table-relation-types">
                 <TableHeader>
                   <TableRow>
                     <TableHead>{t('settings:relation_types.slug')}</TableHead>
@@ -269,7 +269,7 @@ export default function RelationTypesSettingsPage() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[500px]" data-testid="modal-relation-type">
           <DialogHeader>
             <DialogTitle>
               {editing ? t('settings:relation_types.edit') : t('settings:relation_types.create')}
@@ -279,6 +279,7 @@ export default function RelationTypesSettingsPage() {
             <div className="grid gap-2">
               <Label>{t('settings:relation_types.slug')}</Label>
               <Input
+                data-testid="input-relation-type-slug"
                 value={slug}
                 onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '_'))}
                 placeholder="my_relation"
@@ -287,7 +288,7 @@ export default function RelationTypesSettingsPage() {
             </div>
             <div className="grid gap-2">
               <Label>{t('settings:relation_types.name_col')}</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="My Relation" />
+              <Input data-testid="input-relation-type-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="My Relation" />
             </div>
             <div className="grid gap-2">
               <Label>{t('settings:relation_types.description_field')}</Label>
@@ -322,6 +323,7 @@ export default function RelationTypesSettingsPage() {
               {t('common:actions.cancel')}
             </Button>
             <Button
+              data-testid="btn-save-relation-type"
               onClick={() => void handleSave()}
               disabled={!name.trim() || !slug.trim() || createType.isPending || updateType.isPending}
             >

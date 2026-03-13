@@ -303,6 +303,7 @@ function AddCommentForm({ ticketId }: AddCommentFormProps) {
         placeholder={t('comments.placeholder')}
         rows={3}
         className="resize-none"
+        data-testid="input-comment"
         onKeyDown={(e) => {
           if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
             e.preventDefault();
@@ -316,6 +317,7 @@ function AddCommentForm({ ticketId }: AddCommentFormProps) {
             id="internal-switch"
             checked={isInternal}
             onCheckedChange={setIsInternal}
+            data-testid="input-internal-toggle"
           />
           <Label htmlFor="internal-switch" className="text-sm text-muted-foreground cursor-pointer">
             {t('comments.internal')}
@@ -325,6 +327,7 @@ function AddCommentForm({ ticketId }: AddCommentFormProps) {
           size="sm"
           onClick={handleSubmit}
           disabled={!content.trim() || addComment.isPending}
+          data-testid="btn-add-comment"
         >
           <Send className="mr-2 h-3.5 w-3.5" />
           {t('comments.add')}
@@ -915,7 +918,7 @@ export function TicketDetailPage() {
   const isBreach = ticket.sla_breached === 1;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="page-ticket-detail">
       {/* Header */}
       <div className="flex items-start gap-4">
         <Button
@@ -924,6 +927,7 @@ export function TicketDetailPage() {
           onClick={() => navigate('/tickets')}
           aria-label={tCommon('actions.back')}
           className="shrink-0 mt-0.5"
+          data-testid="btn-back"
         >
           <ArrowLeft className="h-4 w-4" />
         </Button>
@@ -1337,7 +1341,7 @@ export function TicketDetailPage() {
           {/* Tabs: Comments / History / Workflow / KB */}
           <Tabs defaultValue="comments" className="w-full">
             <TabsList className="grid w-full grid-cols-4 max-w-[600px]">
-              <TabsTrigger value="comments" className="gap-1.5">
+              <TabsTrigger value="comments" className="gap-1.5" data-testid="tab-comments">
                 <MessageSquare className="h-3.5 w-3.5" />
                 {t('comments.title')}
                 {comments.length > 0 && (
@@ -1346,7 +1350,7 @@ export function TicketDetailPage() {
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="history" className="gap-1.5">
+              <TabsTrigger value="history" className="gap-1.5" data-testid="tab-history">
                 <History className="h-3.5 w-3.5" />
                 {t('history.title')}
                 {history.length > 0 && (
@@ -1355,7 +1359,7 @@ export function TicketDetailPage() {
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="workflow" className="gap-1.5">
+              <TabsTrigger value="workflow" className="gap-1.5" data-testid="tab-workflow">
                 <GitBranch className="h-3.5 w-3.5" />
                 {tWf('title')}
                 {workflowInstance?.status === 'active' && (
@@ -1364,7 +1368,7 @@ export function TicketDetailPage() {
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="kb" className="gap-1.5">
+              <TabsTrigger value="kb" className="gap-1.5" data-testid="tab-knowledge-base">
                 <BookOpen className="h-3.5 w-3.5" />
                 {tKb('ticket_tab.title')}
               </TabsTrigger>
@@ -1685,7 +1689,7 @@ export function TicketDetailPage() {
                   onValueChange={handleStatusChange}
                   disabled={updateStatus.isPending}
                 >
-                  <SelectTrigger className="h-7 w-[130px] text-xs">
+                  <SelectTrigger className="h-7 w-[130px] text-xs" data-testid="select-status">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -1704,7 +1708,7 @@ export function TicketDetailPage() {
                   value={ticket.impact ?? '__none__'}
                   onValueChange={handleImpactChange}
                 >
-                  <SelectTrigger className="h-8 text-xs">
+                  <SelectTrigger className="h-8 text-xs" data-testid="select-impact">
                     <SelectValue placeholder="-" />
                   </SelectTrigger>
                   <SelectContent>
@@ -1726,7 +1730,7 @@ export function TicketDetailPage() {
                   value={ticket.urgency ?? '__none__'}
                   onValueChange={handleUrgencyChange}
                 >
-                  <SelectTrigger className="h-8 text-xs">
+                  <SelectTrigger className="h-8 text-xs" data-testid="select-urgency">
                     <SelectValue placeholder="-" />
                   </SelectTrigger>
                   <SelectContent>
@@ -1763,7 +1767,7 @@ export function TicketDetailPage() {
                     onValueChange={handlePriorityChange}
                     disabled={updatePriority.isPending}
                   >
-                    <SelectTrigger className="h-7 w-[130px] text-xs">
+                    <SelectTrigger className="h-7 w-[130px] text-xs" data-testid="select-priority">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -1796,7 +1800,7 @@ export function TicketDetailPage() {
                   value={ticket.assignee_id ?? '__none__'}
                   onValueChange={handleAssigneeChange}
                 >
-                  <SelectTrigger className="h-8 text-xs">
+                  <SelectTrigger className="h-8 text-xs" data-testid="select-assignee">
                     <SelectValue placeholder={t('unassigned')} />
                   </SelectTrigger>
                   <SelectContent>
@@ -1818,7 +1822,7 @@ export function TicketDetailPage() {
                   value={ticket.assignee_group_id ?? '__none__'}
                   onValueChange={handleGroupChange}
                 >
-                  <SelectTrigger className="h-8 text-xs">
+                  <SelectTrigger className="h-8 text-xs" data-testid="select-group">
                     <SelectValue placeholder="-" />
                   </SelectTrigger>
                   <SelectContent>
@@ -1869,7 +1873,7 @@ export function TicketDetailPage() {
                   value={ticket.customer_id ?? '__none__'}
                   onValueChange={handleCustomerChange}
                 >
-                  <SelectTrigger className="h-8 text-xs">
+                  <SelectTrigger className="h-8 text-xs" data-testid="select-customer">
                     <SelectValue placeholder={t('no_customer')} />
                   </SelectTrigger>
                   <SelectContent>

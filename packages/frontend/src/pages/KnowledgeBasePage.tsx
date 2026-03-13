@@ -551,7 +551,7 @@ export function KnowledgeBasePage() {
 
   // ── Render ─────────────────────────────────────────────────
   return (
-    <div className="flex flex-col gap-6 p-6">
+    <div className="flex flex-col gap-6 p-6" data-testid="page-knowledge-base">
       {/* Page header */}
       <div className="flex items-start justify-between gap-4">
         <div>
@@ -562,7 +562,7 @@ export function KnowledgeBasePage() {
             {t('subtitle')}
           </p>
         </div>
-        <Button onClick={openCreateDialog} className="shrink-0">
+        <Button onClick={openCreateDialog} className="shrink-0" data-testid="btn-create-article">
           <Plus className="mr-1.5 h-4 w-4" />
           {t('new_article')}
         </Button>
@@ -577,11 +577,12 @@ export function KnowledgeBasePage() {
             placeholder={t('search_placeholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            data-testid="input-search-articles"
           />
         </div>
 
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[160px] h-9 text-sm dark:bg-slate-800 dark:border-slate-700 dark:text-white">
+          <SelectTrigger className="w-[160px] h-9 text-sm dark:bg-slate-800 dark:border-slate-700 dark:text-white" data-testid="select-status-filter">
             <SelectValue placeholder={t('all_statuses')} />
           </SelectTrigger>
           <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
@@ -593,7 +594,7 @@ export function KnowledgeBasePage() {
         </Select>
 
         <Select value={visibilityFilter} onValueChange={setVisibilityFilter}>
-          <SelectTrigger className="w-[160px] h-9 text-sm dark:bg-slate-800 dark:border-slate-700 dark:text-white">
+          <SelectTrigger className="w-[160px] h-9 text-sm dark:bg-slate-800 dark:border-slate-700 dark:text-white" data-testid="select-visibility-filter">
             <SelectValue placeholder="Alle Sichtbarkeiten" />
           </SelectTrigger>
           <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
@@ -626,7 +627,7 @@ export function KnowledgeBasePage() {
       {/* Table */}
       {!isError && (
         <div className="rounded-lg border border-border dark:border-slate-700 overflow-hidden">
-          <Table>
+          <Table data-testid="table-articles">
             <TableHeader>
               <TableRow className="bg-muted/40 hover:bg-muted/40 dark:bg-slate-800/60 dark:hover:bg-slate-800/60">
                 <TableHead className="dark:text-slate-400">{t('fields.title')}</TableHead>
@@ -708,6 +709,7 @@ export function KnowledgeBasePage() {
                       key={article.id}
                       className="transition-colors hover:bg-muted/50 dark:border-slate-700 dark:hover:bg-slate-800/50 cursor-pointer"
                       onClick={() => setViewingArticle(article)}
+                      data-testid={`row-article-${article.id}`}
                     >
                       {/* Title */}
                       <TableCell>

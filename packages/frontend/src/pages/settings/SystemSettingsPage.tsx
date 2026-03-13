@@ -47,7 +47,7 @@ export default function SystemSettingsPage() {
   ];
 
   return (
-    <Card>
+    <Card data-testid="page-system-settings">
       <CardHeader>
         <CardTitle className="text-base flex items-center gap-2">
           <Server className="h-4 w-4" />

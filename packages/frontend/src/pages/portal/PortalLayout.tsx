@@ -51,7 +51,7 @@ export function PortalLayout() {
       {/* ------------------------------------------------------------------ */}
       {/* Header                                                              */}
       {/* ------------------------------------------------------------------ */}
-      <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+      <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80" data-testid="portal-header">
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           {/* Left: Logo + badge + nav */}
           <div className="flex items-center gap-4">
@@ -67,9 +67,10 @@ export function PortalLayout() {
                 </div>
               </div>
             </div>
-            <nav className="hidden sm:flex items-center gap-1">
+            <nav className="hidden sm:flex items-center gap-1" data-testid="portal-nav">
               <NavLink
                 to="/portal/tickets"
+                data-testid="nav-portal-tickets"
                 className={({ isActive }) =>
                   `flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                     isActive
@@ -83,6 +84,7 @@ export function PortalLayout() {
               </NavLink>
               <NavLink
                 to="/portal/kb"
+                data-testid="nav-portal-kb"
                 className={({ isActive }) =>
                   `flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                     isActive
@@ -104,6 +106,7 @@ export function PortalLayout() {
                 variant="ghost"
                 size="sm"
                 className="flex items-center gap-2 px-2 hover:bg-muted"
+                data-testid="btn-portal-user-menu"
               >
                 <Avatar className="h-7 w-7">
                   <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
@@ -130,6 +133,7 @@ export function PortalLayout() {
               <DropdownMenuItem
                 className="cursor-pointer text-destructive focus:text-destructive"
                 onClick={handleLogout}
+                data-testid="btn-portal-logout"
               >
                 <LogOut className="mr-2 h-4 w-4" />
                 {t('nav.logout')}

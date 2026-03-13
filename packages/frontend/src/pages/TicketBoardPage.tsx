@@ -183,6 +183,7 @@ function TicketCard({ ticket, locale }: TicketCardProps) {
       onClick={() => navigate(`/tickets/${ticket.id}`)}
       role="button"
       tabIndex={0}
+      data-testid={`card-ticket-${ticket.id}`}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
@@ -306,7 +307,7 @@ function BoardColumn({ status, tickets, count, locale }: BoardColumnProps) {
   const { t } = useTranslation('tickets');
 
   return (
-    <div className="flex-shrink-0 w-72 flex flex-col">
+    <div className="flex-shrink-0 w-72 flex flex-col" data-testid={`board-column-${status}`}>
       {/* Column header */}
       <div className="flex items-center gap-2 mb-3 px-1">
         <div className={cn('h-2.5 w-2.5 rounded-full', columnDotColors[status])} />
@@ -698,7 +699,7 @@ function TicketListView({
         </Button>
       </div>
       <div className="border rounded-lg overflow-x-auto">
-        <Table className="min-w-[1300px]">
+        <Table className="min-w-[1300px]" data-testid="table-tickets">
           <TableHeader>
             <TableRow className="bg-muted/30 hover:bg-muted/30">
               <TableHead className="w-10 px-3">
@@ -798,6 +799,7 @@ function TicketListView({
                     ticket.is_major_incident === 1 && 'bg-red-50/60 dark:bg-red-950/20 border-l-2 border-l-red-500',
                   )}
                   onClick={() => navigate(`/tickets/${ticket.id}`)}
+                  data-testid={`row-ticket-${ticket.id}`}
                 >
                   <TableCell className="px-3" onClick={(e) => e.stopPropagation()}>
                     <Checkbox
@@ -1189,7 +1191,7 @@ export function TicketBoardPage() {
   const totalPages = listMeta ? Math.ceil(listMeta.total / listMeta.limit) : 1;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-testid="page-ticket-board">
       {/* Page header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
@@ -1209,6 +1211,7 @@ export function TicketBoardPage() {
               className={cn('rounded-none h-8 px-3', !isListView && 'pointer-events-none')}
               onClick={() => setViewMode('board')}
               aria-label={t('board.view_board')}
+              data-testid="btn-view-board"
             >
               <LayoutGrid className="h-4 w-4" />
             </Button>
@@ -1218,12 +1221,13 @@ export function TicketBoardPage() {
               className={cn('rounded-none h-8 px-3', isListView && 'pointer-events-none')}
               onClick={() => setViewMode('list')}
               aria-label={t('board.view_list')}
+              data-testid="btn-view-list"
             >
               <List className="h-4 w-4" />
             </Button>
           </div>
 
-          <Button onClick={() => navigate('/tickets/new')}>
+          <Button onClick={() => navigate('/tickets/new')} data-testid="btn-create-ticket">
             <Plus className="mr-2 h-4 w-4" />
             {t('create')}
           </Button>
@@ -1302,6 +1306,7 @@ export function TicketBoardPage() {
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={tCommon('actions.search')}
             className="pl-8 h-8"
+            data-testid="input-search-tickets"
           />
         </div>
 
@@ -1331,6 +1336,7 @@ export function TicketBoardPage() {
           className="h-8 w-8"
           onClick={() => void activeQuery.refetch()}
           aria-label={tCommon('actions.refresh')}
+          data-testid="btn-refresh"
         >
           <RefreshCw className="h-4 w-4" />
         </Button>

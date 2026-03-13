@@ -152,7 +152,7 @@ export default function AssetTypesSettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="page-asset-types-settings">
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -163,7 +163,7 @@ export default function AssetTypesSettingsPage() {
               </CardTitle>
               <CardDescription>{t('settings:asset_types.description')}</CardDescription>
             </div>
-            <Button size="sm" onClick={() => { resetForm(); setDialogOpen(true); }}>
+            <Button size="sm" data-testid="btn-create-asset-type" onClick={() => { resetForm(); setDialogOpen(true); }}>
               <Plus className="mr-1.5 h-3.5 w-3.5" />
               {t('settings:asset_types.create')}
             </Button>
@@ -178,7 +178,7 @@ export default function AssetTypesSettingsPage() {
             </div>
           ) : (
             <div className="rounded-md border">
-              <Table>
+              <Table data-testid="table-asset-types">
                 <TableHeader>
                   <TableRow>
                     <TableHead>{t('settings:asset_types.slug')}</TableHead>
@@ -272,7 +272,7 @@ export default function AssetTypesSettingsPage() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[500px]" data-testid="modal-asset-type">
           <DialogHeader>
             <DialogTitle>
               {editing ? t('settings:asset_types.edit') : t('settings:asset_types.create')}
@@ -282,6 +282,7 @@ export default function AssetTypesSettingsPage() {
             <div className="grid gap-2">
               <Label>{t('settings:asset_types.slug')}</Label>
               <Input
+                data-testid="input-asset-type-slug"
                 value={slug}
                 onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '_'))}
                 placeholder="my_custom_type"
@@ -290,7 +291,7 @@ export default function AssetTypesSettingsPage() {
             </div>
             <div className="grid gap-2">
               <Label>{t('settings:asset_types.name_col')}</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="My Custom Type" />
+              <Input data-testid="input-asset-type-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="My Custom Type" />
             </div>
             <div className="grid gap-2">
               <Label>{t('settings:asset_types.description_field')}</Label>
@@ -325,6 +326,7 @@ export default function AssetTypesSettingsPage() {
               {t('common:actions.cancel')}
             </Button>
             <Button
+              data-testid="btn-save-asset-type"
               onClick={() => void handleSave()}
               disabled={!name.trim() || !slug.trim() || createType.isPending || updateType.isPending}
             >

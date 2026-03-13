@@ -300,10 +300,11 @@ function ServiceDescriptionsTab() {
               placeholder={tCatalog('filters.search_placeholder')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              data-testid="input-service-search"
             />
           </div>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[160px] h-8 text-sm">
+            <SelectTrigger className="w-[160px] h-8 text-sm" data-testid="select-service-status-filter">
               <SelectValue placeholder={tCatalog('filters.all_statuses')} />
             </SelectTrigger>
             <SelectContent>
@@ -314,7 +315,7 @@ function ServiceDescriptionsTab() {
             </SelectContent>
           </Select>
         </div>
-        <Button size="sm" onClick={openCreateDialog}>
+        <Button size="sm" onClick={openCreateDialog} data-testid="btn-create-service-description">
           <Plus className="mr-1.5 h-4 w-4" />
           {tCatalog('descriptions.create')}
         </Button>
@@ -342,7 +343,7 @@ function ServiceDescriptionsTab() {
       {/* Table */}
       {!isError && (
         <div className="rounded-lg border border-border overflow-hidden">
-          <Table>
+          <Table data-testid="table-service-descriptions">
             <TableHeader>
               <TableRow className="bg-muted/40 hover:bg-muted/40">
                 <TableHead className="w-[130px]">{tCatalog('fields.code')}</TableHead>
@@ -474,7 +475,7 @@ function ServiceDescriptionsTab() {
 
       {/* Create / Edit Dialog */}
       <Dialog open={descDialogOpen} onOpenChange={setDescDialogOpen}>
-        <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto" data-testid="modal-service-description">
           <DialogHeader>
             <DialogTitle>
               {editingDesc
@@ -593,7 +594,7 @@ function ServiceDescriptionsTab() {
 
       {/* Delete Confirm Dialog */}
       <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" data-testid="modal-delete-service-description">
           <DialogHeader>
             <DialogTitle>{tCommon('delete')}</DialogTitle>
             <DialogDescription>{tCatalog('dialogs.delete_confirm')}</DialogDescription>
@@ -1560,7 +1561,7 @@ export function ServiceCatalogPage() {
   const { t: tCatalog } = useTranslation('catalog');
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5" data-testid="page-service-catalog">
       {/* Page header */}
       <div>
         <h2 className="text-2xl font-bold tracking-tight">{tCatalog('title')}</h2>
@@ -1569,15 +1570,15 @@ export function ServiceCatalogPage() {
 
       <Tabs defaultValue="descriptions" className="space-y-4">
         <TabsList className="h-9">
-          <TabsTrigger value="descriptions" className="gap-1.5 text-sm">
+          <TabsTrigger value="descriptions" className="gap-1.5 text-sm" data-testid="tab-descriptions">
             <BookOpen className="h-3.5 w-3.5" />
             {tCatalog('descriptions.title')}
           </TabsTrigger>
-          <TabsTrigger value="horizontal" className="gap-1.5 text-sm">
+          <TabsTrigger value="horizontal" className="gap-1.5 text-sm" data-testid="tab-horizontal">
             <Layers className="h-3.5 w-3.5" />
             {tCatalog('horizontal.title')}
           </TabsTrigger>
-          <TabsTrigger value="vertical" className="gap-1.5 text-sm">
+          <TabsTrigger value="vertical" className="gap-1.5 text-sm" data-testid="tab-vertical">
             <Lock className="h-3.5 w-3.5 opacity-60" />
             {tCatalog('vertical.title')}
           </TabsTrigger>
