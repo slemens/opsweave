@@ -65,6 +65,7 @@ import {
   escalationRules,
   monitoringSources,
   knownErrors,
+  serviceScopeItems,
 } from '../schema/index.js';
 import { DEMO_LICENSE_KEY } from './demo-license.js';
 
@@ -1461,6 +1462,38 @@ async function doSeed(): Promise<void> {
   ]);
   logger.info('  ✓ Service Descriptions: 8 service descriptions');
 
+  // ─── Service Scope Items (REQ-2.2c) ────────────────────
+  await db.insert(serviceScopeItems).values([
+    // SVC-EMAIL scope items
+    { id: uuidv4(), tenant_id: tenantId, service_id: svcEmailId, item_description: 'E-Mail-Server Betrieb (Exchange/IMAP)', scope_type: 'included', sort_order: 0, notes: null, created_at: now, updated_at: now },
+    { id: uuidv4(), tenant_id: tenantId, service_id: svcEmailId, item_description: 'Spam- und Virenschutz', scope_type: 'included', sort_order: 1, notes: null, created_at: now, updated_at: now },
+    { id: uuidv4(), tenant_id: tenantId, service_id: svcEmailId, item_description: 'Postfach-Verwaltung bis 50 GB', scope_type: 'included', sort_order: 2, notes: null, created_at: now, updated_at: now },
+    { id: uuidv4(), tenant_id: tenantId, service_id: svcEmailId, item_description: 'Mobile-Sync (ActiveSync)', scope_type: 'included', sort_order: 3, notes: null, created_at: now, updated_at: now },
+    { id: uuidv4(), tenant_id: tenantId, service_id: svcEmailId, item_description: 'E-Mail-Migration von Drittanbietern', scope_type: 'excluded', sort_order: 4, notes: null, created_at: now, updated_at: now },
+    { id: uuidv4(), tenant_id: tenantId, service_id: svcEmailId, item_description: 'Marketing-Mails und Newsletter-Versand', scope_type: 'excluded', sort_order: 5, notes: null, created_at: now, updated_at: now },
+    { id: uuidv4(), tenant_id: tenantId, service_id: svcEmailId, item_description: 'E-Mail-Archivierung (10 Jahre)', scope_type: 'addon', sort_order: 6, notes: 'Kostenpflichtige Zusatzleistung', created_at: now, updated_at: now },
+    // SVC-DB scope items
+    { id: uuidv4(), tenant_id: tenantId, service_id: svcDatabaseId, item_description: 'DB-Installation und Konfiguration', scope_type: 'included', sort_order: 0, notes: null, created_at: now, updated_at: now },
+    { id: uuidv4(), tenant_id: tenantId, service_id: svcDatabaseId, item_description: 'Patch-Management und Updates', scope_type: 'included', sort_order: 1, notes: null, created_at: now, updated_at: now },
+    { id: uuidv4(), tenant_id: tenantId, service_id: svcDatabaseId, item_description: 'Tägliche Backups mit 30-Tage-Retention', scope_type: 'included', sort_order: 2, notes: null, created_at: now, updated_at: now },
+    { id: uuidv4(), tenant_id: tenantId, service_id: svcDatabaseId, item_description: 'Applikationsspezifische DB-Optimierung', scope_type: 'excluded', sort_order: 3, notes: 'Verantwortung des Applikationsteams', created_at: now, updated_at: now },
+    { id: uuidv4(), tenant_id: tenantId, service_id: svcDatabaseId, item_description: 'Schema-Design und Datenmigration', scope_type: 'excluded', sort_order: 4, notes: null, created_at: now, updated_at: now },
+    { id: uuidv4(), tenant_id: tenantId, service_id: svcDatabaseId, item_description: 'Read-Replica Bereitstellung', scope_type: 'optional', sort_order: 5, notes: 'Auf Anfrage verfügbar', created_at: now, updated_at: now },
+    // SVC-NET scope items
+    { id: uuidv4(), tenant_id: tenantId, service_id: svcNetworkId, item_description: 'Switching und Routing', scope_type: 'included', sort_order: 0, notes: null, created_at: now, updated_at: now },
+    { id: uuidv4(), tenant_id: tenantId, service_id: svcNetworkId, item_description: 'Firewall-Management', scope_type: 'included', sort_order: 1, notes: null, created_at: now, updated_at: now },
+    { id: uuidv4(), tenant_id: tenantId, service_id: svcNetworkId, item_description: 'VPN-Zugänge und WLAN', scope_type: 'included', sort_order: 2, notes: null, created_at: now, updated_at: now },
+    { id: uuidv4(), tenant_id: tenantId, service_id: svcNetworkId, item_description: 'ISP-Leitungen und Mobilfunkverträge', scope_type: 'excluded', sort_order: 3, notes: null, created_at: now, updated_at: now },
+    { id: uuidv4(), tenant_id: tenantId, service_id: svcNetworkId, item_description: 'SD-WAN Overlay-Netzwerk', scope_type: 'addon', sort_order: 4, notes: 'Enterprise-Zusatzleistung', created_at: now, updated_at: now },
+    // SVC-BKP scope items
+    { id: uuidv4(), tenant_id: tenantId, service_id: svcBackupId, item_description: 'Tägliche Backups aller Server', scope_type: 'included', sort_order: 0, notes: null, created_at: now, updated_at: now },
+    { id: uuidv4(), tenant_id: tenantId, service_id: svcBackupId, item_description: '30-Tage-Retention und Off-Site-Kopie', scope_type: 'included', sort_order: 1, notes: null, created_at: now, updated_at: now },
+    { id: uuidv4(), tenant_id: tenantId, service_id: svcBackupId, item_description: 'Restore-Tests (monatlich)', scope_type: 'included', sort_order: 2, notes: null, created_at: now, updated_at: now },
+    { id: uuidv4(), tenant_id: tenantId, service_id: svcBackupId, item_description: 'Langzeitarchivierung (>1 Jahr)', scope_type: 'excluded', sort_order: 3, notes: null, created_at: now, updated_at: now },
+    { id: uuidv4(), tenant_id: tenantId, service_id: svcBackupId, item_description: 'Client-Geräte-Backup', scope_type: 'optional', sort_order: 4, notes: 'Erfordert Endpoint-Agent', created_at: now, updated_at: now },
+  ]);
+  logger.info('  ✓ Service Scope Items: 23 scope items for 4 services');
+
   // ─── Horizontal Catalog ────────────────────────────────
   const catalogStandardId = uuidv4();
   const catalogPremiumId = uuidv4();
@@ -2226,6 +2259,14 @@ async function doSeed(): Promise<void> {
       business_hours_end: null,
       business_days: '1,2,3,4,5,6,7',
       priority_overrides: '{}',
+      availability_pct: '99.9',
+      support_level: '24x7',
+      recovery_class: 'Tier 1',
+      business_criticality: 'high',
+      penalty_clause: 'Bei Unterschreitung der vereinbarten Verfügbarkeit von 99,9% wird eine Gutschrift von 10% der monatlichen Servicegebühr pro 0,1% Unterschreitung gewährt.',
+      contract_reference: 'SLA-GOLD-2025-001',
+      valid_from: '2025-01-01',
+      valid_until: '2025-12-31',
       is_default: 0,
       is_active: 1,
       created_at: now,
@@ -2243,6 +2284,14 @@ async function doSeed(): Promise<void> {
       business_hours_end: '20:00',
       business_days: '1,2,3,4,5',
       priority_overrides: '{}',
+      availability_pct: '99.5',
+      support_level: '8x5',
+      recovery_class: 'Tier 2',
+      business_criticality: 'medium',
+      penalty_clause: null,
+      contract_reference: 'SLA-SILVER-2025-001',
+      valid_from: '2025-01-01',
+      valid_until: '2025-12-31',
       is_default: 1,
       is_active: 1,
       created_at: now,
@@ -2260,6 +2309,14 @@ async function doSeed(): Promise<void> {
       business_hours_end: '17:00',
       business_days: '1,2,3,4,5',
       priority_overrides: '{}',
+      availability_pct: '99.0',
+      support_level: 'best-effort',
+      recovery_class: 'Tier 3',
+      business_criticality: 'low',
+      penalty_clause: null,
+      contract_reference: null,
+      valid_from: '2025-01-01',
+      valid_until: null,
       is_default: 0,
       is_active: 1,
       created_at: now,

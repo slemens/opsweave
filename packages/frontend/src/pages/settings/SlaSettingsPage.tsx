@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -94,6 +95,14 @@ export default function SlaSettingsPage() {
   const [defIsDefault, setDefIsDefault] = useState(false);
   const [defRpoMin, setDefRpoMin] = useState<string>('');
   const [defRtoMin, setDefRtoMin] = useState<string>('');
+  const [defAvailabilityPct, setDefAvailabilityPct] = useState<string>('');
+  const [defSupportLevel, setDefSupportLevel] = useState<string>('');
+  const [defRecoveryClass, setDefRecoveryClass] = useState<string>('');
+  const [defBusinessCriticality, setDefBusinessCriticality] = useState<string>('');
+  const [defPenaltyClause, setDefPenaltyClause] = useState<string>('');
+  const [defContractReference, setDefContractReference] = useState<string>('');
+  const [defValidFrom, setDefValidFrom] = useState<string>('');
+  const [defValidUntil, setDefValidUntil] = useState<string>('');
 
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [assignDefId, setAssignDefId] = useState('');
@@ -128,6 +137,14 @@ export default function SlaSettingsPage() {
     setDefIsDefault(false);
     setDefRpoMin('');
     setDefRtoMin('');
+    setDefAvailabilityPct('');
+    setDefSupportLevel('');
+    setDefRecoveryClass('');
+    setDefBusinessCriticality('');
+    setDefPenaltyClause('');
+    setDefContractReference('');
+    setDefValidFrom('');
+    setDefValidUntil('');
     setEditingDef(null);
   }
 
@@ -143,6 +160,14 @@ export default function SlaSettingsPage() {
     setDefIsDefault(!!def.is_default);
     setDefRpoMin(def.rpo_minutes != null ? String(def.rpo_minutes) : '');
     setDefRtoMin(def.rto_minutes != null ? String(def.rto_minutes) : '');
+    setDefAvailabilityPct(def.availability_pct ?? '');
+    setDefSupportLevel(def.support_level ?? '');
+    setDefRecoveryClass(def.recovery_class ?? '');
+    setDefBusinessCriticality(def.business_criticality ?? '');
+    setDefPenaltyClause(def.penalty_clause ?? '');
+    setDefContractReference(def.contract_reference ?? '');
+    setDefValidFrom(def.valid_from ?? '');
+    setDefValidUntil(def.valid_until ?? '');
     setDefDialogOpen(true);
   }
 
@@ -158,6 +183,14 @@ export default function SlaSettingsPage() {
       business_hours_end: defBusinessHours !== '24/7' ? defBhEnd : null,
       rpo_minutes: defRpoMin ? Number(defRpoMin) : null,
       rto_minutes: defRtoMin ? Number(defRtoMin) : null,
+      availability_pct: defAvailabilityPct.trim() || null,
+      support_level: (defSupportLevel || null) as '8x5' | '24x7' | 'best-effort' | null,
+      recovery_class: defRecoveryClass.trim() || null,
+      business_criticality: (defBusinessCriticality || null) as 'low' | 'medium' | 'high' | 'critical' | null,
+      penalty_clause: defPenaltyClause.trim() || null,
+      contract_reference: defContractReference.trim() || null,
+      valid_from: defValidFrom || null,
+      valid_until: defValidUntil || null,
       is_default: defIsDefault,
     };
     try {
@@ -262,6 +295,8 @@ export default function SlaSettingsPage() {
                     <TableHead>{t('settings:sla.response_time')}</TableHead>
                     <TableHead>{t('settings:sla.resolution_time')}</TableHead>
                     <TableHead>{t('settings:sla.business_hours')}</TableHead>
+                    <TableHead>{t('settings:sla.availability_pct')}</TableHead>
+                    <TableHead>{t('settings:sla.business_criticality')}</TableHead>
                     <TableHead>{t('settings:sla.rpo')}</TableHead>
                     <TableHead>{t('settings:sla.rto')}</TableHead>
                     <TableHead className="w-[80px]" />
@@ -306,6 +341,27 @@ export default function SlaSettingsPage() {
                           <span className="text-xs text-muted-foreground ml-1">
                             ({def.business_hours_start}–{def.business_hours_end})
                           </span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {def.availability_pct ? (
+                          <Badge variant="outline" className="font-mono text-xs">
+                            {def.availability_pct}%
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">{'\u2014'}</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {def.business_criticality ? (
+                          <Badge
+                            variant={def.business_criticality === 'critical' ? 'destructive' : 'outline'}
+                            className="text-xs"
+                          >
+                            {t(`settings:sla.criticality_${def.business_criticality}`)}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">{'\u2014'}</span>
                         )}
                       </TableCell>
                       <TableCell>
@@ -463,7 +519,7 @@ export default function SlaSettingsPage() {
 
       {/* Create/Edit Definition Dialog */}
       <Dialog open={defDialogOpen} onOpenChange={(open) => { setDefDialogOpen(open); if (!open) resetDefForm(); }}>
-        <DialogContent className="sm:max-w-[500px]" data-testid="modal-sla-definition">
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto" data-testid="modal-sla-definition">
           <DialogHeader>
             <DialogTitle>
               {editingDef ? t('settings:sla.edit') : t('settings:sla.create')}
@@ -498,6 +554,113 @@ export default function SlaSettingsPage() {
                 <Input type="number" min={0} value={defRtoMin} onChange={(e) => setDefRtoMin(e.target.value)} placeholder={t('settings:sla.optional')} />
               </div>
             </div>
+            {/* Service Levels Section */}
+            <div className="pt-2 border-t">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
+                {t('settings:sla.section_service_levels')}
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label>{t('settings:sla.availability_pct')}</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min={0}
+                    max={100}
+                    value={defAvailabilityPct}
+                    onChange={(e) => setDefAvailabilityPct(e.target.value)}
+                    placeholder="99.9"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label>{t('settings:sla.support_level')}</Label>
+                  <Select value={defSupportLevel || '__none__'} onValueChange={(v) => setDefSupportLevel(v === '__none__' ? '' : v)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">{'\u2014'}</SelectItem>
+                      <SelectItem value="8x5">{t('settings:sla.support_level_8x5')}</SelectItem>
+                      <SelectItem value="24x7">{t('settings:sla.support_level_24x7')}</SelectItem>
+                      <SelectItem value="best-effort">{t('settings:sla.support_level_best_effort')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 mt-4">
+                <div className="grid gap-2">
+                  <Label>{t('settings:sla.recovery_class')}</Label>
+                  <Input
+                    value={defRecoveryClass}
+                    onChange={(e) => setDefRecoveryClass(e.target.value)}
+                    placeholder={t('settings:sla.optional')}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label>{t('settings:sla.business_criticality')}</Label>
+                  <Select value={defBusinessCriticality || '__none__'} onValueChange={(v) => setDefBusinessCriticality(v === '__none__' ? '' : v)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">{'\u2014'}</SelectItem>
+                      <SelectItem value="low">{t('settings:sla.criticality_low')}</SelectItem>
+                      <SelectItem value="medium">{t('settings:sla.criticality_medium')}</SelectItem>
+                      <SelectItem value="high">{t('settings:sla.criticality_high')}</SelectItem>
+                      <SelectItem value="critical">{t('settings:sla.criticality_critical')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            {/* Contract Section */}
+            <div className="pt-2 border-t">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
+                {t('settings:sla.section_contract')}
+              </p>
+              <div className="grid gap-4">
+                <div className="grid gap-2">
+                  <Label>{t('settings:sla.contract_reference')}</Label>
+                  <Input
+                    value={defContractReference}
+                    onChange={(e) => setDefContractReference(e.target.value)}
+                    placeholder={t('settings:sla.optional')}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label>{t('settings:sla.penalty_clause')}</Label>
+                  <Textarea
+                    value={defPenaltyClause}
+                    onChange={(e) => setDefPenaltyClause(e.target.value)}
+                    placeholder={t('settings:sla.optional')}
+                    rows={3}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Validity Section */}
+            <div className="pt-2 border-t">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
+                {t('settings:sla.section_validity')}
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label>{t('settings:sla.valid_from')}</Label>
+                  <Input
+                    type="date"
+                    value={defValidFrom}
+                    onChange={(e) => setDefValidFrom(e.target.value)}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label>{t('settings:sla.valid_until')}</Label>
+                  <Input
+                    type="date"
+                    value={defValidUntil}
+                    onChange={(e) => setDefValidUntil(e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+
             <div className="grid gap-2">
               <Label>{t('settings:sla.business_hours')}</Label>
               <Select value={defBusinessHours} onValueChange={(v) => setDefBusinessHours(v as '24/7' | 'business' | 'extended')}>

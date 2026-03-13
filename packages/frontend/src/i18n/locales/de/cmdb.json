@@ -148,7 +148,8 @@
     "relations": "Relationen",
     "tickets": "Tickets",
     "classifications": "Klassifizierungen",
-    "capacity": "Kapazität"
+    "capacity": "Kapazität",
+    "tenantAssignments": "Mandanten"
   },
   "linked_tickets": {
     "title": "Verknüpfte Tickets",
@@ -194,6 +195,32 @@
     "security": "Sicherheit",
     "compliance": "Compliance",
     "architecture": "Architektur"
+  },
+  "tenantAssignments": {
+    "title": "Mandanten-Zuordnungen",
+    "add": "Zuordnung hinzufügen",
+    "edit": "Zuordnung bearbeiten",
+    "remove": "Zuordnung entfernen",
+    "add_success": "Mandanten-Zuordnung erfolgreich erstellt",
+    "add_error": "Fehler beim Erstellen der Zuordnung",
+    "update_success": "Zuordnung erfolgreich aktualisiert",
+    "update_error": "Fehler beim Aktualisieren der Zuordnung",
+    "remove_success": "Zuordnung erfolgreich entfernt",
+    "remove_error": "Fehler beim Entfernen der Zuordnung",
+    "no_assignments": "Keine Mandanten-Zuordnungen",
+    "tenant": "Mandant",
+    "type": "Zuordnungstyp",
+    "notes": "Notizen",
+    "inherited_from": "Geerbt von",
+    "created_at": "Erstellt am",
+    "select_tenant": "Mandant auswählen",
+    "select_type": "Typ auswählen",
+    "type_dedicated": "Dediziert",
+    "type_shared": "Geteilt",
+    "type_inherited": "Geerbt",
+    "type_dedicated_desc": "Asset ist exklusiv diesem Mandanten zugeordnet",
+    "type_shared_desc": "Asset wird von mehreren Mandanten gemeinsam genutzt",
+    "type_inherited_desc": "Zuordnung wird von einem übergeordneten Asset geerbt"
   },
   "temporal": {
     "valid_from": "Gültig ab",

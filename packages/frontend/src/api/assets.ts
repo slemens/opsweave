@@ -138,6 +138,36 @@ export interface CreateAssetRelationPayload {
 // Query Keys
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// REQ-2.1: Asset Tenant Assignment Types
+// ---------------------------------------------------------------------------
+
+export interface AssetTenantAssignment {
+  id: string;
+  asset_id: string;
+  tenant_id: string;
+  assignment_type: 'dedicated' | 'shared' | 'inherited';
+  inherited_from_asset_id: string | null;
+  notes: string | null;
+  created_at: string;
+  created_by: string | null;
+  tenant_name?: string;
+  inherited_from_asset_name?: string | null;
+}
+
+export interface CreateTenantAssignmentPayload {
+  tenant_id: string;
+  assignment_type: 'dedicated' | 'shared' | 'inherited';
+  inherited_from_asset_id?: string | null;
+  notes?: string | null;
+}
+
+export interface UpdateTenantAssignmentPayload {
+  assignment_type?: 'dedicated' | 'shared' | 'inherited';
+  inherited_from_asset_id?: string | null;
+  notes?: string | null;
+}
+
 export const assetKeys = {
   all: ['assets'] as const,
   lists: () => [...assetKeys.all, 'list'] as const,
@@ -149,6 +179,7 @@ export const assetKeys = {
   graphFull: () => [...assetKeys.all, 'graph', 'full'] as const,
   stats: () => [...assetKeys.all, 'stats'] as const,
   tickets: (id: string) => [...assetKeys.all, 'tickets', id] as const,
+  tenantAssignments: (id: string) => [...assetKeys.all, 'tenant-assignments', id] as const,
 };
 
 // ---------------------------------------------------------------------------
@@ -306,6 +337,59 @@ export function useDeleteAssetRelation() {
     },
     onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({ queryKey: assetKeys.relations(variables.assetId) });
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// REQ-2.1: Asset Tenant Assignment Hooks
+// ---------------------------------------------------------------------------
+
+export function useAssetTenantAssignments(assetId: string) {
+  return useQuery({
+    queryKey: assetKeys.tenantAssignments(assetId),
+    queryFn: async () => {
+      return apiClient.get<AssetTenantAssignment[]>(`/assets/${assetId}/tenant-assignments`);
+    },
+    enabled: !!assetId,
+  });
+}
+
+export function useAssignAssetToTenant() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ assetId, ...payload }: CreateTenantAssignmentPayload & { assetId: string }) => {
+      return apiClient.post<AssetTenantAssignment>(`/assets/${assetId}/tenant-assignments`, payload);
+    },
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({ queryKey: assetKeys.tenantAssignments(variables.assetId) });
+    },
+  });
+}
+
+export function useUpdateAssetTenantAssignment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ assetId, assignmentId, ...payload }: UpdateTenantAssignmentPayload & { assetId: string; assignmentId: string }) => {
+      return apiClient.put<AssetTenantAssignment>(`/assets/${assetId}/tenant-assignments/${assignmentId}`, payload);
+    },
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({ queryKey: assetKeys.tenantAssignments(variables.assetId) });
+    },
+  });
+}
+
+export function useRemoveAssetTenantAssignment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ assetId, assignmentId }: { assetId: string; assignmentId: string }) => {
+      return apiClient.delete(`/assets/${assetId}/tenant-assignments/${assignmentId}`);
+    },
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({ queryKey: assetKeys.tenantAssignments(variables.assetId) });
     },
   });
 }

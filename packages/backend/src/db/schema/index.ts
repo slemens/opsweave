@@ -29,6 +29,7 @@ export {
   assetClassifications,
   capacityTypes,
   assetCapacities,
+  assetTenantAssignments,
 } from './assets.js';
 
 // Tickets
@@ -50,6 +51,7 @@ export {
   verticalCatalogs,
   verticalCatalogOverrides,
   assetServiceLinks,
+  serviceScopeItems,
 } from './services.js';
 
 // Compliance / Regulatory

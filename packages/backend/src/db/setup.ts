@@ -231,6 +231,19 @@ CREATE TABLE IF NOT EXISTS asset_capacities (
   UNIQUE(asset_id, capacity_type_id, direction)
 );
 
+-- asset_tenant_assignments (REQ-2.1: Multi-Tenant Asset Assignment)
+CREATE TABLE IF NOT EXISTS asset_tenant_assignments (
+  id TEXT PRIMARY KEY,
+  asset_id TEXT NOT NULL REFERENCES assets(id),
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  assignment_type TEXT NOT NULL DEFAULT 'dedicated',
+  inherited_from_asset_id TEXT REFERENCES assets(id),
+  notes TEXT,
+  created_at TEXT NOT NULL,
+  created_by TEXT,
+  UNIQUE(asset_id, tenant_id)
+);
+
 -- ticket_categories
 CREATE TABLE IF NOT EXISTS ticket_categories (
   id TEXT PRIMARY KEY,
@@ -599,6 +612,14 @@ CREATE TABLE IF NOT EXISTS sla_definitions (
   rto_minutes INTEGER,
   service_window TEXT DEFAULT '{}',
   escalation_matrix TEXT DEFAULT '[]',
+  availability_pct TEXT,
+  support_level TEXT,
+  recovery_class TEXT,
+  business_criticality TEXT,
+  penalty_clause TEXT,
+  contract_reference TEXT,
+  valid_from TEXT,
+  valid_until TEXT,
   is_default INTEGER NOT NULL DEFAULT 0,
   is_active INTEGER NOT NULL DEFAULT 1,
   created_at TEXT NOT NULL,
@@ -853,6 +874,19 @@ CREATE TABLE IF NOT EXISTS compliance_evidence (
   uploaded_by TEXT
 );
 
+-- service_scope_items (REQ-2.2c: Structured scope per service)
+CREATE TABLE IF NOT EXISTS service_scope_items (
+  id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  service_id TEXT NOT NULL REFERENCES service_descriptions(id),
+  item_description TEXT NOT NULL,
+  scope_type TEXT NOT NULL DEFAULT 'included',
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  notes TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
 -- ─── Feedback Board (global, no tenant_id) ────────────────────
 CREATE TABLE IF NOT EXISTS feedback_entries (
   id TEXT PRIMARY KEY,
@@ -893,6 +927,10 @@ CREATE INDEX IF NOT EXISTS idx_ce_control ON compliance_evidence(control_id);
 CREATE INDEX IF NOT EXISTS idx_ce_tenant_type ON compliance_evidence(tenant_id, evidence_type);
 CREATE INDEX IF NOT EXISTS idx_feedback_type ON feedback_entries(entry_type);
 CREATE INDEX IF NOT EXISTS idx_feedback_created ON feedback_entries(created_at);
+CREATE INDEX IF NOT EXISTS idx_ata_tenant ON asset_tenant_assignments(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_ata_asset ON asset_tenant_assignments(asset_id);
+CREATE INDEX IF NOT EXISTS idx_ssi_tenant_service ON service_scope_items(tenant_id, service_id);
+CREATE INDEX IF NOT EXISTS idx_ssi_service_type ON service_scope_items(service_id, scope_type);
 `;
 
 /**
@@ -912,6 +950,14 @@ export const EVO_MIGRATIONS_SQL = [
   `ALTER TABLE requirement_service_mappings ADD COLUMN last_verified TEXT`,
   `ALTER TABLE requirement_service_mappings ADD COLUMN verified_by TEXT`,
   `ALTER TABLE audit_logs ADD COLUMN integrity_hash TEXT`,
+  `ALTER TABLE sla_definitions ADD COLUMN availability_pct TEXT`,
+  `ALTER TABLE sla_definitions ADD COLUMN support_level TEXT`,
+  `ALTER TABLE sla_definitions ADD COLUMN recovery_class TEXT`,
+  `ALTER TABLE sla_definitions ADD COLUMN business_criticality TEXT`,
+  `ALTER TABLE sla_definitions ADD COLUMN penalty_clause TEXT`,
+  `ALTER TABLE sla_definitions ADD COLUMN contract_reference TEXT`,
+  `ALTER TABLE sla_definitions ADD COLUMN valid_from TEXT`,
+  `ALTER TABLE sla_definitions ADD COLUMN valid_until TEXT`,
 ];
 
 // CLI entry point: only runs when executed directly (not when imported)

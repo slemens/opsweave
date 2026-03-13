@@ -46,6 +46,22 @@
     "type_extend": "Extend",
     "type_restrict": "Restrict"
   },
+  "scope": {
+    "title": "Service Scope",
+    "included": "Included",
+    "excluded": "Excluded",
+    "addon": "Add-on",
+    "optional": "Optional",
+    "addItem": "Add Scope Item",
+    "description": "Description",
+    "type": "Type",
+    "notes": "Notes",
+    "empty": "No scope items defined",
+    "editItem": "Edit Scope Item",
+    "deleteConfirm": "Are you sure you want to delete this scope item?",
+    "moveUp": "Move Up",
+    "moveDown": "Move Down"
+  },
   "fields": {
     "code": "Code",
     "title": "Title",

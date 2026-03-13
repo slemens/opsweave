@@ -46,6 +46,22 @@
     "type_extend": "Erweitern",
     "type_restrict": "Einschränken"
   },
+  "scope": {
+    "title": "Leistungsumfang",
+    "included": "Enthalten",
+    "excluded": "Ausgeschlossen",
+    "addon": "Zusatzleistung",
+    "optional": "Optional",
+    "addItem": "Leistung hinzufügen",
+    "description": "Beschreibung",
+    "type": "Art",
+    "notes": "Anmerkungen",
+    "empty": "Keine Leistungsumfang-Einträge definiert",
+    "editItem": "Leistung bearbeiten",
+    "deleteConfirm": "Soll dieser Eintrag wirklich gelöscht werden?",
+    "moveUp": "Nach oben",
+    "moveDown": "Nach unten"
+  },
   "fields": {
     "code": "Code",
     "title": "Titel",

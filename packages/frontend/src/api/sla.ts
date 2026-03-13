@@ -19,6 +19,14 @@ export interface SlaDefinition {
   rto_minutes: number | null;
   service_window: string;
   escalation_matrix: string;
+  availability_pct: string | null;
+  support_level: string | null;
+  recovery_class: string | null;
+  business_criticality: string | null;
+  penalty_clause: string | null;
+  contract_reference: string | null;
+  valid_from: string | null;
+  valid_until: string | null;
   is_default: number;
   is_active: number;
   created_at: string;
@@ -53,6 +61,14 @@ export interface CreateSlaDefinitionPayload {
   rto_minutes?: number | null;
   service_window?: Record<string, unknown>;
   escalation_matrix?: unknown[];
+  availability_pct?: string | null;
+  support_level?: '8x5' | '24x7' | 'best-effort' | null;
+  recovery_class?: string | null;
+  business_criticality?: 'low' | 'medium' | 'high' | 'critical' | null;
+  penalty_clause?: string | null;
+  contract_reference?: string | null;
+  valid_from?: string | null;
+  valid_until?: string | null;
   is_default?: boolean;
 }
 

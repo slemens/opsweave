@@ -130,6 +130,37 @@ export const verticalCatalogOverrides = sqliteTable(
 // asset_service_links — Maps assets to vertical catalogs
 // =============================================================================
 
+// =============================================================================
+// service_scope_items — Structured scope items per service description
+// =============================================================================
+
+export const serviceScopeItems = sqliteTable(
+  'service_scope_items',
+  {
+    id: text('id').primaryKey(),
+    tenant_id: text('tenant_id')
+      .notNull()
+      .references(() => tenants.id),
+    service_id: text('service_id')
+      .notNull()
+      .references(() => serviceDescriptions.id),
+    item_description: text('item_description').notNull(),
+    scope_type: text('scope_type').notNull().default('included'),
+    sort_order: integer('sort_order').notNull().default(0),
+    notes: text('notes'),
+    created_at: text('created_at').notNull(),
+    updated_at: text('updated_at').notNull(),
+  },
+  (t) => [
+    index('idx_ssi_tenant_service').on(t.tenant_id, t.service_id),
+    index('idx_ssi_service_type').on(t.service_id, t.scope_type),
+  ],
+);
+
+// =============================================================================
+// asset_service_links — Maps assets to vertical catalogs
+// =============================================================================
+
 export const assetServiceLinks = sqliteTable(
   'asset_service_links',
   {

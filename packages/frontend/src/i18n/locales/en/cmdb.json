@@ -148,7 +148,8 @@
     "relations": "Relations",
     "tickets": "Tickets",
     "classifications": "Classifications",
-    "capacity": "Capacity"
+    "capacity": "Capacity",
+    "tenantAssignments": "Tenants"
   },
   "linked_tickets": {
     "title": "Linked Tickets",
@@ -194,6 +195,32 @@
     "security": "Security",
     "compliance": "Compliance",
     "architecture": "Architecture"
+  },
+  "tenantAssignments": {
+    "title": "Tenant Assignments",
+    "add": "Add Assignment",
+    "edit": "Edit Assignment",
+    "remove": "Remove Assignment",
+    "add_success": "Tenant assignment created successfully",
+    "add_error": "Failed to create assignment",
+    "update_success": "Assignment updated successfully",
+    "update_error": "Failed to update assignment",
+    "remove_success": "Assignment removed successfully",
+    "remove_error": "Failed to remove assignment",
+    "no_assignments": "No tenant assignments",
+    "tenant": "Tenant",
+    "type": "Assignment Type",
+    "notes": "Notes",
+    "inherited_from": "Inherited from",
+    "created_at": "Created at",
+    "select_tenant": "Select tenant",
+    "select_type": "Select type",
+    "type_dedicated": "Dedicated",
+    "type_shared": "Shared",
+    "type_inherited": "Inherited",
+    "type_dedicated_desc": "Asset is exclusively assigned to this tenant",
+    "type_shared_desc": "Asset is shared across multiple tenants",
+    "type_inherited_desc": "Assignment is inherited from a parent asset"
   },
   "temporal": {
     "valid_from": "Valid from",

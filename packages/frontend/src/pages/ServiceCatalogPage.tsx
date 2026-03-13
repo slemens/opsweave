@@ -14,6 +14,9 @@ import {
   RefreshCw,
   ChevronDown,
   ChevronUp,
+  ArrowUp,
+  ArrowDown,
+  ListChecks,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -83,8 +86,13 @@ import {
   useDeleteVerticalCatalog,
   useAddVerticalOverride,
   useRemoveVerticalOverride,
+  useServiceScopeItems,
+  useCreateServiceScopeItem,
+  useUpdateServiceScopeItem,
+  useDeleteServiceScopeItem,
+  useReorderServiceScopeItems,
 } from '@/api/services';
-import type { ServiceDescription, HorizontalCatalog, VerticalCatalog } from '@/api/services';
+import type { ServiceDescription, HorizontalCatalog, VerticalCatalog, ServiceScopeItem } from '@/api/services';
 import { useLicenseInfo } from '@/api/settings';
 // AUDIT-FIX: M-09 — Import from domain-specific API module
 import { useCustomers } from '@/api/customers';
@@ -96,6 +104,14 @@ import { ApiRequestError } from '@/api/client';
 
 type DescStatus = 'draft' | 'published' | 'archived';
 type CatalogStatus = 'active' | 'inactive' | 'draft';
+type ScopeType = 'included' | 'excluded' | 'addon' | 'optional';
+
+const SCOPE_TYPE_COLORS: Record<ScopeType, string> = {
+  included: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
+  excluded: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
+  addon: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+  optional: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+};
 
 function descStatusBadge(status: DescStatus) {
   switch (status) {
@@ -194,6 +210,337 @@ function catalogFormFromRecord(c: HorizontalCatalog): CatalogForm {
     description: c.description ?? '',
     status: c.status,
   };
+}
+
+// =============================================================================
+// Scope Items Section (REQ-2.2c)
+// =============================================================================
+
+interface ScopeItemForm {
+  item_description: string;
+  scope_type: ScopeType;
+  notes: string;
+}
+
+const BLANK_SCOPE_FORM: ScopeItemForm = {
+  item_description: '',
+  scope_type: 'included',
+  notes: '',
+};
+
+function ScopeItemsSection({ serviceId }: { serviceId: string }) {
+  const { t: tCatalog } = useTranslation('catalog');
+  const { t: tCommon } = useTranslation('common');
+
+  const [scopeDialogOpen, setScopeDialogOpen] = useState(false);
+  const [editingScopeItem, setEditingScopeItem] = useState<ServiceScopeItem | null>(null);
+  const [scopeForm, setScopeForm] = useState<ScopeItemForm>(BLANK_SCOPE_FORM);
+  const [deletingScopeItem, setDeletingScopeItem] = useState<ServiceScopeItem | null>(null);
+
+  const { data: scopeData, isLoading } = useServiceScopeItems(serviceId);
+  const createMutation = useCreateServiceScopeItem();
+  const updateMutation = useUpdateServiceScopeItem();
+  const deleteMutation = useDeleteServiceScopeItem();
+  const reorderMutation = useReorderServiceScopeItems();
+
+  const scopeItems = (scopeData as ServiceScopeItem[] | undefined) ?? [];
+
+  const groupedItems = {
+    included: scopeItems.filter((i) => i.scope_type === 'included'),
+    excluded: scopeItems.filter((i) => i.scope_type === 'excluded'),
+    addon: scopeItems.filter((i) => i.scope_type === 'addon'),
+    optional: scopeItems.filter((i) => i.scope_type === 'optional'),
+  };
+
+  const openCreateDialog = useCallback(() => {
+    setEditingScopeItem(null);
+    setScopeForm(BLANK_SCOPE_FORM);
+    setScopeDialogOpen(true);
+  }, []);
+
+  const openEditDialog = useCallback((item: ServiceScopeItem) => {
+    setEditingScopeItem(item);
+    setScopeForm({
+      item_description: item.item_description,
+      scope_type: item.scope_type as ScopeType,
+      notes: item.notes ?? '',
+    });
+    setScopeDialogOpen(true);
+  }, []);
+
+  const handleScopeSave = useCallback(async () => {
+    if (!scopeForm.item_description.trim()) return;
+    try {
+      if (editingScopeItem) {
+        await updateMutation.mutateAsync({
+          serviceId,
+          itemId: editingScopeItem.id,
+          data: {
+            item_description: scopeForm.item_description.trim(),
+            scope_type: scopeForm.scope_type,
+            notes: scopeForm.notes.trim() || null,
+          },
+        });
+        toast.success(tCommon('saved'));
+      } else {
+        await createMutation.mutateAsync({
+          serviceId,
+          data: {
+            item_description: scopeForm.item_description.trim(),
+            scope_type: scopeForm.scope_type,
+            sort_order: scopeItems.length,
+            notes: scopeForm.notes.trim() || null,
+          },
+        });
+        toast.success(tCommon('saved'));
+      }
+      setScopeDialogOpen(false);
+    } catch (err) {
+      const msg = err instanceof ApiRequestError ? err.message : tCommon('error_generic');
+      toast.error(msg);
+    }
+  }, [scopeForm, editingScopeItem, serviceId, scopeItems.length, createMutation, updateMutation, tCommon]);
+
+  const handleScopeDelete = useCallback(async () => {
+    if (!deletingScopeItem) return;
+    try {
+      await deleteMutation.mutateAsync({ serviceId, itemId: deletingScopeItem.id });
+      toast.success(tCommon('deleted'));
+      setDeletingScopeItem(null);
+    } catch (err) {
+      const msg = err instanceof ApiRequestError ? err.message : tCommon('error_generic');
+      toast.error(msg);
+      setDeletingScopeItem(null);
+    }
+  }, [deletingScopeItem, serviceId, deleteMutation, tCommon]);
+
+  const handleMoveItem = useCallback(async (item: ServiceScopeItem, direction: 'up' | 'down') => {
+    const typeItems = scopeItems.filter((i) => i.scope_type === item.scope_type);
+    const idx = typeItems.findIndex((i) => i.id === item.id);
+    if (idx === -1) return;
+    const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (targetIdx < 0 || targetIdx >= typeItems.length) return;
+
+    // Build reordered ID list for the entire service (all types)
+    const targetItem = typeItems[targetIdx];
+    if (!targetItem) return;
+    const reordered = [...scopeItems];
+    const globalIdx = reordered.findIndex((i) => i.id === item.id);
+    const globalTargetIdx = reordered.findIndex((i) => i.id === targetItem.id);
+    if (globalIdx === -1 || globalTargetIdx === -1) return;
+    const temp = reordered[globalIdx]!;
+    reordered[globalIdx] = reordered[globalTargetIdx]!;
+    reordered[globalTargetIdx] = temp;
+
+    try {
+      await reorderMutation.mutateAsync({
+        serviceId,
+        itemIds: reordered.map((i) => i.id),
+      });
+    } catch {
+      // Silently fail — the UI will refresh from the server state
+    }
+  }, [scopeItems, serviceId, reorderMutation]);
+
+  const isSaving = createMutation.isPending || updateMutation.isPending;
+
+  const renderGroup = (type: ScopeType, items: ServiceScopeItem[]) => {
+    if (items.length === 0) return null;
+    const label = tCatalog(`scope.${type}`);
+
+    return (
+      <div key={type} className="space-y-1.5">
+        <div className="flex items-center gap-2">
+          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${SCOPE_TYPE_COLORS[type]}`}>
+            {label}
+          </span>
+          <span className="text-xs text-muted-foreground">{items.length}</span>
+        </div>
+        <div className="space-y-1">
+          {items.map((item, idx) => (
+            <div
+              key={item.id}
+              className="group flex items-start gap-2 rounded-md border border-border bg-muted/20 px-3 py-2 text-sm hover:bg-muted/40 transition-colors"
+            >
+              <div className="flex-1 min-w-0">
+                <p className="leading-snug">{item.item_description}</p>
+                {item.notes && (
+                  <p className="text-xs text-muted-foreground mt-0.5">{item.notes}</p>
+                )}
+              </div>
+              <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  disabled={idx === 0}
+                  onClick={() => void handleMoveItem(item, 'up')}
+                  title={tCatalog('scope.moveUp')}
+                >
+                  <ArrowUp className="h-3 w-3" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  disabled={idx === items.length - 1}
+                  onClick={() => void handleMoveItem(item, 'down')}
+                  title={tCatalog('scope.moveDown')}
+                >
+                  <ArrowDown className="h-3 w-3" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => openEditDialog(item)}
+                >
+                  <Pencil className="h-3 w-3" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 text-destructive hover:text-destructive"
+                  onClick={() => setDeletingScopeItem(item)}
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <>
+      <Separator />
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <ListChecks className="h-4 w-4 text-muted-foreground" />
+            <h4 className="text-sm font-semibold">{tCatalog('scope.title')}</h4>
+          </div>
+          <Button variant="outline" size="sm" onClick={openCreateDialog}>
+            <Plus className="mr-1.5 h-3.5 w-3.5" />
+            {tCatalog('scope.addItem')}
+          </Button>
+        </div>
+
+        {isLoading ? (
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-3/4" />
+          </div>
+        ) : scopeItems.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-8 gap-2 border border-dashed border-border rounded-lg">
+            <ListChecks className="h-8 w-8 text-muted-foreground/40" />
+            <p className="text-sm text-muted-foreground">{tCatalog('scope.empty')}</p>
+            <Button variant="outline" size="sm" onClick={openCreateDialog}>
+              <Plus className="mr-1.5 h-3.5 w-3.5" />
+              {tCatalog('scope.addItem')}
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {(['included', 'excluded', 'addon', 'optional'] as ScopeType[]).map((type) =>
+              renderGroup(type, groupedItems[type]),
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Create/Edit Scope Item Dialog */}
+      <Dialog open={scopeDialogOpen} onOpenChange={setScopeDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {editingScopeItem ? tCatalog('scope.editItem') : tCatalog('scope.addItem')}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="scope-desc">{tCatalog('scope.description')}</Label>
+              <Textarea
+                id="scope-desc"
+                rows={3}
+                value={scopeForm.item_description}
+                onChange={(e) => setScopeForm((f) => ({ ...f, item_description: e.target.value }))}
+                placeholder={tCatalog('scope.description')}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="scope-type">{tCatalog('scope.type')}</Label>
+              <Select
+                value={scopeForm.scope_type}
+                onValueChange={(v) => setScopeForm((f) => ({ ...f, scope_type: v as ScopeType }))}
+              >
+                <SelectTrigger id="scope-type">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="included">{tCatalog('scope.included')}</SelectItem>
+                  <SelectItem value="excluded">{tCatalog('scope.excluded')}</SelectItem>
+                  <SelectItem value="addon">{tCatalog('scope.addon')}</SelectItem>
+                  <SelectItem value="optional">{tCatalog('scope.optional')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="scope-notes">{tCatalog('scope.notes')}</Label>
+              <Textarea
+                id="scope-notes"
+                rows={2}
+                value={scopeForm.notes}
+                onChange={(e) => setScopeForm((f) => ({ ...f, notes: e.target.value }))}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setScopeDialogOpen(false)}>
+              {tCommon('cancel')}
+            </Button>
+            <Button
+              onClick={() => void handleScopeSave()}
+              disabled={isSaving || !scopeForm.item_description.trim()}
+            >
+              {isSaving ? tCommon('saving') : tCommon('save')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Scope Item Confirm */}
+      <Dialog open={!!deletingScopeItem} onOpenChange={(open) => !open && setDeletingScopeItem(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{tCommon('delete')}</DialogTitle>
+            <DialogDescription>{tCatalog('scope.deleteConfirm')}</DialogDescription>
+          </DialogHeader>
+          {deletingScopeItem && (
+            <div className="rounded-lg border border-border bg-muted/30 px-4 py-3 text-sm">
+              {deletingScopeItem.item_description}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeletingScopeItem(null)}>
+              {tCommon('cancel')}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => void handleScopeDelete()}
+              disabled={deleteMutation.isPending}
+            >
+              <Trash2 className="mr-1.5 h-4 w-4" />
+              {tCommon('delete')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
 }
 
 // =============================================================================
@@ -577,6 +924,11 @@ function ServiceDescriptionsTab() {
               </div>
             </div>
           </div>
+
+          {/* Scope Items Section — only shown when editing an existing service */}
+          {editingDesc && (
+            <ScopeItemsSection serviceId={editingDesc.id} />
+          )}
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setDescDialogOpen(false)}>
