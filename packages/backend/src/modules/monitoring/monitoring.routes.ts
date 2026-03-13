@@ -11,7 +11,7 @@ const createSourceSchema = z.object({
   type: z.enum(MONITORING_SOURCE_TYPES),
   config: z.record(z.unknown()).optional(),
   webhook_secret: z.string().nullable().optional(),
-  is_active: z.boolean().optional(),
+  is_active: z.union([z.boolean(), z.number()]).transform((v) => (typeof v === 'number' ? v !== 0 : v)).optional(),
 });
 
 const updateSourceSchema = createSourceSchema.partial();

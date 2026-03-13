@@ -4,7 +4,7 @@ import crypto from 'node:crypto';
 
 import { getDb, type TypedDb } from '../../config/database.js';
 import { monitoringSources, monitoringEvents } from '../../db/schema/index.js';
-import { NotFoundError, ForbiddenError } from '../../lib/errors.js';
+import { NotFoundError, ForbiddenError, LicenseLimitError } from '../../lib/errors.js';
 import { COMMUNITY_LIMITS } from '@opsweave/shared';
 import logger from '../../lib/logger.js';
 
@@ -51,16 +51,25 @@ export async function getSource(tenantId: string, id: string) {
 }
 
 export async function createSource(tenantId: string, input: CreateSourceInput) {
-  const [countRow] = await db()
-    .select({ total: drizzleCount() })
-    .from(monitoringSources)
-    .where(and(eq(monitoringSources.tenant_id, tenantId), eq(monitoringSources.is_active, 1)));
-  const activeCount = countRow?.total ?? 0;
-  if (activeCount >= COMMUNITY_LIMITS.maxMonitoringSources) {
-    // TODO: check enterprise license for higher limits
-    throw new ForbiddenError(
-      `Community Edition is limited to ${COMMUNITY_LIMITS.maxMonitoringSources} monitoring source`,
-    );
+  // License-aware limit check
+  const { validateLicenseKey } = await import('../../middleware/license.js');
+  const { getTenantLicenseKey } = await import('../tenants/tenants.service.js');
+  const licenseKey = await getTenantLicenseKey(tenantId);
+  const licensePayload = validateLicenseKey(licenseKey);
+  const maxSources = licensePayload?.limits?.maxMonitoringSources ?? COMMUNITY_LIMITS.maxMonitoringSources;
+
+  // -1 = unlimited (Enterprise)
+  if (maxSources !== -1) {
+    const [countRow] = await db()
+      .select({ total: drizzleCount() })
+      .from(monitoringSources)
+      .where(and(eq(monitoringSources.tenant_id, tenantId), eq(monitoringSources.is_active, 1)));
+    const activeCount = countRow?.total ?? 0;
+    if (activeCount >= maxSources) {
+      throw new LicenseLimitError(
+        `Monitoring source limit reached (${maxSources}). Upgrade to Enterprise for unlimited sources.`,
+      );
+    }
   }
 
   const id = uuidv4();

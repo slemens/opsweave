@@ -315,7 +315,7 @@ function CategoriesSection() {
   const [editing, setEditing] = useState<CategoryRow | null>(null);
   const [form, setForm] = useState({ ...BLANK_CATEGORY_FORM });
 
-  const categories = (categoriesData?.data ?? []) as CategoryRow[];
+  const categories = (categoriesData ?? []) as CategoryRow[];
 
   function openCreate() {
     setEditing(null);

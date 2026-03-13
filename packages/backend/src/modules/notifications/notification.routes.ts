@@ -22,7 +22,7 @@ const updatePreferencesSchema = z.object({
     z.object({
       event_type: z.string(),
       channel: z.string().default('email'),
-      enabled: z.boolean(),
+      enabled: z.union([z.boolean(), z.number()]).transform((v) => (typeof v === 'number' ? v !== 0 : v)),
     }),
   ),
 });

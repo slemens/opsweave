@@ -182,9 +182,9 @@ export interface CategorySummary {
   is_active: number;
 }
 
-export interface CategoriesResponse {
-  data: CategorySummary[];
-}
+// NOTE: The backend returns { data: CategorySummary[] } which the apiClient
+// auto-unwraps (no `meta` key), so the resolved type is CategorySummary[].
+export type CategoriesResponse = CategorySummary[];
 
 // ---------------------------------------------------------------------------
 // Query Keys

@@ -19,11 +19,11 @@ const createDefinitionSchema = z.object({
   rto_minutes: z.number().int().min(0).nullable().optional(),
   service_window: z.record(z.unknown()).optional(),
   escalation_matrix: z.array(z.unknown()).optional(),
-  is_default: z.boolean().optional(),
+  is_default: z.union([z.boolean(), z.number()]).transform((v) => (typeof v === 'number' ? v !== 0 : v)).optional(),
 });
 
 const updateDefinitionSchema = createDefinitionSchema.partial().extend({
-  is_active: z.boolean().optional(),
+  is_active: z.union([z.boolean(), z.number()]).transform((v) => (typeof v === 'number' ? v !== 0 : v)).optional(),
 });
 
 const createAssignmentSchema = z.object({

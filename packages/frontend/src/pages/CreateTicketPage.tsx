@@ -97,7 +97,7 @@ export default function CreateTicketPage() {
   // Derived
   const groups = groupsData?.data ?? [];
   const customers = (customersData?.data ?? []).filter((c) => c.is_active);
-  const categories = (categoriesData?.data ?? []).filter(
+  const categories = (categoriesData ?? []).filter(
     (c) => c.is_active && (c.applies_to === 'all' || c.applies_to === ticketType),
   );
 

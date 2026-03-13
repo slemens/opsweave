@@ -169,12 +169,12 @@ export async function deactivateLicenseHandler(
  * GET /api/v1/settings/password-policy
  * Get the password policy for the current tenant.
  */
-export function getPasswordPolicy(
+export async function getPasswordPolicy(
   req: Request,
   res: Response,
-): void {
+): Promise<void> {
   const tenantId = requireTenantId(req);
-  const policy = settingsService.getPasswordPolicy(tenantId);
+  const policy = await settingsService.getPasswordPolicy(tenantId);
   sendSuccess(res, policy);
 }
 

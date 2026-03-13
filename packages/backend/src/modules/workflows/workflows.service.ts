@@ -116,17 +116,26 @@ export async function createWorkflowTemplate(
 ): Promise<unknown> {
   const d = db();
 
-  // Community limit check
-  const countRows = await d
-    .select({ value: count() })
-    .from(workflowTemplates)
-    .where(eq(workflowTemplates.tenant_id, tenantId));
-  const total = countRows[0]?.value ?? 0;
+  // License-aware limit check
+  const { validateLicenseKey } = await import('../../middleware/license.js');
+  const { getTenantLicenseKey } = await import('../tenants/tenants.service.js');
+  const licenseKey = await getTenantLicenseKey(tenantId);
+  const licensePayload = validateLicenseKey(licenseKey);
+  const maxWorkflows = licensePayload?.limits?.maxWorkflows ?? COMMUNITY_LIMITS.maxWorkflows;
 
-  if (total >= COMMUNITY_LIMITS.maxWorkflows) {
-    throw new LicenseLimitError(
-      `Community Edition is limited to ${COMMUNITY_LIMITS.maxWorkflows} workflow templates`,
-    );
+  // -1 = unlimited (Enterprise)
+  if (maxWorkflows !== -1) {
+    const countRows = await d
+      .select({ value: count() })
+      .from(workflowTemplates)
+      .where(eq(workflowTemplates.tenant_id, tenantId));
+    const total = countRows[0]?.value ?? 0;
+
+    if (total >= maxWorkflows) {
+      throw new LicenseLimitError(
+        `Workflow template limit reached (${maxWorkflows}). Upgrade to Enterprise for unlimited workflows.`,
+      );
+    }
   }
 
   const id = uuidv4();
