@@ -1554,7 +1554,38 @@ export async function getDashboardStats(tenantId: string): Promise<unknown> {
     .from(frameworkRequirementMappings)
     .where(eq(frameworkRequirementMappings.tenant_id, tenantId));
 
+  // Map to frontend ComplianceDashboardData interface
+  const coverage = frameworkStats.map((fw) => ({
+    framework_id: fw.framework_id,
+    framework_name: fw.framework_name,
+    framework_version: fw.framework_version,
+    total_requirements: fw.total_requirements,
+    mapped_requirements: fw.mapped_count,
+    coverage_pct: fw.coverage_pct,
+  }));
+
+  // Fetch recent audits for dashboard display
+  const recentAudits = await d
+    .select({
+      id: complianceAudits.id,
+      name: complianceAudits.name,
+      audit_type: complianceAudits.audit_type,
+      status: complianceAudits.status,
+      auditor: complianceAudits.auditor,
+      start_date: complianceAudits.start_date,
+      end_date: complianceAudits.end_date,
+    })
+    .from(complianceAudits)
+    .where(eq(complianceAudits.tenant_id, tenantId))
+    .orderBy(desc(complianceAudits.created_at))
+    .limit(5);
+
   return {
+    coverage,
+    control_statuses: controlStatusMap,
+    open_findings: openFindingsMap,
+    recent_audits: recentAudits,
+    // Additional stats for extended dashboard
     frameworks: frameworkStats,
     controls: {
       by_status: controlStatusMap,
