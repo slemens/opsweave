@@ -127,7 +127,8 @@
     "customer": "Customer",
     "attributes": "Attributes",
     "created_at": "Created at",
-    "updated_at": "Updated at"
+    "updated_at": "Updated at",
+    "type": "Type"
   },
   "list": {
     "title": "Asset List",

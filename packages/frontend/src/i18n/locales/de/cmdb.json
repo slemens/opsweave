@@ -127,7 +127,8 @@
     "customer": "Kunde",
     "attributes": "Attribute",
     "created_at": "Erstellt am",
-    "updated_at": "Aktualisiert am"
+    "updated_at": "Aktualisiert am",
+    "type": "Typ"
   },
   "list": {
     "title": "Asset-Liste",
