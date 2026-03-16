@@ -48,6 +48,10 @@ function getPageTitle(pathname: string, t: (key: string) => string): string {
     '/monitoring': t('nav.monitoring'),
     '/reports/sla': t('nav.sla_reports'),
     '/cab': t('nav.cab'),
+    '/customers': t('nav.customers'),
+    '/projects': t('nav.projects'),
+    '/known-errors': t('nav.known_errors'),
+    '/capacity-planning': t('nav.capacity_planning'),
     '/settings': t('nav.settings'),
   };
 
