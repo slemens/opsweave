@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import * as keService from './known-errors.service.js';
 import { paginationSchema, uuidSchema } from '@opsweave/shared';
+import { requireRole } from '../../middleware/auth.js';
 import { requireTenantId, requireUserId } from '../../lib/context.js';
 
 // ─── Validation Schemas ──────────────────────────────────
@@ -59,7 +60,7 @@ knownErrorRouter.get('/:id', async (req, res, next) => {
 });
 
 // POST /known-errors — Create
-knownErrorRouter.post('/', async (req, res, next) => {
+knownErrorRouter.post('/', requireRole('admin', 'manager'), async (req, res, next) => {
   try {
     const tenantId = requireTenantId(req);
     const userId = requireUserId(req);
@@ -70,7 +71,7 @@ knownErrorRouter.post('/', async (req, res, next) => {
 });
 
 // PUT /known-errors/:id — Update
-knownErrorRouter.put('/:id', async (req, res, next) => {
+knownErrorRouter.put('/:id', requireRole('admin', 'manager'), async (req, res, next) => {
   try {
     const tenantId = requireTenantId(req);
     const { id } = z.object({ id: uuidSchema }).parse(req.params);
@@ -81,7 +82,7 @@ knownErrorRouter.put('/:id', async (req, res, next) => {
 });
 
 // DELETE /known-errors/:id — Delete
-knownErrorRouter.delete('/:id', async (req, res, next) => {
+knownErrorRouter.delete('/:id', requireRole('admin', 'manager'), async (req, res, next) => {
   try {
     const tenantId = requireTenantId(req);
     const { id } = z.object({ id: uuidSchema }).parse(req.params);

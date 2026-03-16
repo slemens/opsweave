@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 
+import { requireRole } from '../../middleware/auth.js';
 import { validate, validateQuery, validateParams } from '../../middleware/validate.js';
 import {
   idParamSchema,
@@ -131,21 +132,21 @@ ticketRouter.get('/categories', listCategoriesCtrl);
  * Create a ticket category.
  */
 // AUDIT-FIX: C-10 — Validate category body
-ticketRouter.post('/categories', validate(categorySchema), createCategoryCtrl);
+ticketRouter.post('/categories', requireRole('admin', 'manager'), validate(categorySchema), createCategoryCtrl);
 
 /**
  * PUT /api/v1/tickets/categories/:id
  * Update a ticket category.
  */
 // AUDIT-FIX: C-10 — Validate category body
-ticketRouter.put('/categories/:id', validateParams(idParamSchema), validate(categorySchema), updateCategoryCtrl);
+ticketRouter.put('/categories/:id', requireRole('admin', 'manager'), validateParams(idParamSchema), validate(categorySchema), updateCategoryCtrl);
 
 // AUDIT-FIX: H-06 — Delete a ticket category (hard delete, 409 if tickets assigned)
 /**
  * DELETE /api/v1/tickets/categories/:id
  * Delete a ticket category.
  */
-ticketRouter.delete('/categories/:id', validateParams(idParamSchema), deleteCategoryCtrl);
+ticketRouter.delete('/categories/:id', requireRole('admin', 'manager'), validateParams(idParamSchema), deleteCategoryCtrl);
 
 // ─── Batch Update Schema ────────────────────────────────
 
@@ -294,6 +295,6 @@ ticketRouter.get(
 
 ticketRouter.get('/cab/pending', listCabPending);
 ticketRouter.get('/cab/all', listCabAll);
-ticketRouter.post('/:id/cab/decision', validateParams(idParamSchema), validate(cabDecisionSchema), setCabDecision);
+ticketRouter.post('/:id/cab/decision', requireRole('admin', 'manager'), validateParams(idParamSchema), validate(cabDecisionSchema), setCabDecision);
 
 export { ticketRouter };

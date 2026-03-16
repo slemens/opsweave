@@ -1,5 +1,6 @@
 import { Router } from 'express';
 
+import { requireRole } from '../../middleware/auth.js';
 import { validate, validateQuery, validateParams } from '../../middleware/validate.js';
 import {
   idParamSchema,
@@ -65,6 +66,7 @@ serviceCatalogRouter.get(
  */
 serviceCatalogRouter.post(
   '/descriptions',
+  requireRole('admin', 'manager'),
   validate(createServiceDescriptionSchema),
   createServiceDescription,
 );
@@ -85,6 +87,7 @@ serviceCatalogRouter.get(
  */
 serviceCatalogRouter.put(
   '/descriptions/:id',
+  requireRole('admin', 'manager'),
   validateParams(idParamSchema),
   validate(updateServiceDescriptionSchema),
   updateServiceDescription,
@@ -96,6 +99,7 @@ serviceCatalogRouter.put(
  */
 serviceCatalogRouter.delete(
   '/descriptions/:id',
+  requireRole('admin', 'manager'),
   validateParams(idParamSchema),
   deleteServiceDescription,
 );
@@ -118,6 +122,7 @@ serviceCatalogRouter.get(
  */
 serviceCatalogRouter.post(
   '/descriptions/:id/scope-items',
+  requireRole('admin', 'manager'),
   validateParams(idParamSchema),
   validate(createServiceScopeItemSchema),
   createScopeItem,
@@ -129,6 +134,7 @@ serviceCatalogRouter.post(
  */
 serviceCatalogRouter.post(
   '/descriptions/:id/scope-items/reorder',
+  requireRole('admin', 'manager'),
   validateParams(idParamSchema),
   validate(reorderServiceScopeItemsSchema),
   reorderScopeItems,
@@ -140,6 +146,7 @@ serviceCatalogRouter.post(
  */
 serviceCatalogRouter.put(
   '/descriptions/:id/scope-items/:sid',
+  requireRole('admin', 'manager'),
   validateParams(idParamSchema),
   validate(updateServiceScopeItemSchema),
   updateScopeItem,
@@ -151,6 +158,7 @@ serviceCatalogRouter.put(
  */
 serviceCatalogRouter.delete(
   '/descriptions/:id/scope-items/:sid',
+  requireRole('admin', 'manager'),
   validateParams(idParamSchema),
   deleteScopeItem,
 );
@@ -173,6 +181,7 @@ serviceCatalogRouter.get(
  */
 serviceCatalogRouter.post(
   '/catalogs/horizontal',
+  requireRole('admin', 'manager'),
   validate(createHorizontalCatalogSchema),
   createHorizontalCatalog,
 );
@@ -193,6 +202,7 @@ serviceCatalogRouter.get(
  */
 serviceCatalogRouter.put(
   '/catalogs/horizontal/:id',
+  requireRole('admin', 'manager'),
   validateParams(idParamSchema),
   validate(updateHorizontalCatalogSchema),
   updateHorizontalCatalog,
@@ -204,6 +214,7 @@ serviceCatalogRouter.put(
  */
 serviceCatalogRouter.delete(
   '/catalogs/horizontal/:id',
+  requireRole('admin', 'manager'),
   validateParams(idParamSchema),
   deleteHorizontalCatalog,
 );
@@ -214,6 +225,7 @@ serviceCatalogRouter.delete(
  */
 serviceCatalogRouter.post(
   '/catalogs/horizontal/:id/items',
+  requireRole('admin', 'manager'),
   validateParams(idParamSchema),
   validate(addCatalogItemSchema),
   addCatalogItem,
@@ -225,6 +237,7 @@ serviceCatalogRouter.post(
  */
 serviceCatalogRouter.delete(
   '/catalogs/horizontal/:id/items/:sid',
+  requireRole('admin', 'manager'),
   validateParams(idParamSchema),
   removeCatalogItem,
 );
@@ -232,11 +245,11 @@ serviceCatalogRouter.delete(
 // ─── Vertical Catalogs (Enterprise) ──────────────────────
 
 serviceCatalogRouter.get('/catalogs/vertical', listVerticalCatalogs);
-serviceCatalogRouter.post('/catalogs/vertical', createVerticalCatalog);
+serviceCatalogRouter.post('/catalogs/vertical', requireRole('admin', 'manager'), createVerticalCatalog);
 serviceCatalogRouter.get('/catalogs/vertical/:id', validateParams(idParamSchema), getVerticalCatalog);
-serviceCatalogRouter.put('/catalogs/vertical/:id', validateParams(idParamSchema), updateVerticalCatalog);
-serviceCatalogRouter.delete('/catalogs/vertical/:id', validateParams(idParamSchema), deleteVerticalCatalog);
-serviceCatalogRouter.post('/catalogs/vertical/:id/overrides', validateParams(idParamSchema), addVerticalOverride);
-serviceCatalogRouter.delete('/catalogs/vertical/:id/overrides/:oid', removeVerticalOverride);
+serviceCatalogRouter.put('/catalogs/vertical/:id', requireRole('admin', 'manager'), validateParams(idParamSchema), updateVerticalCatalog);
+serviceCatalogRouter.delete('/catalogs/vertical/:id', requireRole('admin', 'manager'), validateParams(idParamSchema), deleteVerticalCatalog);
+serviceCatalogRouter.post('/catalogs/vertical/:id/overrides', requireRole('admin', 'manager'), validateParams(idParamSchema), addVerticalOverride);
+serviceCatalogRouter.delete('/catalogs/vertical/:id/overrides/:oid', requireRole('admin', 'manager'), removeVerticalOverride);
 
 export { serviceCatalogRouter };

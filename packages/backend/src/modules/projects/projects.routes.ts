@@ -1,5 +1,6 @@
 import { Router } from 'express';
 
+import { requireRole } from '../../middleware/auth.js';
 import { validate, validateParams, validateQuery } from '../../middleware/validate.js';
 import {
   idParamSchema,
@@ -24,10 +25,10 @@ import {
 const projectRouter = Router();
 
 projectRouter.get('/', validateQuery(projectFilterSchema), listProjects);
-projectRouter.post('/', validate(createProjectSchema), createProject);
+projectRouter.post('/', requireRole('admin', 'manager'), validate(createProjectSchema), createProject);
 projectRouter.get('/:id', validateParams(idParamSchema), getProject);
-projectRouter.put('/:id', validateParams(idParamSchema), validate(updateProjectSchema), updateProject);
-projectRouter.delete('/:id', validateParams(idParamSchema), deleteProject);
+projectRouter.put('/:id', requireRole('admin', 'manager'), validateParams(idParamSchema), validate(updateProjectSchema), updateProject);
+projectRouter.delete('/:id', requireRole('admin', 'manager'), validateParams(idParamSchema), deleteProject);
 
 // Project-Asset links
 projectRouter.get('/:id/assets', validateParams(idParamSchema), listProjectAssets);

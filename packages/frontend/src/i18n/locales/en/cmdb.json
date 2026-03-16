@@ -89,6 +89,7 @@
     "type": "Type",
     "source": "Source",
     "target": "Target",
+    "direction": "Direction",
     "select_asset": "Select asset",
     "table_view": "Table",
     "graph_view": "Graph",

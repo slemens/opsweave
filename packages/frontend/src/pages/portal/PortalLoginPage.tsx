@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Loader2, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,6 +17,7 @@ import type { PortalAuth } from '@/api/portal';
 
 export function PortalLoginPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation('portal');
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -45,7 +47,7 @@ export function PortalLoginPage() {
       setPortalAuth(data.data);
       navigate('/portal/tickets');
     } catch {
-      setError('Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut.');
+      setError(t('auth.error_generic'));
     } finally {
       setIsLoading(false);
     }
@@ -65,7 +67,7 @@ export function PortalLoginPage() {
             </h1>
             <div className="mt-1 inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-3 py-0.5 text-xs font-medium text-muted-foreground">
               <Building2 className="h-3 w-3" />
-              Kundenportal
+              {t('nav.badge')}
             </div>
           </div>
         </div>
@@ -73,9 +75,9 @@ export function PortalLoginPage() {
         {/* Login Card */}
         <Card className="shadow-lg">
           <CardHeader className="space-y-1 pb-4">
-            <CardTitle className="text-xl">Anmelden</CardTitle>
+            <CardTitle className="text-xl">{t('auth.title')}</CardTitle>
             <CardDescription>
-              Melden Sie sich mit Ihren Zugangsdaten an, um Ihre Tickets einzusehen.
+              {t('auth.subtitle')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -89,11 +91,11 @@ export function PortalLoginPage() {
 
               {/* Tenant slug */}
               <div className="space-y-2">
-                <Label htmlFor="tenantSlug">Organisations-ID</Label>
+                <Label htmlFor="tenantSlug">{t('auth.org_id')}</Label>
                 <Input
                   id="tenantSlug"
                   type="text"
-                  placeholder="z. B. acme-corp"
+                  placeholder={t('auth.org_id_placeholder')}
                   value={tenantSlug}
                   onChange={(e) => setTenantSlug(e.target.value)}
                   required
@@ -103,13 +105,13 @@ export function PortalLoginPage() {
                   data-testid="input-portal-tenant"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Die Organisations-ID wurde Ihnen von Ihrem IT-Dienstleister mitgeteilt.
+                  {t('auth.org_id_hint')}
                 </p>
               </div>
 
               {/* Email */}
               <div className="space-y-2">
-                <Label htmlFor="email">E-Mail-Adresse</Label>
+                <Label htmlFor="email">{t('auth.email')}</Label>
                 <Input
                   id="email"
                   type="email"
@@ -125,7 +127,7 @@ export function PortalLoginPage() {
 
               {/* Password */}
               <div className="space-y-2">
-                <Label htmlFor="password">Passwort</Label>
+                <Label htmlFor="password">{t('auth.password')}</Label>
                 <Input
                   id="password"
                   type="password"
@@ -148,10 +150,10 @@ export function PortalLoginPage() {
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Anmelden…
+                    {t('auth.submitting')}
                   </>
                 ) : (
-                  'Anmelden'
+                  t('auth.submit')
                 )}
               </Button>
             </form>
@@ -160,7 +162,7 @@ export function PortalLoginPage() {
 
         {/* Footer */}
         <p className="text-center text-xs text-muted-foreground">
-          Bei Problemen wenden Sie sich bitte an Ihren IT-Dienstleister.
+          {t('auth.help')}
         </p>
       </div>
     </div>

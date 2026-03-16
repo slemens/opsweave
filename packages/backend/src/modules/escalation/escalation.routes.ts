@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 
+import { requireRole } from '../../middleware/auth.js';
 import { validate, validateParams } from '../../middleware/validate.js';
 import { idParamSchema, TICKET_TYPES, TICKET_PRIORITIES } from '@opsweave/shared';
 import { requireTenantId, requireUserId } from '../../lib/context.js';
@@ -54,6 +55,7 @@ escalationRouter.get('/rules', async (req, res, next) => {
 
 escalationRouter.post(
   '/rules',
+  requireRole('admin', 'manager'),
   validate(createRuleSchema),
   async (req, res, next) => {
     try {
@@ -68,6 +70,7 @@ escalationRouter.post(
 
 escalationRouter.put(
   '/rules/:id',
+  requireRole('admin', 'manager'),
   validateParams(idParamSchema),
   validate(updateRuleSchema),
   async (req, res, next) => {
@@ -83,6 +86,7 @@ escalationRouter.put(
 
 escalationRouter.delete(
   '/rules/:id',
+  requireRole('admin', 'manager'),
   validateParams(idParamSchema),
   async (req, res, next) => {
     try {

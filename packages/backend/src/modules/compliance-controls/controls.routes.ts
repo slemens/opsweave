@@ -1,5 +1,6 @@
 import { Router } from 'express';
 
+import { requireRole } from '../../middleware/auth.js';
 import { validate, validateQuery, validateParams } from '../../middleware/validate.js';
 import {
   idParamSchema,
@@ -48,6 +49,7 @@ controlRouter.get(
  */
 controlRouter.post(
   '/',
+  requireRole('admin', 'manager'),
   validate(createComplianceControlSchema),
   createControl,
 );
@@ -68,6 +70,7 @@ controlRouter.get(
  */
 controlRouter.put(
   '/:id',
+  requireRole('admin', 'manager'),
   validateParams(idParamSchema),
   validate(updateComplianceControlSchema),
   updateControl,
@@ -79,6 +82,7 @@ controlRouter.put(
  */
 controlRouter.delete(
   '/:id',
+  requireRole('admin', 'manager'),
   validateParams(idParamSchema),
   deleteControl,
 );
@@ -93,6 +97,7 @@ controlRouter.delete(
  */
 controlRouter.post(
   '/mappings',
+  requireRole('admin', 'manager'),
   validate(mapRequirementControlSchema),
   mapRequirementToControl,
 );
@@ -103,6 +108,7 @@ controlRouter.post(
  */
 controlRouter.delete(
   '/mappings/:requirementId/:controlId',
+  requireRole('admin', 'manager'),
   removeRequirementControlMapping,
 );
 
@@ -140,6 +146,7 @@ controlRouter.get(
  */
 controlRouter.post(
   '/:id/evidence',
+  requireRole('admin', 'manager'),
   validateParams(idParamSchema),
   createEvidence,
 );
@@ -150,6 +157,7 @@ controlRouter.post(
  */
 controlRouter.delete(
   '/:id/evidence/:evidenceId',
+  requireRole('admin', 'manager'),
   deleteEvidence,
 );
 

@@ -1464,7 +1464,7 @@ export function AssetDetailPage() {
 
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label>Richtung</Label>
+              <Label>{t('relations.direction')}</Label>
               <Select value={relDirection} onValueChange={(v) => setRelDirection(v as 'outgoing' | 'incoming')}>
                 <SelectTrigger>
                   <SelectValue />

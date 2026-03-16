@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 
+import { requireRole } from '../../middleware/auth.js';
 import { validate, validateQuery, validateParams } from '../../middleware/validate.js';
 import {
   idParamSchema,
@@ -94,6 +95,7 @@ assetRouter.get(
  */
 assetRouter.post(
   '/',
+  requireRole('admin', 'manager'),
   validate(createAssetSchema),
   createAsset,
 );
@@ -145,6 +147,7 @@ assetRouter.get(
  */
 assetRouter.put(
   '/:id',
+  requireRole('admin', 'manager'),
   validateParams(idParamSchema),
   validate(updateAssetSchema),
   updateAsset,
@@ -156,6 +159,7 @@ assetRouter.put(
  */
 assetRouter.delete(
   '/:id',
+  requireRole('admin', 'manager'),
   validateParams(idParamSchema),
   deleteAsset,
 );

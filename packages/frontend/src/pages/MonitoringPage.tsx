@@ -321,10 +321,10 @@ export function MonitoringPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t('events.all_states')}</SelectItem>
-                <SelectItem value="ok">OK</SelectItem>
-                <SelectItem value="warning">Warning</SelectItem>
-                <SelectItem value="critical">Critical</SelectItem>
-                <SelectItem value="unknown">Unknown</SelectItem>
+                <SelectItem value="ok">{t('stats.ok')}</SelectItem>
+                <SelectItem value="warning">{t('stats.warning')}</SelectItem>
+                <SelectItem value="critical">{t('stats.critical')}</SelectItem>
+                <SelectItem value="unknown">{t('stats.unknown')}</SelectItem>
               </SelectContent>
             </Select>
 

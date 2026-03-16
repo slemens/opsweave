@@ -1,5 +1,6 @@
 import { Router } from 'express';
 
+import { requireRole } from '../../middleware/auth.js';
 import { validate, validateQuery, validateParams } from '../../middleware/validate.js';
 import {
   idParamSchema,
@@ -50,6 +51,7 @@ kbRouter.get('/search', searchArticles);
  */
 kbRouter.post(
   '/',
+  requireRole('admin', 'manager'),
   validate(createKbArticleSchema),
   createArticle,
 );
@@ -70,6 +72,7 @@ kbRouter.get(
  */
 kbRouter.put(
   '/:id',
+  requireRole('admin', 'manager'),
   validateParams(idParamSchema),
   validate(updateKbArticleSchema),
   updateArticle,
@@ -81,6 +84,7 @@ kbRouter.put(
  */
 kbRouter.delete(
   '/:id',
+  requireRole('admin', 'manager'),
   validateParams(idParamSchema),
   deleteArticle,
 );

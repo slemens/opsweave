@@ -1,5 +1,6 @@
 import { Router } from 'express';
 
+import { requireRole } from '../../middleware/auth.js';
 import { validate, validateParams } from '../../middleware/validate.js';
 import {
   idParamSchema,
@@ -18,9 +19,9 @@ import {
 const relationTypeRouter = Router();
 
 relationTypeRouter.get('/', listRelationTypes);
-relationTypeRouter.post('/', validate(createRelationTypeSchema), createRelationType);
+relationTypeRouter.post('/', requireRole('admin'), validate(createRelationTypeSchema), createRelationType);
 relationTypeRouter.get('/:id', validateParams(idParamSchema), getRelationType);
-relationTypeRouter.put('/:id', validateParams(idParamSchema), validate(updateRelationTypeSchema), updateRelationType);
-relationTypeRouter.delete('/:id', validateParams(idParamSchema), deleteRelationType);
+relationTypeRouter.put('/:id', requireRole('admin'), validateParams(idParamSchema), validate(updateRelationTypeSchema), updateRelationType);
+relationTypeRouter.delete('/:id', requireRole('admin'), validateParams(idParamSchema), deleteRelationType);
 
 export { relationTypeRouter };

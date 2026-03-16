@@ -1,5 +1,6 @@
 import { Router } from 'express';
 
+import { requireRole } from '../../middleware/auth.js';
 import { validate, validateQuery, validateParams } from '../../middleware/validate.js';
 import {
   idParamSchema,
@@ -94,6 +95,7 @@ complianceRouter.get(
  */
 complianceRouter.post(
   '/frameworks',
+  requireRole('admin', 'manager'),
   validate(createRegulatoryFrameworkSchema),
   createFramework,
 );
@@ -114,6 +116,7 @@ complianceRouter.get(
  */
 complianceRouter.put(
   '/frameworks/:id',
+  requireRole('admin', 'manager'),
   validateParams(idParamSchema),
   validate(updateRegulatoryFrameworkSchema),
   updateFramework,
@@ -125,6 +128,7 @@ complianceRouter.put(
  */
 complianceRouter.delete(
   '/frameworks/:id',
+  requireRole('admin', 'manager'),
   validateParams(idParamSchema),
   deleteFramework,
 );
@@ -150,6 +154,7 @@ complianceRouter.get(
  */
 complianceRouter.post(
   '/frameworks/:id/requirements',
+  requireRole('admin', 'manager'),
   validateParams(idParamSchema),
   validate(createRequirementSchema),
   createRequirement,
@@ -161,6 +166,7 @@ complianceRouter.post(
  */
 complianceRouter.put(
   '/requirements/:rid',
+  requireRole('admin', 'manager'),
   validate(updateRequirementSchema),
   updateRequirement,
 );
@@ -171,6 +177,7 @@ complianceRouter.put(
  */
 complianceRouter.delete(
   '/requirements/:rid',
+  requireRole('admin', 'manager'),
   deleteRequirement,
 );
 
@@ -184,6 +191,7 @@ complianceRouter.delete(
  */
 complianceRouter.post(
   '/requirements/:rid/mappings/:sid',
+  requireRole('admin', 'manager'),
   validate(upsertMappingSchema),
   upsertMapping,
 );
@@ -194,6 +202,7 @@ complianceRouter.post(
  */
 complianceRouter.delete(
   '/requirements/:rid/mappings/:sid',
+  requireRole('admin', 'manager'),
   deleteMapping,
 );
 
@@ -231,6 +240,7 @@ complianceRouter.get(
  */
 complianceRouter.post(
   '/frameworks/:id/assets',
+  requireRole('admin', 'manager'),
   validateParams(idParamSchema),
   validate(flagAssetSchema),
   flagAsset,
@@ -242,6 +252,7 @@ complianceRouter.post(
  */
 complianceRouter.delete(
   '/frameworks/:id/assets/:aid',
+  requireRole('admin', 'manager'),
   validateParams(idParamSchema),
   unflagAsset,
 );
@@ -266,6 +277,7 @@ complianceRouter.get(
  */
 complianceRouter.post(
   '/audits',
+  requireRole('admin', 'manager'),
   validate(createComplianceAuditSchema),
   createAudit,
 );
@@ -286,6 +298,7 @@ complianceRouter.get(
  */
 complianceRouter.put(
   '/audits/:id',
+  requireRole('admin', 'manager'),
   validateParams(idParamSchema),
   validate(updateComplianceAuditSchema),
   updateAudit,
@@ -297,6 +310,7 @@ complianceRouter.put(
  */
 complianceRouter.delete(
   '/audits/:id',
+  requireRole('admin', 'manager'),
   validateParams(idParamSchema),
   deleteAudit,
 );
@@ -345,6 +359,7 @@ complianceRouter.get(
  */
 complianceRouter.post(
   '/audits/:id/findings',
+  requireRole('admin', 'manager'),
   validateParams(idParamSchema),
   validate(createAuditFindingSchema),
   createFinding,
@@ -356,6 +371,7 @@ complianceRouter.post(
  */
 complianceRouter.put(
   '/findings/:id',
+  requireRole('admin', 'manager'),
   validateParams(idParamSchema),
   validate(updateAuditFindingSchema),
   updateFinding,
@@ -367,6 +383,7 @@ complianceRouter.put(
  */
 complianceRouter.delete(
   '/findings/:id',
+  requireRole('admin', 'manager'),
   validateParams(idParamSchema),
   deleteFinding,
 );
@@ -390,6 +407,7 @@ complianceRouter.get(
  */
 complianceRouter.post(
   '/cross-mappings/import',
+  requireRole('admin', 'manager'),
   importCrossMappingsCsv,
 );
 
@@ -408,6 +426,7 @@ complianceRouter.get(
  */
 complianceRouter.post(
   '/cross-mappings',
+  requireRole('admin', 'manager'),
   validate(createCrossMappingSchema),
   createCrossMapping,
 );
@@ -418,6 +437,7 @@ complianceRouter.post(
  */
 complianceRouter.delete(
   '/cross-mappings/:id',
+  requireRole('admin', 'manager'),
   validateParams(idParamSchema),
   deleteCrossMapping,
 );
@@ -474,6 +494,7 @@ complianceRouter.get(
  */
 complianceRouter.post(
   '/controls/:id/evidence',
+  requireRole('admin', 'manager'),
   validateParams(idParamSchema),
   validate(createComplianceEvidenceSchema),
   createEvidence,
@@ -485,6 +506,7 @@ complianceRouter.post(
  */
 complianceRouter.delete(
   '/evidence/:id',
+  requireRole('admin', 'manager'),
   validateParams(idParamSchema),
   deleteEvidence,
 );

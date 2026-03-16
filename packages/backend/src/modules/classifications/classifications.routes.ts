@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 
+import { requireRole } from '../../middleware/auth.js';
 import { validate, validateParams } from '../../middleware/validate.js';
 import {
   idParamSchema,
@@ -31,32 +32,36 @@ const classificationRouter = Router();
 // ─── Model Routes ───────────────────────────────────────
 
 classificationRouter.get('/', listClassificationModels);
-classificationRouter.post('/', validate(createClassificationModelSchema), createClassificationModel);
+classificationRouter.post('/', requireRole('admin'), validate(createClassificationModelSchema), createClassificationModel);
 classificationRouter.get('/:id', validateParams(idParamSchema), getClassificationModel);
 classificationRouter.put(
   '/:id',
+  requireRole('admin'),
   validateParams(idParamSchema),
   validate(updateClassificationModelSchema),
   updateClassificationModel,
 );
-classificationRouter.delete('/:id', validateParams(idParamSchema), deleteClassificationModel);
+classificationRouter.delete('/:id', requireRole('admin'), validateParams(idParamSchema), deleteClassificationModel);
 
 // ─── Value Routes ───────────────────────────────────────
 
 classificationRouter.post(
   '/:id/values',
+  requireRole('admin'),
   validateParams(idParamSchema),
   validate(createClassificationValueSchema),
   createClassificationValue,
 );
 classificationRouter.put(
   '/:id/values/:vid',
+  requireRole('admin'),
   validateParams(modelValueParamsSchema),
   validate(createClassificationValueSchema.partial()),
   updateClassificationValue,
 );
 classificationRouter.delete(
   '/:id/values/:vid',
+  requireRole('admin'),
   validateParams(modelValueParamsSchema),
   deleteClassificationValue,
 );

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 
+import { requireRole } from '../../middleware/auth.js';
 import { validate, validateParams } from '../../middleware/validate.js';
 import {
   idParamSchema,
@@ -26,9 +27,9 @@ const capacityRouter = Router();
 
 // ── Capacity Types ──────────────────────────────────────────
 capacityRouter.get('/types', listCapacityTypes);
-capacityRouter.post('/types', validate(createCapacityTypeSchema), createCapacityType);
-capacityRouter.put('/types/:id', validateParams(idParamSchema), updateCapacityType);
-capacityRouter.delete('/types/:id', validateParams(idParamSchema), deleteCapacityType);
+capacityRouter.post('/types', requireRole('admin'), validate(createCapacityTypeSchema), createCapacityType);
+capacityRouter.put('/types/:id', requireRole('admin'), validateParams(idParamSchema), updateCapacityType);
+capacityRouter.delete('/types/:id', requireRole('admin'), validateParams(idParamSchema), deleteCapacityType);
 
 // ── Capacity Planning (REQ-3.4a / REQ-3.4b) ────────────────
 capacityRouter.get('/utilization', getUtilizationOverview);
@@ -38,8 +39,8 @@ capacityRouter.get('/overprovisioned', getOverprovisionedAssets);
 
 // ── Asset Capacities ────────────────────────────────────────
 capacityRouter.get('/assets/:id', validateParams(idParamSchema), getAssetCapacities);
-capacityRouter.post('/assets/:id', validateParams(idParamSchema), validate(setAssetCapacitySchema), setAssetCapacity);
-capacityRouter.delete('/assets/:id/:cid', deleteAssetCapacity);
+capacityRouter.post('/assets/:id', requireRole('admin'), validateParams(idParamSchema), validate(setAssetCapacitySchema), setAssetCapacity);
+capacityRouter.delete('/assets/:id/:cid', requireRole('admin'), deleteAssetCapacity);
 capacityRouter.get('/assets/:id/utilization', validateParams(idParamSchema), getCapacityUtilization);
 
 export { capacityRouter };
