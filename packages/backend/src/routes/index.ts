@@ -15,7 +15,7 @@ import { workflowRouter } from '../modules/workflows/workflows.routes.js';
 import { serviceCatalogRouter } from '../modules/services/services.routes.js';
 import { complianceRouter } from '../modules/compliance/compliance.routes.js';
 import { kbRouter } from '../modules/knowledge-base/kb.routes.js';
-import { emailRouter } from '../modules/email-inbound/email.routes.js';
+import { emailRouter, emailWebhookRouter } from '../modules/email-inbound/email.routes.js';
 import { portalRouter } from '../modules/portal/portal.routes.js';
 import { settingsRouter, licenseRouter } from '../modules/settings/settings.routes.js';
 import { slaRouter } from '../modules/sla/sla.routes.js';
@@ -88,6 +88,9 @@ protectedRouter.use('/monitoring', monitoringRouter);
 
 // Monitoring webhook is public (uses webhook_secret instead of JWT auth)
 apiRouter.use(monitoringWebhookRouter);
+
+// Email inbound webhook is public (uses provider signature validation instead of JWT auth)
+apiRouter.use(emailWebhookRouter);
 
 apiRouter.use(protectedRouter);
 

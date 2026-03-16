@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { apiClient } from './client';
+import { customerKeys } from './customers';
 import type { AuthUser, TenantInfo } from '@/stores/auth-store';
 
 interface LoginResponse {
@@ -72,6 +73,7 @@ export function useCreatePortalUser() {
       apiClient.post<PortalUser>(`/customers/${customerId}/portal-users`, data),
     onSuccess: (_data, vars) => {
       void queryClient.invalidateQueries({ queryKey: portalUserKeys.byCustomer(vars.customerId) });
+      void queryClient.invalidateQueries({ queryKey: customerKeys.overview(vars.customerId) });
     },
   });
 }
@@ -83,6 +85,7 @@ export function useUpdatePortalUser() {
       apiClient.put<PortalUser>(`/customers/${customerId}/portal-users/${userId}`, data),
     onSuccess: (_data, vars) => {
       void queryClient.invalidateQueries({ queryKey: portalUserKeys.byCustomer(vars.customerId) });
+      void queryClient.invalidateQueries({ queryKey: customerKeys.overview(vars.customerId) });
     },
   });
 }

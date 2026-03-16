@@ -215,11 +215,11 @@ export function DashboardPage() {
         />
         <StatCard
           titleKey="dashboard.pending_changes"
-          value={stats?.by_status?.pending ?? 0}
+          value={stats?.by_type?.change ?? 0}
           icon={GitPullRequest}
           isLoading={isLoading}
-          variant={stats && (stats.by_status?.pending ?? 0) > 0 ? 'warning' : 'default'}
-          onClick={() => navigate('/tickets')}
+          variant={stats && (stats.by_type?.change ?? 0) > 0 ? 'warning' : 'default'}
+          onClick={() => navigate('/tickets?ticket_type=change')}
         />
       </div>
 

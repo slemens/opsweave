@@ -1,6 +1,5 @@
 import { Router, json } from 'express';
 
-import { requireAuth } from '../../middleware/auth.js';
 import { requireRole } from '../../middleware/auth.js';
 import { validate, validateQuery, validateParams } from '../../middleware/validate.js';
 import {
@@ -28,17 +27,13 @@ import { validateWebhookSignature, webhookPayloadSchema } from './webhook.schema
 
 const emailRouter = Router();
 
-// ─── Public Routes (no auth) ─────────────────────────────
-
-/**
- * POST /api/v1/email/webhook
- * Public inbound webhook called by email providers (Mailgun, SendGrid, etc.).
- * Must be declared BEFORE the requireAuth middleware below.
- */
-// AUDIT-FIX: C-08 — Webhook signature validation
-// AUDIT-FIX: C-09 — Zod schema validation + 5mb body limit
-emailRouter.post(
-  '/webhook',
+// ─── Public Webhook Router (no auth) ─────────────────────
+// Mounted OUTSIDE the protectedRouter in routes/index.ts so that
+// external email providers (Mailgun, SendGrid) can reach it without JWT.
+// Auth is handled via webhook signature validation middleware.
+const emailWebhookRouter = Router();
+emailWebhookRouter.post(
+  '/email/webhook',
   json({ limit: '5mb' }),
   validateWebhookSignature,
   validate(webhookPayloadSchema),
@@ -46,9 +41,8 @@ emailRouter.post(
 );
 
 // ─── Authenticated Routes ─────────────────────────────────
-
-// All routes below this point require a valid JWT.
-emailRouter.use(requireAuth);
+// Note: emailRouter is mounted inside protectedRouter (routes/index.ts),
+// which already applies requireAuth + tenantMiddleware + auditMiddleware.
 
 // ─── Config Routes ────────────────────────────────────────
 
@@ -141,4 +135,4 @@ emailRouter.get(
   getMessage,
 );
 
-export { emailRouter };
+export { emailRouter, emailWebhookRouter };
