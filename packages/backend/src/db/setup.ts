@@ -307,7 +307,7 @@ CREATE TABLE IF NOT EXISTS tickets (
   major_declared_at TEXT,
   major_declared_by TEXT,
   bridge_call_url TEXT,
-  project_id TEXT REFERENCES projects(id),
+  project_id TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   resolved_at TEXT,
