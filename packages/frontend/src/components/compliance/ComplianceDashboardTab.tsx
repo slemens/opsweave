@@ -59,6 +59,7 @@ const AUDIT_STATUS_COLORS: Record<string, string> = {
 // ---------------------------------------------------------------------------
 
 export function ComplianceDashboardTab() {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- t is used in sub-components below
   const { t } = useTranslation(['compliance', 'common']);
 
   const { data: dashboardRaw, isLoading } = useComplianceDashboard();
