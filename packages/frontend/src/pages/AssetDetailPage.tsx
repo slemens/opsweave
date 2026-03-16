@@ -86,11 +86,12 @@ import {
   useRemoveAssetTenantAssignment,
   useAssetRelationHistory,
   useAssetCapacityHistory,
+  useAssetHistory,
 } from '@/api/assets';
 // AUDIT-FIX: M-09 — Import from domain-specific API modules
 import { useGroups } from '@/api/groups';
 import { useCustomers } from '@/api/customers';
-import type { AssetRelationWithDetails, AssetTicketSummary, AssetTenantAssignment, RelationHistoryEntry, CapacityHistoryEntry } from '@/api/assets';
+import type { AssetRelationWithDetails, AssetTicketSummary, AssetTenantAssignment, RelationHistoryEntry, CapacityHistoryEntry, AssetHistoryEntry } from '@/api/assets';
 import { useAuthStore } from '@/stores/auth-store';
 import {
   useClassificationModels,
@@ -100,7 +101,20 @@ import {
 } from '@/api/classifications';
 import {
   useAssetCapacityUtilization,
+  useCapacityTypes,
+  useSetAssetCapacity,
+  useDeleteAssetCapacity,
 } from '@/api/capacity';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { ASSET_STATUSES, SLA_TIERS, ENVIRONMENTS } from '@opsweave/shared';
 import { useAssetTypes, useRelationTypes } from '@/api/asset-types';
 import { DynamicFieldDisplay } from '@/components/cmdb/DynamicFieldDisplay';
@@ -222,12 +236,16 @@ export function AssetDetailPage() {
   const { data: classificationModels } = useClassificationModels();
   const { data: assetClassifications } = useAssetClassifications(id ?? '');
   const { data: capacityUtilization } = useAssetCapacityUtilization(id ?? '');
+  const { data: capacityTypesData } = useCapacityTypes();
   const classifyAsset = useClassifyAsset();
   const removeClassification = useRemoveAssetClassification();
+  const setAssetCapacity = useSetAssetCapacity();
+  const deleteAssetCapacity = useDeleteAssetCapacity();
 
   // ── History (REQ-3.3b) ──────────────────────────────────
   const { data: relationHistoryData } = useAssetRelationHistory(id ?? '');
   const { data: capacityHistoryData } = useAssetCapacityHistory(id ?? '');
+  const { data: fieldHistoryData } = useAssetHistory(id ?? '');
 
   // ── Tenant Assignments (REQ-2.1) ────────────────────────
   const { data: tenantAssignmentsData } = useAssetTenantAssignments(id ?? '');
@@ -272,6 +290,16 @@ export function AssetDetailPage() {
   const [assignTenantId, setAssignTenantId] = useState('');
   const [assignType, setAssignType] = useState<'dedicated' | 'shared' | 'inherited'>('dedicated');
   const [assignNotes, setAssignNotes] = useState('');
+
+  // ── Capacity Dialog ──────────────────────────────────────
+  const [capacityDialogOpen, setCapacityDialogOpen] = useState(false);
+  const [editingCapacityId, setEditingCapacityId] = useState<string | null>(null);
+  const [capTypeId, setCapTypeId] = useState('');
+  const [capDirection, setCapDirection] = useState<'provides' | 'requires'>('provides');
+  const [capTotal, setCapTotal] = useState(0);
+  const [capAllocated, setCapAllocated] = useState(0);
+  const [capReserved, setCapReserved] = useState(0);
+  const [deleteCapacityId, setDeleteCapacityId] = useState<string | null>(null);
 
   const selectedModelValues = useMemo(() => {
     if (!selectedModelId || !classificationModels) return [];
@@ -430,6 +458,54 @@ export function AssetDetailPage() {
     }
   }, [id, removeClassification, t]);
 
+  const handleOpenCapacityDialog = useCallback((entry?: import('@/api/capacity').CapacityUtilizationEntry) => {
+    if (entry) {
+      setEditingCapacityId(entry.id);
+      setCapTypeId(entry.capacity_type_id);
+      setCapDirection(entry.direction);
+      setCapTotal(entry.total);
+      setCapAllocated(entry.allocated);
+      setCapReserved(entry.reserved);
+    } else {
+      setEditingCapacityId(null);
+      setCapTypeId('');
+      setCapDirection('provides');
+      setCapTotal(0);
+      setCapAllocated(0);
+      setCapReserved(0);
+    }
+    setCapacityDialogOpen(true);
+  }, []);
+
+  const handleSaveCapacity = useCallback(async () => {
+    if (!id || !capTypeId) return;
+    try {
+      await setAssetCapacity.mutateAsync({
+        assetId: id,
+        capacity_type_id: capTypeId,
+        direction: capDirection,
+        total: capTotal,
+        allocated: capAllocated,
+        reserved: capReserved,
+      });
+      toast.success(editingCapacityId ? t('capacity.edit_success') : t('capacity.add_success'));
+      setCapacityDialogOpen(false);
+    } catch {
+      toast.error(editingCapacityId ? t('capacity.edit_error') : t('capacity.add_error'));
+    }
+  }, [id, capTypeId, capDirection, capTotal, capAllocated, capReserved, editingCapacityId, setAssetCapacity, t]);
+
+  const handleDeleteCapacity = useCallback(async () => {
+    if (!id || !deleteCapacityId) return;
+    try {
+      await deleteAssetCapacity.mutateAsync({ assetId: id, capacityId: deleteCapacityId });
+      toast.success(t('capacity.delete_success'));
+    } catch {
+      toast.error(t('capacity.delete_error'));
+    }
+    setDeleteCapacityId(null);
+  }, [id, deleteCapacityId, deleteAssetCapacity, t]);
+
   // ── Group / Customer Options ──────────────────────────────
 
   const groups = useMemo(() => groupsData?.data ?? [], [groupsData]);
@@ -478,7 +554,8 @@ export function AssetDetailPage() {
   const tenantAssignments = tenantAssignmentsData ?? [];
   const relationHistory = relationHistoryData ?? [];
   const capacityHistory = capacityHistoryData ?? [];
-  const totalHistoryCount = relationHistory.length + capacityHistory.length;
+  const fieldHistory = fieldHistoryData ?? [];
+  const totalHistoryCount = relationHistory.length + capacityHistory.length + fieldHistory.length;
 
   return (
     <div className="space-y-6" data-testid="page-asset-detail">
@@ -956,8 +1033,12 @@ export function AssetDetailPage() {
             {/* Capacity Tab */}
             <TabsContent value="capacity" className="mt-4">
               <Card>
-                <CardHeader className="pb-3">
+                <CardHeader className="flex flex-row items-center justify-between pb-3">
                   <CardTitle className="text-base">{t('capacity.title')}</CardTitle>
+                  <Button size="sm" onClick={() => handleOpenCapacityDialog()}>
+                    <Plus className="mr-1.5 h-3.5 w-3.5" />
+                    {t('capacity.add')}
+                  </Button>
                 </CardHeader>
                 <CardContent>
                   {capacityData.length === 0 ? (
@@ -983,12 +1064,32 @@ export function AssetDetailPage() {
                                       {cap.capacity_type.name}
                                       <span className="text-muted-foreground ml-1 text-xs">({cap.capacity_type.unit})</span>
                                     </span>
-                                    <span className={cn(
-                                      'text-xs font-medium',
-                                      pct > 90 ? 'text-destructive' : pct > 70 ? 'text-warning' : 'text-emerald-600 dark:text-emerald-400',
-                                    )}>
-                                      {pct.toFixed(1)}%
-                                    </span>
+                                    <div className="flex items-center gap-1.5">
+                                      <span className={cn(
+                                        'text-xs font-medium',
+                                        pct > 90 ? 'text-destructive' : pct > 70 ? 'text-warning' : 'text-emerald-600 dark:text-emerald-400',
+                                      )}>
+                                        {pct.toFixed(1)}%
+                                      </span>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                                        onClick={() => handleOpenCapacityDialog(cap)}
+                                        aria-label={t('capacity.edit')}
+                                      >
+                                        <Edit className="h-3 w-3" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                                        onClick={() => setDeleteCapacityId(cap.id)}
+                                        aria-label={t('capacity.delete')}
+                                      >
+                                        <Trash2 className="h-3 w-3" />
+                                      </Button>
+                                    </div>
                                   </div>
                                   <Progress value={pct} variant={variant} height={6} />
                                   <div className="flex items-center gap-3 text-xs text-muted-foreground">
@@ -1019,12 +1120,32 @@ export function AssetDetailPage() {
                                       {cap.capacity_type.name}
                                       <span className="text-muted-foreground ml-1 text-xs">({cap.capacity_type.unit})</span>
                                     </span>
-                                    <span className={cn(
-                                      'text-xs font-medium',
-                                      pct > 90 ? 'text-destructive' : pct > 70 ? 'text-warning' : 'text-emerald-600 dark:text-emerald-400',
-                                    )}>
-                                      {pct.toFixed(1)}%
-                                    </span>
+                                    <div className="flex items-center gap-1.5">
+                                      <span className={cn(
+                                        'text-xs font-medium',
+                                        pct > 90 ? 'text-destructive' : pct > 70 ? 'text-warning' : 'text-emerald-600 dark:text-emerald-400',
+                                      )}>
+                                        {pct.toFixed(1)}%
+                                      </span>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                                        onClick={() => handleOpenCapacityDialog(cap)}
+                                        aria-label={t('capacity.edit')}
+                                      >
+                                        <Edit className="h-3 w-3" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                                        onClick={() => setDeleteCapacityId(cap.id)}
+                                        aria-label={t('capacity.delete')}
+                                      >
+                                        <Trash2 className="h-3 w-3" />
+                                      </Button>
+                                    </div>
                                   </div>
                                   <Progress value={pct} variant={variant} height={6} />
                                   <div className="flex items-center gap-3 text-xs text-muted-foreground">
@@ -1262,6 +1383,47 @@ export function AssetDetailPage() {
                                   </TableCell>
                                   <TableCell className="text-sm text-muted-foreground">
                                     {entry.new_total != null ? `${entry.new_total}` : '\u2014'}
+                                  </TableCell>
+                                  <TableCell className="text-sm">
+                                    {entry.changed_by_name ?? '\u2014'}
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      )}
+
+                      {/* Field Changes */}
+                      {fieldHistory.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                            {t('history.field_changes')}
+                          </p>
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead className="w-[160px]">{t('fields.created_at')}</TableHead>
+                                <TableHead>{t('history.field')}</TableHead>
+                                <TableHead>{t('history.old_value')}</TableHead>
+                                <TableHead>{t('history.new_value')}</TableHead>
+                                <TableHead>{t('history.changed_by')}</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {fieldHistory.map((entry: AssetHistoryEntry) => (
+                                <TableRow key={entry.id}>
+                                  <TableCell className="text-sm text-muted-foreground">
+                                    {formatDate(entry.changed_at)}
+                                  </TableCell>
+                                  <TableCell className="text-sm font-medium">
+                                    {entry.field_changed}
+                                  </TableCell>
+                                  <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate" title={entry.old_value ?? ''}>
+                                    {entry.old_value ?? '\u2014'}
+                                  </TableCell>
+                                  <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate" title={entry.new_value ?? ''}>
+                                    {entry.new_value ?? '\u2014'}
                                   </TableCell>
                                   <TableCell className="text-sm">
                                     {entry.changed_by_name ?? '\u2014'}
@@ -1656,6 +1818,118 @@ export function AssetDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Capacity Add/Edit Dialog */}
+      <Dialog open={capacityDialogOpen} onOpenChange={setCapacityDialogOpen}>
+        <DialogContent className="sm:max-w-[460px]">
+          <DialogHeader>
+            <DialogTitle>{editingCapacityId ? t('capacity.edit') : t('capacity.add')}</DialogTitle>
+            <DialogDescription>
+              {asset.display_name}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label>{t('capacity.form.type')}</Label>
+              <Select
+                value={capTypeId}
+                onValueChange={setCapTypeId}
+                disabled={!!editingCapacityId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={t('capacity.form.select_type')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {(capacityTypesData ?? []).map((ct) => (
+                    <SelectItem key={ct.id} value={ct.id}>
+                      {ct.name} ({ct.unit})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid gap-2">
+              <Label>{t('capacity.form.direction')}</Label>
+              <Select
+                value={capDirection}
+                onValueChange={(v) => setCapDirection(v as 'provides' | 'requires')}
+                disabled={!!editingCapacityId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={t('capacity.form.select_direction')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="provides">{t('capacity.provides')}</SelectItem>
+                  <SelectItem value="requires">{t('capacity.requires')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid gap-2">
+              <Label>{t('capacity.form.total')}</Label>
+              <Input
+                type="number"
+                min={0}
+                value={capTotal}
+                onChange={(e) => setCapTotal(Number(e.target.value))}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label>{t('capacity.form.allocated')}</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={capAllocated}
+                  onChange={(e) => setCapAllocated(Number(e.target.value))}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label>{t('capacity.form.reserved')}</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={capReserved}
+                  onChange={(e) => setCapReserved(Number(e.target.value))}
+                />
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCapacityDialogOpen(false)}>
+              {tCommon('actions.cancel')}
+            </Button>
+            <Button
+              onClick={handleSaveCapacity}
+              disabled={!capTypeId || setAssetCapacity.isPending}
+            >
+              {setAssetCapacity.isPending
+                ? tCommon('status.loading')
+                : editingCapacityId ? t('capacity.edit') : t('capacity.add')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Capacity Delete Confirmation */}
+      <AlertDialog open={!!deleteCapacityId} onOpenChange={(open) => { if (!open) setDeleteCapacityId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('capacity.delete')}</AlertDialogTitle>
+            <AlertDialogDescription>{t('capacity.confirm_delete')}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{tCommon('actions.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteCapacity}>
+              {tCommon('actions.delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Tenant Assignment Dialog (REQ-2.1) */}
       <Dialog open={tenantAssignOpen} onOpenChange={setTenantAssignOpen}>

@@ -2,7 +2,7 @@
 // OpsWeave — Capacity API Hooks (TanStack Query)
 // =============================================================================
 
-import { useQuery, keepPreviousData } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { apiClient } from '@/api/client';
 
 // ---------------------------------------------------------------------------
@@ -80,6 +80,36 @@ export function useAssetCapacities(assetId: string) {
       return apiClient.get<AssetCapacity[]>(`/capacity/assets/${assetId}`);
     },
     enabled: !!assetId,
+  });
+}
+
+export function useSetAssetCapacity() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ assetId, ...data }: {
+      assetId: string;
+      capacity_type_id: string;
+      direction: 'provides' | 'requires';
+      total: number;
+      allocated?: number;
+      reserved?: number;
+    }) => apiClient.post(`/capacity/assets/${assetId}`, data),
+    onSuccess: (_data, vars) => {
+      void queryClient.invalidateQueries({ queryKey: capacityKeys.assetUtilization(vars.assetId) });
+      void queryClient.invalidateQueries({ queryKey: capacityKeys.assetCapacities(vars.assetId) });
+    },
+  });
+}
+
+export function useDeleteAssetCapacity() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ assetId, capacityId }: { assetId: string; capacityId: string }) =>
+      apiClient.delete(`/capacity/assets/${assetId}/${capacityId}`),
+    onSuccess: (_data, vars) => {
+      void queryClient.invalidateQueries({ queryKey: capacityKeys.assetUtilization(vars.assetId) });
+      void queryClient.invalidateQueries({ queryKey: capacityKeys.assetCapacities(vars.assetId) });
+    },
   });
 }
 

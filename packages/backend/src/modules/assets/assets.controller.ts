@@ -297,3 +297,18 @@ export async function getAssetCapacityHistory(
   const history = await assetsService.getAssetCapacityHistoryEntries(tenantId, id);
   sendSuccess(res, history);
 }
+
+/**
+ * GET /api/v1/assets/:id/history
+ * Get field-level change history for an asset.
+ */
+export async function getAssetHistory(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const tenantId = requireTenantId(req);
+  const { id } = req.params as { id: string };
+
+  const history = await assetsService.getAssetFieldHistory(tenantId, id);
+  sendSuccess(res, history);
+}

@@ -263,6 +263,32 @@ export const assetCapacityHistory = sqliteTable(
 );
 
 // =============================================================================
+// asset_history — Field-level change tracking for assets
+// =============================================================================
+
+export const assetHistory = sqliteTable(
+  'asset_history',
+  {
+    id: text('id').primaryKey(),
+    tenant_id: text('tenant_id')
+      .notNull()
+      .references(() => tenants.id),
+    asset_id: text('asset_id')
+      .notNull()
+      .references(() => assets.id),
+    field_changed: text('field_changed').notNull(),
+    old_value: text('old_value'),
+    new_value: text('new_value'),
+    changed_by: text('changed_by').notNull(),
+    changed_at: text('changed_at').notNull(),
+  },
+  (t) => [
+    index('idx_ah_tenant').on(t.tenant_id),
+    index('idx_ah_tenant_asset').on(t.tenant_id, t.asset_id),
+  ],
+);
+
+// =============================================================================
 // assets — Central CMDB entity
 // =============================================================================
 

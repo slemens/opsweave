@@ -189,7 +189,26 @@
     "reserved": "Reserved",
     "available": "Available",
     "utilization": "Utilization",
-    "no_capacity": "No capacity data"
+    "no_capacity": "No capacity data",
+    "add": "Add Capacity",
+    "edit": "Edit Capacity",
+    "delete": "Delete Capacity",
+    "add_success": "Capacity added successfully",
+    "edit_success": "Capacity updated successfully",
+    "delete_success": "Capacity removed successfully",
+    "add_error": "Failed to add capacity",
+    "edit_error": "Failed to update capacity",
+    "delete_error": "Failed to remove capacity",
+    "confirm_delete": "Are you sure you want to remove this capacity entry?",
+    "form": {
+      "type": "Capacity Type",
+      "direction": "Direction",
+      "total": "Total",
+      "allocated": "Allocated",
+      "reserved": "Reserved",
+      "select_type": "Select capacity type",
+      "select_direction": "Select direction"
+    }
   },
   "capacity_planning": {
     "title": "Capacity Planning",
@@ -282,6 +301,8 @@
     "capacity_changes": "Capacity Changes",
     "old_value": "Old Value",
     "new_value": "New Value",
-    "capacity_type": "Capacity Type"
+    "capacity_type": "Capacity Type",
+    "field_changes": "Field Changes",
+    "field": "Field"
   }
 }

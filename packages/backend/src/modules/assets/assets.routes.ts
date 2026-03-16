@@ -32,6 +32,7 @@ import {
   getAssetCompliance,
   getAssetRelationHistory,
   getAssetCapacityHistory,
+  getAssetHistory,
 } from './assets.controller.js';
 import {
   getAssetClassifications,
@@ -270,6 +271,16 @@ assetRouter.get(
   '/:id/capacity-history',
   validateParams(idParamSchema),
   getAssetCapacityHistory,
+);
+
+/**
+ * GET /api/v1/assets/:id/history
+ * Get field-level change history for an asset.
+ */
+assetRouter.get(
+  '/:id/history',
+  validateParams(idParamSchema),
+  getAssetHistory,
 );
 
 // ─── Asset Classifications (Evo-1C) ─────────────────────

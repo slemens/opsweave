@@ -914,6 +914,20 @@ CREATE TABLE IF NOT EXISTS asset_capacity_history (
   reason TEXT
 );
 
+-- asset_history (Field-level change tracking for assets)
+CREATE TABLE IF NOT EXISTS asset_history (
+  id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL REFERENCES tenants(id),
+  asset_id TEXT NOT NULL REFERENCES assets(id),
+  field_changed TEXT NOT NULL,
+  old_value TEXT,
+  new_value TEXT,
+  changed_by TEXT NOT NULL,
+  changed_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_ah_tenant ON asset_history(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_ah_tenant_asset ON asset_history(tenant_id, asset_id);
+
 -- ─── Feedback Board (global, no tenant_id) ────────────────────
 CREATE TABLE IF NOT EXISTS feedback_entries (
   id TEXT PRIMARY KEY,

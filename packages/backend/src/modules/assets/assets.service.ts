@@ -6,6 +6,7 @@ import {
   assets,
   assetRelations,
   assetRelationHistory,
+  assetHistory,
   assetServiceLinks,
   assetRegulatoryFlags,
   assigneeGroups,
@@ -259,18 +260,19 @@ export async function createAsset(
 
 /**
  * Update an existing asset.
+ * Records field-level change history for auditing.
  */
 export async function updateAsset(
   tenantId: string,
   assetId: string,
   data: UpdateAssetInput,
-  _userId: string,
+  userId: string,
 ): Promise<unknown> {
   const d = db();
 
-  // Check existence
+  // Fetch current asset BEFORE updating (for history tracking)
   const [existing] = await d
-    .select({ id: assets.id })
+    .select()
     .from(assets)
     .where(and(eq(assets.tenant_id, tenantId), eq(assets.id, assetId)))
     .limit(1);
@@ -279,8 +281,9 @@ export async function updateAsset(
     throw new NotFoundError('Asset not found');
   }
 
+  const now = new Date().toISOString();
   const updateData: Record<string, unknown> = {
-    updated_at: new Date().toISOString(),
+    updated_at: now,
   };
 
   if (data.asset_type !== undefined) updateData.asset_type = data.asset_type;
@@ -295,10 +298,60 @@ export async function updateAsset(
   if (data.customer_id !== undefined) updateData.customer_id = data.customer_id;
   if (data.attributes !== undefined) updateData.attributes = JSON.stringify(data.attributes);
 
+  // Track field-level changes
+  const trackedFields = [
+    'name', 'display_name', 'status', 'ip_address', 'location',
+    'sla_tier', 'environment', 'owner_group_id', 'customer_id', 'asset_type', 'attributes',
+  ] as const;
+
+  const historyInserts: Array<{
+    id: string;
+    tenant_id: string;
+    asset_id: string;
+    field_changed: string;
+    old_value: string | null;
+    new_value: string | null;
+    changed_by: string;
+    changed_at: string;
+  }> = [];
+
+  for (const field of trackedFields) {
+    if (data[field] === undefined) continue;
+
+    const oldVal = existing[field];
+    let newVal: unknown = data[field];
+
+    // Normalize attributes to JSON string for comparison
+    if (field === 'attributes') {
+      newVal = JSON.stringify(newVal);
+    }
+
+    const oldStr = oldVal != null ? String(oldVal) : null;
+    const newStr = newVal != null ? String(newVal) : null;
+
+    if (oldStr !== newStr) {
+      historyInserts.push({
+        id: uuidv4(),
+        tenant_id: tenantId,
+        asset_id: assetId,
+        field_changed: field,
+        old_value: oldStr,
+        new_value: newStr,
+        changed_by: userId,
+        changed_at: now,
+      });
+    }
+  }
+
   await d
     .update(assets)
     .set(updateData)
     .where(and(eq(assets.tenant_id, tenantId), eq(assets.id, assetId)));
+
+  // Insert history records
+  if (historyInserts.length > 0) {
+    await d.insert(assetHistory).values(historyInserts);
+  }
 
   return getAsset(tenantId, assetId);
 }
@@ -1326,5 +1379,56 @@ export async function getAssetCapacityHistoryEntries(
     reason: row.reason,
     changed_by_name: row.changed_by_name ?? null,
     capacity_type_name: row.capacity_type_name ?? null,
+  }));
+}
+
+/**
+ * Get field-level change history for an asset.
+ */
+export async function getAssetFieldHistory(
+  tenantId: string,
+  assetId: string,
+): Promise<Array<{
+  id: string;
+  asset_id: string;
+  field_changed: string;
+  old_value: string | null;
+  new_value: string | null;
+  changed_by: string;
+  changed_at: string;
+  changed_by_name: string | null;
+}>> {
+  const d = db();
+
+  const rows = await d
+    .select({
+      id: assetHistory.id,
+      asset_id: assetHistory.asset_id,
+      field_changed: assetHistory.field_changed,
+      old_value: assetHistory.old_value,
+      new_value: assetHistory.new_value,
+      changed_by: assetHistory.changed_by,
+      changed_at: assetHistory.changed_at,
+      changed_by_name: users.display_name,
+    })
+    .from(assetHistory)
+    .leftJoin(users, eq(assetHistory.changed_by, users.id))
+    .where(
+      and(
+        eq(assetHistory.tenant_id, tenantId),
+        eq(assetHistory.asset_id, assetId),
+      ),
+    )
+    .orderBy(desc(assetHistory.changed_at));
+
+  return rows.map((row) => ({
+    id: row.id,
+    asset_id: row.asset_id,
+    field_changed: row.field_changed,
+    old_value: row.old_value,
+    new_value: row.new_value,
+    changed_by: row.changed_by,
+    changed_at: row.changed_at,
+    changed_by_name: row.changed_by_name ?? null,
   }));
 }

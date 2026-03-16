@@ -168,6 +168,18 @@ export interface UpdateTenantAssignmentPayload {
   notes?: string | null;
 }
 
+// Asset field-level change history
+export interface AssetHistoryEntry {
+  id: string;
+  asset_id: string;
+  field_changed: string;
+  old_value: string | null;
+  new_value: string | null;
+  changed_by: string;
+  changed_at: string;
+  changed_by_name: string | null;
+}
+
 // REQ-3.3b: History Types
 export interface RelationHistoryEntry {
   id: string;
@@ -209,6 +221,7 @@ export const assetKeys = {
   tenantAssignments: (id: string) => [...assetKeys.all, 'tenant-assignments', id] as const,
   relationHistory: (id: string) => [...assetKeys.all, 'relation-history', id] as const,
   capacityHistory: (id: string) => [...assetKeys.all, 'capacity-history', id] as const,
+  history: (id: string) => [...assetKeys.detail(id), 'history'] as const,
 };
 
 // ---------------------------------------------------------------------------
@@ -321,6 +334,14 @@ export function useAssetCapacityHistory(assetId: string) {
   });
 }
 
+export function useAssetHistory(assetId: string) {
+  return useQuery({
+    queryKey: assetKeys.history(assetId),
+    queryFn: () => apiClient.get<AssetHistoryEntry[]>(`/assets/${assetId}/history`),
+    enabled: !!assetId,
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Mutation Hooks
 // ---------------------------------------------------------------------------
@@ -349,6 +370,7 @@ export function useUpdateAsset() {
       void queryClient.invalidateQueries({ queryKey: assetKeys.detail(variables.id) });
       void queryClient.invalidateQueries({ queryKey: assetKeys.lists() });
       void queryClient.invalidateQueries({ queryKey: assetKeys.stats() });
+      void queryClient.invalidateQueries({ queryKey: assetKeys.history(variables.id) });
     },
   });
 }

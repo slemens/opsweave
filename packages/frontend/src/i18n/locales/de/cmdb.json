@@ -189,7 +189,26 @@
     "reserved": "Reserviert",
     "available": "Verfügbar",
     "utilization": "Auslastung",
-    "no_capacity": "Keine Kapazitätsdaten"
+    "no_capacity": "Keine Kapazitätsdaten",
+    "add": "Kapazität hinzufügen",
+    "edit": "Kapazität bearbeiten",
+    "delete": "Kapazität entfernen",
+    "add_success": "Kapazität erfolgreich hinzugefügt",
+    "edit_success": "Kapazität erfolgreich aktualisiert",
+    "delete_success": "Kapazität erfolgreich entfernt",
+    "add_error": "Fehler beim Hinzufügen der Kapazität",
+    "edit_error": "Fehler beim Aktualisieren der Kapazität",
+    "delete_error": "Fehler beim Entfernen der Kapazität",
+    "confirm_delete": "Möchten Sie diesen Kapazitätseintrag wirklich entfernen?",
+    "form": {
+      "type": "Kapazitätstyp",
+      "direction": "Richtung",
+      "total": "Gesamt",
+      "allocated": "Zugewiesen",
+      "reserved": "Reserviert",
+      "select_type": "Kapazitätstyp wählen",
+      "select_direction": "Richtung wählen"
+    }
   },
   "capacity_planning": {
     "title": "Kapazitätsplanung",
@@ -282,6 +301,8 @@
     "capacity_changes": "Kapazitäts-Änderungen",
     "old_value": "Alter Wert",
     "new_value": "Neuer Wert",
-    "capacity_type": "Kapazitätstyp"
+    "capacity_type": "Kapazitätstyp",
+    "field_changes": "Feld-Änderungen",
+    "field": "Feld"
   }
 }
