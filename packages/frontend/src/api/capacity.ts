@@ -29,17 +29,22 @@ export interface AssetCapacity {
   available: number;
 }
 
+export interface CapacityUtilizationEntry {
+  id: string;
+  capacity_type_id: string;
+  capacity_type: CapacityType;
+  direction: 'provides' | 'requires';
+  total: number;
+  allocated: number;
+  reserved: number;
+  available: number;
+  utilization_pct: number;
+}
+
+/** @deprecated Use CapacityUtilizationEntry[] — API returns flat array */
 export interface AssetCapacityUtilization {
   asset_id: string;
-  capacities: Array<{
-    capacity_type: CapacityType;
-    direction: 'provides' | 'requires';
-    total: number;
-    allocated: number;
-    reserved: number;
-    available: number;
-    utilization_pct: number;
-  }>;
+  capacities: CapacityUtilizationEntry[];
 }
 
 // ---------------------------------------------------------------------------
@@ -82,7 +87,7 @@ export function useAssetCapacityUtilization(assetId: string) {
   return useQuery({
     queryKey: capacityKeys.assetUtilization(assetId),
     queryFn: async () => {
-      return apiClient.get<AssetCapacityUtilization>(
+      return apiClient.get<CapacityUtilizationEntry[]>(
         `/capacity/assets/${assetId}/utilization`,
       );
     },

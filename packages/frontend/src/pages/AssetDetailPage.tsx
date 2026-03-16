@@ -472,7 +472,7 @@ export function AssetDetailPage() {
   const relationsData = (relations ?? []) as AssetRelationWithDetails[];
   const ticketsData = (linkedTickets ?? []) as AssetTicketSummary[];
   const classificationsData = assetClassifications ?? [];
-  const capacityData = capacityUtilization?.capacities ?? [];
+  const capacityData = capacityUtilization ?? [];
   const providesCapacity = capacityData.filter((c) => c.direction === 'provides');
   const requiresCapacity = capacityData.filter((c) => c.direction === 'requires');
   const tenantAssignments = tenantAssignmentsData ?? [];

@@ -365,16 +365,18 @@ export async function getCapacityUtilization(
     return {
       id: row.id,
       capacity_type_id: row.capacity_type_id,
+      capacity_type: {
+        slug: row.type_slug,
+        name: row.type_name,
+        unit: row.type_unit,
+        category: row.type_category,
+      },
       direction: row.direction,
       total,
       allocated,
       reserved,
       available,
-      utilization_percent: utilizationPercent,
-      type_slug: row.type_slug,
-      type_name: row.type_name,
-      type_unit: row.type_unit,
-      type_category: row.type_category,
+      utilization_pct: utilizationPercent,
     };
   });
 }
