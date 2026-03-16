@@ -75,7 +75,7 @@ import {
 } from '@/api/monitoring';
 import type { MonitoringSource, EventFilters } from '@/api/monitoring';
 import { ApiRequestError } from '@/api/client';
-import { cn } from '@/lib/utils';
+import { cn, copyToClipboard } from '@/lib/utils';
 
 // =============================================================================
 // State badge helpers
@@ -539,7 +539,7 @@ export function MonitoringPage() {
                               variant="ghost"
                               size="icon"
                               className="h-6 w-6 shrink-0"
-                              onClick={() => { void navigator.clipboard.writeText(webhookUrl); toast.success('URL kopiert'); }}
+                              onClick={() => { void copyToClipboard(webhookUrl).then((ok) => { if (ok) { toast.success(tCommon('actions.copied')); } else { toast.error(tCommon('errors.copy_failed')); } }); }}
                               aria-label={tCommon('actions.copy')}
                             >
                               <Copy className="h-3 w-3" />

@@ -39,6 +39,7 @@
     "retry": "Retry",
     "reset_filters": "Reset filters",
     "copy": "Copy",
+    "copied": "Copied to clipboard",
     "menu": "Menu",
     "toggle_active": "Toggle active/inactive",
     "toggle_visibility": "Toggle visibility"
@@ -87,7 +88,8 @@
     "forbidden": "Access denied",
     "network": "Network error \u2014 please check your connection",
     "validation": "Please check your input",
-    "server": "Server error \u2014 please try again later"
+    "server": "Server error \u2014 please try again later",
+    "copy_failed": "Copy failed \u2014 please copy manually"
   },
   "dashboard": {
     "title": "Dashboard",

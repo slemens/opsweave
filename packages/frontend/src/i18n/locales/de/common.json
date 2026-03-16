@@ -39,6 +39,7 @@
     "retry": "Erneut versuchen",
     "reset_filters": "Filter zurücksetzen",
     "copy": "Kopieren",
+    "copied": "In die Zwischenablage kopiert",
     "menu": "Menü",
     "toggle_active": "Aktiv/Inaktiv umschalten",
     "toggle_visibility": "Sichtbarkeit umschalten"
@@ -87,7 +88,8 @@
     "forbidden": "Zugriff verweigert",
     "network": "Netzwerkfehler \u2014 bitte pr\u00fcfen Sie Ihre Verbindung",
     "validation": "Bitte \u00fcberpr\u00fcfen Sie Ihre Eingaben",
-    "server": "Serverfehler \u2014 bitte versuchen Sie es sp\u00e4ter erneut"
+    "server": "Serverfehler \u2014 bitte versuchen Sie es sp\u00e4ter erneut",
+    "copy_failed": "Kopieren fehlgeschlagen \u2014 bitte manuell kopieren"
   },
   "dashboard": {
     "title": "Dashboard",

@@ -600,9 +600,9 @@ export function AssetsPage() {
               fitViewOptions={{ padding: 0.2 }}
               nodesDraggable={true}
               nodesConnectable={false}
-              elementsSelectable={true}
+              elementsSelectable={false}
               onNodeClick={(_, node) => {
-                window.location.href = `/assets/${node.id}`;
+                navigate(`/assets/${node.id}`);
               }}
             >
               <Controls />

@@ -381,7 +381,7 @@ export function AssetDetailPage() {
 
   const handleOpenEditProperties = useCallback((rel: AssetRelationWithDetails) => {
     setEditingRelation(rel);
-    setEditProperties({ ...rel.properties });
+    setEditProperties({ ...(rel.properties ?? {}) });
     setEditPropsOpen(true);
   }, []);
 
@@ -726,7 +726,7 @@ export function AssetDetailPage() {
                           fitViewOptions={{ padding: 0.25 }}
                           nodesDraggable={true}
                           nodesConnectable={false}
-                          elementsSelectable={true}
+                          elementsSelectable={false}
                         >
                           <Controls />
                           <MiniMap
@@ -1778,7 +1778,7 @@ function RelationPropertiesCell({
   schema?: import('@opsweave/shared').AttributeDefinition[];
   locale: string;
 }) {
-  const entries = Object.entries(properties).filter(([, v]) => v != null && v !== '');
+  const entries = Object.entries(properties ?? {}).filter(([, v]) => v != null && v !== '');
   if (entries.length === 0) return <span className="text-muted-foreground text-xs">{'\u2014'}</span>;
 
   return (
