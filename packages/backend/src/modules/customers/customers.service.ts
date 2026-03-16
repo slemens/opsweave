@@ -16,6 +16,7 @@ import {
 } from '../../db/schema/index.js';
 import { isNull } from 'drizzle-orm';
 import { NotFoundError, ConflictError } from '../../lib/errors.js';
+import { hashPassword } from '../auth/auth.service.js';
 import type { PaginationParams } from '@opsweave/shared';
 
 // ─── DB Helper ────────────────────────────────────────────
@@ -521,4 +522,192 @@ export async function getCustomerOverview(
     sla_assignments: enrichedSlaAssignments,
     vertical_catalogs: vertCatalogs,
   };
+}
+
+// ─── Portal Users ────────────────────────────────────────
+
+export interface PortalUserRow {
+  id: string;
+  customer_id: string;
+  email: string;
+  display_name: string;
+  is_active: number;
+  last_login: string | null;
+  created_at: string;
+}
+
+// Columns to select — excludes password_hash
+const portalUserColumns = {
+  id: customerPortalUsers.id,
+  customer_id: customerPortalUsers.customer_id,
+  email: customerPortalUsers.email,
+  display_name: customerPortalUsers.display_name,
+  is_active: customerPortalUsers.is_active,
+  last_login: customerPortalUsers.last_login,
+  created_at: customerPortalUsers.created_at,
+} as const;
+
+/**
+ * List portal users for a customer.
+ */
+export async function getPortalUsers(
+  tenantId: string,
+  customerId: string,
+): Promise<PortalUserRow[]> {
+  const d = db();
+
+  // Verify customer exists
+  await getCustomer(tenantId, customerId);
+
+  return d
+    .select(portalUserColumns)
+    .from(customerPortalUsers)
+    .where(
+      and(
+        eq(customerPortalUsers.tenant_id, tenantId),
+        eq(customerPortalUsers.customer_id, customerId),
+      ),
+    )
+    .orderBy(asc(customerPortalUsers.display_name));
+}
+
+/**
+ * Create a portal user for a customer.
+ */
+export async function createPortalUser(
+  tenantId: string,
+  customerId: string,
+  data: { email: string; display_name: string; password: string },
+): Promise<PortalUserRow> {
+  const d = db();
+
+  // Verify customer exists
+  await getCustomer(tenantId, customerId);
+
+  // Check for duplicate email within tenant
+  const existing = await d
+    .select({ id: customerPortalUsers.id })
+    .from(customerPortalUsers)
+    .where(
+      and(
+        eq(customerPortalUsers.tenant_id, tenantId),
+        eq(customerPortalUsers.email, data.email),
+      ),
+    )
+    .limit(1);
+
+  if (existing.length > 0) {
+    throw new ConflictError('A portal user with this email already exists');
+  }
+
+  const now = new Date().toISOString();
+  const id = uuidv4();
+  const passwordHash = await hashPassword(data.password);
+
+  await d.insert(customerPortalUsers).values({
+    id,
+    tenant_id: tenantId,
+    customer_id: customerId,
+    email: data.email,
+    display_name: data.display_name,
+    password_hash: passwordHash,
+    is_active: 1,
+    created_at: now,
+  });
+
+  const [created] = await d
+    .select(portalUserColumns)
+    .from(customerPortalUsers)
+    .where(eq(customerPortalUsers.id, id))
+    .limit(1);
+
+  return created!;
+}
+
+/**
+ * Update a portal user.
+ */
+export async function updatePortalUser(
+  tenantId: string,
+  customerId: string,
+  userId: string,
+  data: { display_name?: string; is_active?: number },
+): Promise<PortalUserRow> {
+  const d = db();
+
+  const existing = await d
+    .select({ id: customerPortalUsers.id })
+    .from(customerPortalUsers)
+    .where(
+      and(
+        eq(customerPortalUsers.id, userId),
+        eq(customerPortalUsers.tenant_id, tenantId),
+        eq(customerPortalUsers.customer_id, customerId),
+      ),
+    )
+    .limit(1);
+
+  if (existing.length === 0) {
+    throw new NotFoundError('Portal user not found');
+  }
+
+  const updateSet: Record<string, unknown> = {};
+  if (data.display_name !== undefined) updateSet['display_name'] = data.display_name;
+  if (data.is_active !== undefined) updateSet['is_active'] = data.is_active;
+
+  if (Object.keys(updateSet).length > 0) {
+    await d
+      .update(customerPortalUsers)
+      .set(updateSet)
+      .where(
+        and(
+          eq(customerPortalUsers.id, userId),
+          eq(customerPortalUsers.tenant_id, tenantId),
+        ),
+      );
+  }
+
+  const [updated] = await d
+    .select(portalUserColumns)
+    .from(customerPortalUsers)
+    .where(eq(customerPortalUsers.id, userId))
+    .limit(1);
+
+  return updated!;
+}
+
+/**
+ * Delete a portal user.
+ */
+export async function deletePortalUser(
+  tenantId: string,
+  customerId: string,
+  userId: string,
+): Promise<void> {
+  const d = db();
+
+  const existing = await d
+    .select({ id: customerPortalUsers.id })
+    .from(customerPortalUsers)
+    .where(
+      and(
+        eq(customerPortalUsers.id, userId),
+        eq(customerPortalUsers.tenant_id, tenantId),
+        eq(customerPortalUsers.customer_id, customerId),
+      ),
+    )
+    .limit(1);
+
+  if (existing.length === 0) {
+    throw new NotFoundError('Portal user not found');
+  }
+
+  await d
+    .delete(customerPortalUsers)
+    .where(
+      and(
+        eq(customerPortalUsers.id, userId),
+        eq(customerPortalUsers.tenant_id, tenantId),
+      ),
+    );
 }

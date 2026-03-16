@@ -140,7 +140,12 @@ export function DashboardPage() {
 
   const recentTickets = recentTicketsData?.data ?? [];
   const timelineChartData = timelineData ?? [];
-  const customerChartData = customerData ?? [];
+  const customerChartData = (customerData ?? []).map((item) => ({
+    ...item,
+    customer_name: item.customer_name === '__no_customer__'
+      ? t('tickets:no_customer')
+      : item.customer_name,
+  }));
 
   return (
     <div className="space-y-6" data-testid="page-dashboard">
@@ -271,7 +276,7 @@ export function DashboardPage() {
           <CardHeader>
             <CardTitle className="text-base">{t('dashboard.top_customers')}</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="overflow-hidden">
             {isLoadingCustomers ? (
               <Skeleton className="h-[220px] w-full" />
             ) : customerChartData.length === 0 ? (

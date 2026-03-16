@@ -4,6 +4,7 @@ import {
   sendSuccess,
   sendCreated,
   sendPaginated,
+  sendNoContent,
 } from '../../lib/response.js';
 // AUDIT-FIX: M-04 — Safe context accessors instead of non-null assertions
 import { requireTenantId } from '../../lib/context.js';
@@ -106,4 +107,64 @@ export async function getCustomerOverview(
 
   const overview = await customersService.getCustomerOverview(tenantId, id);
   sendSuccess(res, overview);
+}
+
+// ─── Portal Users ──────────────────────────────────────────
+
+/**
+ * GET /api/v1/customers/:id/portal-users
+ */
+export async function listPortalUsers(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const tenantId = requireTenantId(req);
+  const { id } = req.params as { id: string };
+
+  const portalUsers = await customersService.getPortalUsers(tenantId, id);
+  sendSuccess(res, portalUsers);
+}
+
+/**
+ * POST /api/v1/customers/:id/portal-users
+ */
+export async function createPortalUser(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const tenantId = requireTenantId(req);
+  const { id } = req.params as { id: string };
+  const data = req.body as { email: string; display_name: string; password: string };
+
+  const portalUser = await customersService.createPortalUser(tenantId, id, data);
+  sendCreated(res, portalUser);
+}
+
+/**
+ * PUT /api/v1/customers/:id/portal-users/:uid
+ */
+export async function updatePortalUser(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const tenantId = requireTenantId(req);
+  const { id, uid } = req.params as { id: string; uid: string };
+  const data = req.body as { display_name?: string; is_active?: number };
+
+  const portalUser = await customersService.updatePortalUser(tenantId, id, uid, data);
+  sendSuccess(res, portalUser);
+}
+
+/**
+ * DELETE /api/v1/customers/:id/portal-users/:uid
+ */
+export async function deletePortalUser(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const tenantId = requireTenantId(req);
+  const { id, uid } = req.params as { id: string; uid: string };
+
+  await customersService.deletePortalUser(tenantId, id, uid);
+  sendNoContent(res);
 }

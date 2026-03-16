@@ -1557,7 +1557,7 @@ export async function getTicketsByCustomer(
   const safeLimit = Math.abs(Math.floor(limit));
 
   const rows = await d.all<{ customer_name: string; count: number }>(
-    sql`SELECT COALESCE(c.name, 'Kein Kunde') as customer_name, COUNT(t.id) as count
+    sql`SELECT COALESCE(c.name, '__no_customer__') as customer_name, COUNT(t.id) as count
         FROM tickets t
         LEFT JOIN customers c ON t.customer_id = c.id
         WHERE t.tenant_id = ${tenantId}

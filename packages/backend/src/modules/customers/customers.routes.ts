@@ -11,6 +11,10 @@ import {
   updateCustomer,
   deleteCustomer,
   getCustomerOverview,
+  listPortalUsers,
+  createPortalUser,
+  updatePortalUser,
+  deletePortalUser,
 } from './customers.controller.js';
 
 const customerRouter = Router();
@@ -76,6 +80,47 @@ customerRouter.get(
   '/:id/overview',
   validateParams(idParamSchema),
   getCustomerOverview,
+);
+
+/**
+ * GET /api/v1/customers/:id/portal-users
+ * List portal users for a customer.
+ */
+customerRouter.get(
+  '/:id/portal-users',
+  validateParams(idParamSchema),
+  listPortalUsers,
+);
+
+/**
+ * POST /api/v1/customers/:id/portal-users
+ * Create a portal user for a customer.
+ */
+customerRouter.post(
+  '/:id/portal-users',
+  requireRole('admin', 'manager'),
+  validateParams(idParamSchema),
+  createPortalUser,
+);
+
+/**
+ * PUT /api/v1/customers/:id/portal-users/:uid
+ * Update a portal user.
+ */
+customerRouter.put(
+  '/:id/portal-users/:uid',
+  requireRole('admin', 'manager'),
+  updatePortalUser,
+);
+
+/**
+ * DELETE /api/v1/customers/:id/portal-users/:uid
+ * Delete a portal user.
+ */
+customerRouter.delete(
+  '/:id/portal-users/:uid',
+  requireRole('admin', 'manager'),
+  deletePortalUser,
 );
 
 export { customerRouter };
