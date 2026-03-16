@@ -170,9 +170,11 @@ export interface ComplianceDashboardData {
   recent_audits: Array<{
     id: string;
     name: string;
+    audit_type: string;
     status: string;
     auditor: string | null;
-    created_at: string;
+    start_date: string | null;
+    end_date: string | null;
   }>;
 }
 

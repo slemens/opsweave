@@ -379,7 +379,7 @@ function RecentAuditsSection({
                 </div>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   {audit.auditor && <span>{audit.auditor}</span>}
-                  <span>{new Date(audit.created_at).toLocaleDateString()}</span>
+                  <span>{audit.start_date ? new Date(audit.start_date).toLocaleDateString() : '—'}</span>
                 </div>
               </div>
             ))}
