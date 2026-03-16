@@ -4,7 +4,6 @@ import {
   Plus,
   Pencil,
   Trash2,
-  MoreHorizontal,
   Clock,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -49,12 +48,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import {
   Select,
   SelectContent,

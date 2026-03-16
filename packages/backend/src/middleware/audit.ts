@@ -171,7 +171,7 @@ export function auditMiddleware(req: Request, res: Response, next: NextFunction)
     }
 
     // Call original end
-    return (originalEnd as Function).apply(this, args);
+    return (originalEnd as (...a: unknown[]) => unknown).apply(this, args);
   } as typeof res.end;
 
   next();

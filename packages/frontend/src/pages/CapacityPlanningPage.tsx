@@ -6,7 +6,6 @@ import {
   Search,
   Plus,
   Minus,
-  ArrowRightLeft,
   AlertTriangle,
   CheckCircle2,
   XCircle,
@@ -61,12 +60,6 @@ function utilizationBarColor(pct: number): string {
   if (pct > 85) return '[&>div]:bg-red-500';
   if (pct > 70) return '[&>div]:bg-yellow-500';
   return '[&>div]:bg-green-500';
-}
-
-function utilizationBadgeVariant(pct: number): 'destructive' | 'secondary' | 'default' {
-  if (pct > 85) return 'destructive';
-  if (pct > 70) return 'secondary';
-  return 'default';
 }
 
 // ---------------------------------------------------------------------------
