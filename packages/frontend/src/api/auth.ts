@@ -97,6 +97,7 @@ export function useDeletePortalUser() {
       apiClient.delete(`/customers/${customerId}/portal-users/${userId}`),
     onSuccess: (_data, vars) => {
       void queryClient.invalidateQueries({ queryKey: portalUserKeys.byCustomer(vars.customerId) });
+      void queryClient.invalidateQueries({ queryKey: customerKeys.overview(vars.customerId) });
     },
   });
 }

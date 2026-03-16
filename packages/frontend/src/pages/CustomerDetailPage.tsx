@@ -539,7 +539,7 @@ export function CustomerDetailPage() {
 
 function PortalUsersSection({ customerId }: { customerId: string }) {
   const { t } = useTranslation(['common']);
-  const { data: portalUsers, isLoading } = usePortalUsers(customerId);
+  const { data: portalUsers, isLoading, isError, refetch } = usePortalUsers(customerId);
   const createMutation = useCreatePortalUser();
   const updateMutation = useUpdatePortalUser();
 
@@ -617,6 +617,14 @@ function PortalUsersSection({ customerId }: { customerId: string }) {
           {isLoading ? (
             <div className="space-y-2">
               {[1, 2].map((i) => <Skeleton key={i} className="h-10 rounded" />)}
+            </div>
+          ) : isError ? (
+            <div className="flex items-center gap-2 py-2">
+              <p className="text-sm text-destructive">{t('common:status.error')}</p>
+              <Button variant="ghost" size="sm" onClick={() => void refetch()}>
+                <RefreshCw className="mr-1 h-3 w-3" />
+                {t('common:actions.retry')}
+              </Button>
             </div>
           ) : !portalUsers || portalUsers.length === 0 ? (
             <p className="text-sm text-muted-foreground py-2">{t('common:portal_users.empty')}</p>
