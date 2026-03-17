@@ -60,7 +60,6 @@ customerRouter.put(
   updateCustomer,
 );
 
-// AUDIT-FIX: C-14 — Soft-delete (deactivate) endpoint
 /**
  * DELETE /api/v1/customers/:id
  * Deactivate a customer (soft-delete). Returns 409 if open tickets exist.

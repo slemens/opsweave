@@ -1,6 +1,5 @@
 // =============================================================================
 // OpsWeave — Group API Hooks (TanStack Query)
-// AUDIT-FIX: M-09 — Extracted from tickets.ts for domain separation
 // =============================================================================
 
 import {

@@ -3,7 +3,6 @@ import { eq, and } from 'drizzle-orm';
 import { getDb, type TypedDb } from '../../config/database.js';
 import { emailInboundConfigs } from '../../db/schema/email.js';
 import { ImapPoller } from './imap-poller.js';
-// AUDIT-FIX: H-11 — Structured logging
 import logger from '../../lib/logger.js';
 
 // ─── State ────────────────────────────────────────────────
@@ -14,7 +13,6 @@ import logger from '../../lib/logger.js';
  */
 const pollingIntervals = new Map<string, ReturnType<typeof setInterval>>();
 
-// AUDIT-FIX: M-06 — Exponential backoff constants
 const BACKOFF_INITIAL_MS = 1_000;
 const BACKOFF_MAX_MS = 30_000;
 const BACKOFF_FACTOR = 2;
@@ -31,7 +29,6 @@ const MAX_RETRIES = 10;
 export async function startEmailPollingWorker(): Promise<void> {
   logger.info('[email-poll] Starting IMAP polling worker');
 
-  // AUDIT-FIX: M-06 — Wait for DB with exponential backoff
   const dbReady = await waitForDb();
   if (!dbReady) {
     logger.error('[email-poll] DB not reachable after retries — polling will not start. Retrying in background.');
@@ -70,7 +67,6 @@ async function checkDbReady(): Promise<void> {
   await db.select({ id: emailInboundConfigs.id }).from(emailInboundConfigs).limit(1);
 }
 
-// AUDIT-FIX: M-06 — Exponential backoff for DB readiness
 async function waitForDb(): Promise<boolean> {
   let delay = BACKOFF_INITIAL_MS;
 
@@ -92,7 +88,6 @@ async function waitForDb(): Promise<boolean> {
   return false;
 }
 
-// AUDIT-FIX: M-06 — Keep retrying in background if initial attempts fail
 function scheduleBackgroundRetry(): void {
   const handle = setInterval(() => {
     void (async () => {

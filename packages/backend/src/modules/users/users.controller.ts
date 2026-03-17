@@ -6,7 +6,6 @@ import {
   sendPaginated,
   sendNoContent,
 } from '../../lib/response.js';
-// AUDIT-FIX: M-04 — Safe context accessors instead of non-null assertions
 import { requireTenantId, requireUserId, requireUser } from '../../lib/context.js';
 import { ForbiddenError } from '../../lib/errors.js';
 import * as usersService from './users.service.js';

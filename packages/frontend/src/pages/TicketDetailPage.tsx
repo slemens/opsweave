@@ -55,7 +55,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-// AUDIT-FIX: M-15 — AlertDialog for status change confirmation
 import {
   AlertDialog,
   AlertDialogAction,
@@ -80,7 +79,6 @@ import {
   useCreateCategory,
   useUpdateTicket,
 } from '@/api/tickets';
-// AUDIT-FIX: M-09 — Import from domain-specific API modules
 import { useGroups } from '@/api/groups';
 import { useUsers } from '@/api/users';
 import { useCustomers } from '@/api/customers';
@@ -766,7 +764,6 @@ export function TicketDetailPage() {
   const [newCatDialogOpen, setNewCatDialogOpen] = useState(false);
   const [newCatName, setNewCatName] = useState('');
 
-  // AUDIT-FIX: M-15 — Confirmation dialog state for critical status changes
   const [statusConfirmOpen, setStatusConfirmOpen] = useState(false);
   const [pendingStatus, setPendingStatus] = useState<string | null>(null);
 
@@ -818,7 +815,6 @@ export function TicketDetailPage() {
     }
   }, [id, updateTicket, t]);
 
-  // AUDIT-FIX: M-15 — Confirmation dialog for critical status transitions
   const CONFIRM_STATUSES = ['closed', 'resolved', 'archived'];
 
   const handleStatusChange = useCallback((newStatus: string) => {
@@ -2255,7 +2251,6 @@ export function TicketDetailPage() {
         </DialogContent>
       </Dialog>
 
-      {/* AUDIT-FIX: M-15 — Confirmation dialog for critical status changes */}
       <AlertDialog open={statusConfirmOpen} onOpenChange={setStatusConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>

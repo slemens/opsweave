@@ -3,12 +3,9 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 import type { Request, Response, NextFunction } from 'express';
 
 import { config } from '../../config/index.js';
-// AUDIT-FIX: H-11 — Structured logging
 import logger from '../../lib/logger.js';
-// AUDIT-FIX: M-12 — Use standard error response helper
 import { sendError } from '../../lib/response.js';
 
-// AUDIT-FIX: C-09 — Zod schemas for Mailgun and SendGrid webhook payloads
 
 /**
  * Mailgun inbound webhook payload.
@@ -58,7 +55,6 @@ export const webhookPayloadSchema = z.union([
   mailgunWebhookSchema,
 ]);
 
-// AUDIT-FIX: C-08 — Webhook signature validation middleware
 
 /**
  * Validate Mailgun HMAC-SHA256 signature.
@@ -122,7 +118,6 @@ export function validateWebhookSignature(
   // If no secret is configured, skip validation (dev/test only)
   if (!secret) {
     if (config.nodeEnv === 'production') {
-      // AUDIT-FIX: H-11 — Structured logging
       logger.warn('EMAIL_WEBHOOK_SECRET is not set in production — webhook signature validation disabled');
     }
     next();

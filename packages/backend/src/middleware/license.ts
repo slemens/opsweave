@@ -5,11 +5,9 @@ import type { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
 import { LicenseLimitError } from '../lib/errors.js';
-// AUDIT-FIX: H-11 — Structured logging
 import logger from '../lib/logger.js';
 
 // ─── Community Edition default limits ──────────────────────
-// AUDIT-FIX: M-08 — Document where limits come from
 // These limits define the free Community Edition tier (see CLAUDE.md § 1 "Geschäftsmodell").
 // When no valid Enterprise JWT is present, these caps are enforced.
 // Enterprise licenses override these via the `limits` field in the JWT payload.
@@ -94,7 +92,6 @@ export function validateLicenseKey(licenseKey: string | null | undefined): Licen
       issuer: 'opsweave',
     }) as LicensePayload;
   } catch (err) {
-    // AUDIT-FIX: H-13 — Log license validation failures
     logger.error({ err }, 'License validation failed');
     return null;
   }
@@ -124,7 +121,6 @@ function resolveLimit(
     // -1 means unlimited
     return limit === -1 ? Infinity : limit;
   } catch (err) {
-    // AUDIT-FIX: H-13 — Log license limit resolution failures
     logger.warn({ err, resource }, 'License validation failed, falling back to community limits');
     return COMMUNITY_LIMITS[resource];
   }

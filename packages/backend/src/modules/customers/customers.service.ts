@@ -214,7 +214,6 @@ export async function updateCustomer(
 
 // ─── Deactivate Customer ─────────────────────────────────
 
-// AUDIT-FIX: C-14 — Soft-delete (deactivate) a customer.
 // Returns 409 Conflict if the customer has open tickets.
 export async function deactivateCustomer(
   tenantId: string,

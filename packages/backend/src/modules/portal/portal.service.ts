@@ -119,7 +119,6 @@ export async function portalLogin(input: PortalLoginInput): Promise<{
     portal: true,
   };
 
-  // AUDIT-FIX: C-03 — Use central config.jwtSecret instead of separate fallback
   const token = jwt.sign(payload, config.jwtSecret, { expiresIn: '8h' });
 
   return {

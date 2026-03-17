@@ -94,7 +94,6 @@ import {
 } from '@/api/services';
 import type { ServiceDescription, HorizontalCatalog, VerticalCatalog, ServiceScopeItem } from '@/api/services';
 import { useLicenseInfo } from '@/api/settings';
-// AUDIT-FIX: M-09 — Import from domain-specific API module
 import { useCustomers } from '@/api/customers';
 import { ApiRequestError } from '@/api/client';
 
@@ -1530,7 +1529,6 @@ function VerticalCatalogsTab() {
       setCreateIndustry('');
       setCreateDescription('');
     } catch (err) {
-      // AUDIT-FIX: H-15 — Proper error handling with ApiRequestError check
       const msg = err instanceof ApiRequestError ? err.message : tCommon('error');
       toast.error(msg);
     }
@@ -1542,7 +1540,6 @@ function VerticalCatalogsTab() {
       toast.success(tCommon('deleted'));
       if (detailId === id) setDetailId(null);
     } catch (err) {
-      // AUDIT-FIX: H-15 — Proper error handling with ApiRequestError check
       const msg = err instanceof ApiRequestError ? err.message : tCommon('error');
       toast.error(msg);
     }
@@ -1745,7 +1742,6 @@ function VerticalCatalogDetail({ verticalId }: { verticalId: string }) {
       setOverrideDescId('');
       setOverrideReason('');
     } catch (err) {
-      // AUDIT-FIX: H-15 — Proper error handling with ApiRequestError check
       const msg = err instanceof ApiRequestError ? err.message : tCommon('error');
       toast.error(msg);
     }
@@ -1756,7 +1752,6 @@ function VerticalCatalogDetail({ verticalId }: { verticalId: string }) {
       await removeOverrideMutation.mutateAsync({ verticalId, overrideId });
       toast.success(tCommon('deleted'));
     } catch (err) {
-      // AUDIT-FIX: H-15 — Proper error handling with ApiRequestError check
       const msg = err instanceof ApiRequestError ? err.message : tCommon('error');
       toast.error(msg);
     }

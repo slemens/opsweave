@@ -1,4 +1,3 @@
-// AUDIT-FIX: C-07 — PostgreSQL implementation of SLA tier resolution.
 //
 // Uses a recursive CTE (WITH RECURSIVE) to traverse the asset relation DAG
 // upward and find the first ancestor with an explicit SLA tier (!= 'none').

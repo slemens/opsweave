@@ -1,4 +1,3 @@
-// AUDIT-FIX: C-11 — Replace MOCK_USAGE with real API data from GET /api/v1/license/usage
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AlertTriangle, X } from 'lucide-react';
@@ -24,7 +23,6 @@ export function LicenseBanner() {
   const isAdmin =
     activeTenant?.role === 'admin' || user?.isSuperAdmin === true;
 
-  // AUDIT-FIX: C-11 — Fetch real usage data from API
   const { data: usage, isLoading, isError } = useLicenseUsage();
 
   if (!isAdmin || dismissed) {

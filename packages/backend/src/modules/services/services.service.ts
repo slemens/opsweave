@@ -2,7 +2,6 @@ import { eq, and, count, like, or, asc, desc, inArray } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 
 import { getDb, type TypedDb } from '../../config/database.js';
-// AUDIT-FIX: H-11 — Structured logging
 import logger from '../../lib/logger.js';
 import {
   serviceDescriptions,
@@ -30,7 +29,6 @@ function db(): TypedDb {
 
 // ─── Helpers ──────────────────────────────────────────────
 
-// AUDIT-FIX: H-12 — Log JSON parse failures instead of silently returning []
 function parseComplianceTags(raw: unknown): string[] {
   if (Array.isArray(raw)) return raw as string[];
   if (typeof raw === 'string') {

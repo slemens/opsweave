@@ -48,7 +48,6 @@ import {
 
 const assetRouter = Router();
 
-// AUDIT-FIX: H-04 — Param validation for asset relation delete
 const assetRelationParamsSchema = z.object({
   id: z.string().uuid(),
   rid: z.string().uuid(),
@@ -190,7 +189,6 @@ assetRouter.post(
  * DELETE /api/v1/assets/:id/relations/:rid
  * Delete a relation.
  */
-// AUDIT-FIX: H-04 — Validate both UUID params
 assetRouter.delete(
   '/:id/relations/:rid',
   validateParams(assetRelationParamsSchema),
@@ -219,7 +217,6 @@ assetRouter.get(
   getAssetTickets,
 );
 
-// AUDIT-FIX: H-10 — Missing asset sub-endpoints
 
 /**
  * GET /api/v1/assets/:id/sla-chain

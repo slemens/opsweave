@@ -17,7 +17,6 @@ import type {
   TicketPriority,
 } from '@opsweave/shared';
 import type { PaginationMeta } from '@opsweave/shared';
-// AUDIT-FIX: M-09 — Re-export moved hooks for backwards compatibility during transition
 export { useGroups, useCreateGroup, useUpdateGroup, useDeleteGroup, groupKeys } from '@/api/groups';
 export type { GroupsResponse } from '@/api/groups';
 export { useCustomers, useCustomerOverview, useCreateCustomer, useUpdateCustomer, useDeleteCustomer, customerKeys } from '@/api/customers';
@@ -432,7 +431,6 @@ export function useAddComment() {
     },
   });
 }
-
 
 
 // ---------------------------------------------------------------------------

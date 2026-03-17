@@ -88,7 +88,6 @@ import {
   useAssetCapacityHistory,
   useAssetHistory,
 } from '@/api/assets';
-// AUDIT-FIX: M-09 — Import from domain-specific API modules
 import { useGroups } from '@/api/groups';
 import { useCustomers } from '@/api/customers';
 import type { AssetRelationWithDetails, AssetTicketSummary, AssetTenantAssignment, RelationHistoryEntry, CapacityHistoryEntry, AssetHistoryEntry } from '@/api/assets';

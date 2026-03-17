@@ -1,6 +1,5 @@
 # OpsWeave — Soft-Delete Strategy
 
-**AUDIT-FIX: L-09** — Documents which entities use soft-delete vs hard-delete.
 
 ---
 

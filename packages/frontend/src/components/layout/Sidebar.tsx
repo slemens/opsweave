@@ -64,7 +64,6 @@ export function Sidebar() {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const user = useAuthStore((s) => s.user);
-  // AUDIT-FIX: C-06 — Display app version in sidebar
   const { data: systemInfo } = useSystemInfo();
 
   const userInitials = user?.displayName
@@ -210,7 +209,6 @@ export function Sidebar() {
           )}
         </div>
 
-        {/* AUDIT-FIX: C-06 — Version display */}
         {systemInfo?.version && !collapsed && (
           <p className="px-3 py-1 text-[11px] text-muted-foreground/60">
             OpsWeave v{systemInfo.version}

@@ -1,6 +1,5 @@
 import type { Request, Response } from 'express';
 import { sendSuccess, sendCreated, sendNoContent } from '../../lib/response.js';
-// AUDIT-FIX: M-04 — Safe context accessors instead of non-null assertions
 import { requireTenantId } from '../../lib/context.js';
 import * as slaService from './sla.service.js';
 

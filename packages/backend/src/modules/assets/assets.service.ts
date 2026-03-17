@@ -1031,7 +1031,6 @@ export async function getAssetTickets(
   }));
 }
 
-// ─── AUDIT-FIX: H-10 — Missing Asset Sub-Endpoints ──────
 
 /**
  * Get the SLA inheritance chain for an asset.

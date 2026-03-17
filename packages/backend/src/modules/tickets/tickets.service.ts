@@ -4,7 +4,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { getDb, type TypedDb } from '../../config/database.js';
 import { slaEngine } from '../../lib/sla-engine.js';
 import { resolveEffectiveSla, type SlaDefinitionRow } from '../sla/sla.service.js';
-// AUDIT-FIX: H-11 — Structured logging
 import logger from '../../lib/logger.js';
 import {
   tickets,
@@ -155,7 +154,6 @@ export async function listTickets(
 
   const conditions = [eq(tickets.tenant_id, tenantId)];
 
-  // AUDIT-FIX: H-05 — Exclude archived tickets from standard queries.
   // When an explicit status filter is set, respect it (even 'archived').
   // When no status filter → hide archived.
   if (status) {
@@ -598,7 +596,6 @@ export async function createTicket(
     try {
       effectiveSlaTier = await slaEngine.resolveSlaTier(tenantId, data.asset_id);
     } catch (err) {
-      // AUDIT-FIX: H-11 — Structured logging
       logger.warn({ err, assetId: data.asset_id }, 'SLA resolution failed for asset');
     }
   }
@@ -1639,7 +1636,6 @@ export async function updateCategory(
   return updated;
 }
 
-// AUDIT-FIX: H-06 — Delete a ticket category (hard delete).
 // Returns 409 Conflict if tickets are still assigned to this category.
 export async function deleteCategory(
   tenantId: string,
@@ -1849,7 +1845,6 @@ export async function batchUpdateTickets(
   return result;
 }
 
-// AUDIT-FIX: H-05 — Archive a ticket (soft status transition).
 // Only tickets with status 'closed' or 'resolved' may be archived.
 export async function archiveTicket(
   tenantId: string,

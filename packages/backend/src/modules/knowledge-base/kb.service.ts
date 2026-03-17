@@ -2,7 +2,6 @@ import { eq, and, count, like, or, desc, asc, sql } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 
 import { getDb, type TypedDb } from '../../config/database.js';
-// AUDIT-FIX: H-11 — Structured logging
 import logger from '../../lib/logger.js';
 import { kbArticles, kbArticleLinks, users } from '../../db/schema/index.js';
 import { NotFoundError } from '../../lib/errors.js';
@@ -102,7 +101,6 @@ async function ensureUniqueSlug(
 /**
  * Parse tags from DB text (JSON array) to string[].
  */
-// AUDIT-FIX: H-12 — Log JSON parse failures instead of silently returning []
 function parseTags(raw: string): string[] {
   try {
     const parsed = JSON.parse(raw);

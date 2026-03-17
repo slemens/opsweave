@@ -37,7 +37,6 @@ declare global {
   }
 }
 
-// ─── AUDIT-FIX: M-04 — Safe context accessors ────────────────────
 // Replace non-null assertions (req.tenantId!, req.user!) with guarded helpers
 // that throw UnauthorizedError if the middleware hasn't set the expected values.
 

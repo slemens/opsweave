@@ -14,7 +14,6 @@ import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/stores/auth-store';
 import { useChangePassword } from '@/api/auth';
 
-// AUDIT-FIX: H-07 — Wire up password change form
 export default function AccountSettingsPage() {
   const { t } = useTranslation(['settings', 'common']);
   const user = useAuthStore((s) => s.user);

@@ -3,7 +3,6 @@ import type { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
 import { config } from '../../config/index.js';
-// AUDIT-FIX: H-16 — Use centralized error classes instead of inline res.status().json()
 import { UnauthorizedError, ForbiddenError } from '../../lib/errors.js';
 import { sendSuccess } from '../../lib/response.js';
 import {
@@ -34,7 +33,6 @@ export interface PortalRequest extends Request {
 
 // ─── Portal Auth Middleware ──────────────────────────────────
 
-// AUDIT-FIX: H-16 — Throw errors instead of returning res.status().json() directly,
 // so the global error handler formats responses consistently.
 function requirePortalAuth(
   req: Request,
@@ -50,7 +48,6 @@ function requirePortalAuth(
   }
 
   try {
-    // AUDIT-FIX: C-03 — Use central config.jwtSecret instead of separate fallback
     const payload = jwt.verify(token, config.jwtSecret) as {
       sub: string;
       email: string;
@@ -86,7 +83,6 @@ const portalRouter = Router();
  */
 portalRouter.post('/auth/login', login);
 
-// AUDIT-FIX: H-09 — Logout endpoint for portal users.
 // With stateless JWT auth there is no server-side session to invalidate.
 // The client discards the token. This endpoint exists for API completeness
 // and to allow future token-blacklist integration.
