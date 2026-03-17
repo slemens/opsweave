@@ -88,6 +88,10 @@ features:
     title: Eskalation
     details: Mehrstufige Eskalation (L1→L2→L3) mit Zielgruppe, Begründung und automatischer Benachrichtigung.
 
+  - icon: 📐
+    title: Kapazitätsplanung
+    details: Auslastungsübersicht, Consumer-Drill-Down, Kompatibilitätsprüfung, Migrationsprüfung und Überbereitstellungs-Erkennung.
+
   - icon: 📊
     title: Reporting & Dashboard
     details: KPI-Dashboard mit Ticket-Statistiken, SLA-Performance, Compliance-Status und Trend-Analysen.
