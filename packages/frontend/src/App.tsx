@@ -50,6 +50,7 @@ const ServiceProfilesSettingsPage = lazy(() => import('@/pages/settings/ServiceP
 const ProjectsPage = lazy(() => import('@/pages/ProjectsPage'));
 const ProjectDetailPage = lazy(() => import('@/pages/ProjectDetailPage'));
 const CapacityPlanningPage = lazy(() => import('@/pages/CapacityPlanningPage'));
+const CapacityDetailPage = lazy(() => import('@/pages/CapacityDetailPage'));
 
 function SettingsFallback() {
   return (
@@ -91,6 +92,7 @@ export function App() {
             <Route path="/monitoring" element={<MonitoringPage />} />
             <Route path="/reports/sla" element={<Suspense fallback={<SettingsFallback />}><SlaReportsPage /></Suspense>} />
             <Route path="/capacity-planning" element={<Suspense fallback={<SettingsFallback />}><CapacityPlanningPage /></Suspense>} />
+            <Route path="/capacity-planning/:assetId" element={<Suspense fallback={<SettingsFallback />}><CapacityDetailPage /></Suspense>} />
             <Route path="/cab" element={<Suspense fallback={<SettingsFallback />}><CabBoardPage /></Suspense>} />
             <Route path="/settings" element={<SettingsLayout />}>
               <Route index element={<Navigate to="/settings/general" replace />} />

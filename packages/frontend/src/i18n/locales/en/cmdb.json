@@ -113,7 +113,10 @@
     "edit_properties": "Edit Properties",
     "no_properties": "No properties",
     "edit_properties_success": "Properties updated successfully",
-    "edit_properties_error": "Failed to update properties"
+    "edit_properties_error": "Failed to update properties",
+    "capacity_available": "{{available}} of {{total}} {{unit}} available",
+    "capacity_warning": "Warning: Requested value exceeds available capacity",
+    "capacity_mapped": "Will be tracked as capacity consumption"
   },
   "fields": {
     "name": "Technical Name",
@@ -184,6 +187,7 @@
     "title": "Capacity",
     "provides": "Provides",
     "requires": "Requires",
+    "consumes": "Consumes",
     "total": "Total",
     "allocated": "Allocated",
     "reserved": "Reserved",
@@ -200,6 +204,9 @@
     "edit_error": "Failed to update capacity",
     "delete_error": "Failed to remove capacity",
     "confirm_delete": "Are you sure you want to remove this capacity entry?",
+    "auto_calculated": "Auto-calculated from consumers",
+    "auto_synced": "Auto-synced from relation",
+    "linked_to_relation": "Linked to relation",
     "form": {
       "type": "Capacity Type",
       "direction": "Direction",
@@ -241,7 +248,25 @@
     "type": "Type",
     "unit": "Unit",
     "all_types": "All Types",
-    "filter_utilization": "Filter utilization"
+    "filter_utilization": "Filter utilization",
+    "show_consumers": "Show consumers",
+    "no_consumers": "No consumers found",
+    "relation": "Relation",
+    "tracked_consumption": "Tracked consumption",
+    "untracked_consumption": "{{amount}} {{unit}} untracked (manual allocations etc.)",
+    "untracked": "untracked"
+  },
+  "capacity_detail": {
+    "total_capacity": "Total Capacity",
+    "overall_utilization": "Overall Utilization",
+    "consumers_title": "Consumers",
+    "share": "Share",
+    "critical": "Critical",
+    "warning": "Warning",
+    "healthy": "Healthy",
+    "reserved_note": "{{amount}} {{unit}} reserved",
+    "view_asset": "View Asset",
+    "capacity_types_count": "capacity types"
   },
   "dynamic_fields": {
     "no_attributes": "No type-specific attributes defined",

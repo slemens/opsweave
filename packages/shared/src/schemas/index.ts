@@ -793,6 +793,11 @@ export type UpdateAssetTypeInput = z.infer<typeof updateAssetTypeSchema>;
 // Relation Type Registry Schemas (Evo-3A)
 // ---------------------------------------------------------------------------
 
+export const capacityMappingSchema = z.object({
+  property_key: z.string().min(1),
+  capacity_type_slug: z.string().min(1),
+});
+
 export const createRelationTypeSchema = z.object({
   slug: z.string().min(1).max(100).regex(/^[a-z][a-z0-9_]*$/, 'Slug must be lowercase snake_case'),
   name: z.string().min(1).max(255),
@@ -802,6 +807,7 @@ export const createRelationTypeSchema = z.object({
   source_types: z.array(z.string()).default([]),
   target_types: z.array(z.string()).default([]),
   properties_schema: z.array(attributeDefinitionSchema).default([]),
+  capacity_mappings: z.array(capacityMappingSchema).default([]),
   color: z.string().max(50).nullable().default(null),
 });
 export type CreateRelationTypeInput = z.infer<typeof createRelationTypeSchema>;
@@ -814,6 +820,7 @@ export const updateRelationTypeSchema = z.object({
   source_types: z.array(z.string()).optional(),
   target_types: z.array(z.string()).optional(),
   properties_schema: z.array(attributeDefinitionSchema).optional(),
+  capacity_mappings: z.array(capacityMappingSchema).optional(),
   is_active: booleanLike.optional(),
   color: z.string().max(50).nullable().optional(),
 });
@@ -864,8 +871,10 @@ export type CreateCapacityTypeInput = z.infer<typeof createCapacityTypeSchema>;
 
 export const setAssetCapacitySchema = z.object({
   capacity_type_id: uuidSchema,
-  direction: z.enum(['provides', 'requires']),
+  direction: z.enum(['provides', 'consumes']),
   total: z.number().min(0),
+  allocated: z.number().min(0).optional(),
+  reserved: z.number().min(0).optional(),
 });
 export type SetAssetCapacityInput = z.infer<typeof setAssetCapacitySchema>;
 

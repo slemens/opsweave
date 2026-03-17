@@ -522,9 +522,9 @@ async function doSeed(): Promise<void> {
   // ─── Relation Type Registry (Evo-3A) ──────────────────
   // REQ-3.2a: Relation types with properties_schema definitions
   const runsOnSchema = JSON.stringify([
-    { key: 'cpu_cores', label: { de: 'CPU-Kerne', en: 'CPU Cores' }, type: 'number', required: false, sort_order: 0 },
-    { key: 'ram_gb', label: { de: 'RAM (GB)', en: 'RAM (GB)' }, type: 'number', required: false, sort_order: 1 },
-    { key: 'storage_gb', label: { de: 'Speicher (GB)', en: 'Storage (GB)' }, type: 'number', required: false, sort_order: 2 },
+    { key: 'cpu_cores', label: { de: 'CPU-Kerne', en: 'CPU Cores' }, type: 'number', required: true, sort_order: 0 },
+    { key: 'ram_gb', label: { de: 'RAM (GB)', en: 'RAM (GB)' }, type: 'number', required: true, sort_order: 1 },
+    { key: 'storage_gb', label: { de: 'Speicher (GB)', en: 'Storage (GB)' }, type: 'number', required: true, sort_order: 2 },
   ]);
   const connectedToSchema = JSON.stringify([
     { key: 'bandwidth_mbps', label: { de: 'Bandbreite (Mbps)', en: 'Bandwidth (Mbps)' }, type: 'number', required: false, sort_order: 0 },
@@ -546,6 +546,17 @@ async function doSeed(): Promise<void> {
     connected_to: connectedToSchema,
     depends_on: dependsOnSchema,
     backup_of: backupOfSchema,
+  };
+
+  const relTypeCapacityMappings: Record<string, string> = {
+    runs_on: JSON.stringify([
+      { property_key: 'cpu_cores', capacity_type_slug: 'cpu_cores' },
+      { property_key: 'ram_gb', capacity_type_slug: 'ram_gb' },
+      { property_key: 'storage_gb', capacity_type_slug: 'storage_gb' },
+    ]),
+    connected_to: JSON.stringify([
+      { property_key: 'bandwidth_mbps', capacity_type_slug: 'bandwidth_mbps' },
+    ]),
   };
 
   const systemRelationTypes = [
@@ -576,6 +587,7 @@ async function doSeed(): Promise<void> {
     source_types: '[]',
     target_types: '[]',
     properties_schema: relTypeSchemaLookup[rt.slug] ?? '[]',
+    capacity_mappings: relTypeCapacityMappings[rt.slug] ?? '[]',
     is_system: 1,
     is_active: 1,
     created_at: now,
@@ -778,7 +790,7 @@ async function doSeed(): Promise<void> {
       name: 'nas-backup-01',
       display_name: 'Backup NAS 01',
       status: 'active',
-      ip_address: '10.0.5.210',
+      ip_address: '10.0.5.220',
       location: 'RZ Frankfurt, Rack 02, HE 10-14',
       sla_tier: 'bronze',
       environment: 'production',
@@ -842,23 +854,32 @@ async function doSeed(): Promise<void> {
   logger.info('  ✓ Assets: 14 CMDB assets (rack, VMs, firewall, switch, etc.)');
 
   // ─── Asset Relations (REQ-3.2a: with structured properties) ───
+  const relWeb01Esxi01Id = uuidv4();
+  const relWeb02Esxi02Id = uuidv4();
+  const relDb01Esxi01Id = uuidv4();
+  const relMysqlDb01Id = uuidv4();
+  const relFwSwId = uuidv4();
+  const relLbSwId = uuidv4();
+  const relEsxi01RackId = uuidv4();
+  const relEsxi02RackId = uuidv4();
+  const relSwRackId = uuidv4();
   await db.insert(assetRelations).values([
     // VMs run on ESXi hosts — with resource allocation properties
-    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetWeb01Id, target_asset_id: assetEsxi01Id, relation_type: 'runs_on', properties: JSON.stringify({ cpu_cores: 4, ram_gb: 16, storage_gb: 200 }), created_at: now, created_by: adminId },
-    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetWeb02Id, target_asset_id: assetEsxi02Id, relation_type: 'runs_on', properties: JSON.stringify({ cpu_cores: 4, ram_gb: 16, storage_gb: 200 }), created_at: now, created_by: adminId },
-    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetDb01Id, target_asset_id: assetEsxi01Id, relation_type: 'runs_on', properties: JSON.stringify({ cpu_cores: 8, ram_gb: 32, storage_gb: 500 }), created_at: now, created_by: adminId },
+    { id: relWeb01Esxi01Id, tenant_id: tenantId, source_asset_id: assetWeb01Id, target_asset_id: assetEsxi01Id, relation_type: 'runs_on', properties: JSON.stringify({ cpu_cores: 4, ram_gb: 16, storage_gb: 200 }), created_at: now, created_by: adminId },
+    { id: relWeb02Esxi02Id, tenant_id: tenantId, source_asset_id: assetWeb02Id, target_asset_id: assetEsxi02Id, relation_type: 'runs_on', properties: JSON.stringify({ cpu_cores: 4, ram_gb: 16, storage_gb: 200 }), created_at: now, created_by: adminId },
+    { id: relDb01Esxi01Id, tenant_id: tenantId, source_asset_id: assetDb01Id, target_asset_id: assetEsxi01Id, relation_type: 'runs_on', properties: JSON.stringify({ cpu_cores: 8, ram_gb: 32, storage_gb: 500 }), created_at: now, created_by: adminId },
     // MySQL runs on DB server
-    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetMysqlId, target_asset_id: assetDb01Id, relation_type: 'runs_on', properties: JSON.stringify({ cpu_cores: 4, ram_gb: 16, storage_gb: 100 }), created_at: now, created_by: adminId },
+    { id: relMysqlDb01Id, tenant_id: tenantId, source_asset_id: assetMysqlId, target_asset_id: assetDb01Id, relation_type: 'runs_on', properties: JSON.stringify({ cpu_cores: 4, ram_gb: 16, storage_gb: 100 }), created_at: now, created_by: adminId },
     // OpsWeave depends on MySQL + Webserver — with dependency metadata
     { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetOpsweaveId, target_asset_id: assetMysqlId, relation_type: 'depends_on', properties: JSON.stringify({ dependency_type: 'hard', priority: 'critical' }), created_at: now, created_by: adminId },
     { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetOpsweaveId, target_asset_id: assetWeb01Id, relation_type: 'depends_on', properties: JSON.stringify({ dependency_type: 'hard', priority: 'high' }), created_at: now, created_by: adminId },
-    // Hardware in rack
-    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetEsxi01Id, target_asset_id: assetRackId, relation_type: 'member_of', properties: '{}', created_at: now, created_by: adminId },
-    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetEsxi02Id, target_asset_id: assetRackId, relation_type: 'member_of', properties: '{}', created_at: now, created_by: adminId },
-    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetSwId, target_asset_id: assetRackId, relation_type: 'member_of', properties: '{}', created_at: now, created_by: adminId },
+    // Hardware in rack — with rack position properties
+    { id: relEsxi01RackId, tenant_id: tenantId, source_asset_id: assetEsxi01Id, target_asset_id: assetRackId, relation_type: 'member_of', properties: JSON.stringify({ rack_units: 2, power_watts: 800, position: 'HE 32-33' }), created_at: now, created_by: adminId },
+    { id: relEsxi02RackId, tenant_id: tenantId, source_asset_id: assetEsxi02Id, target_asset_id: assetRackId, relation_type: 'member_of', properties: JSON.stringify({ rack_units: 2, power_watts: 800, position: 'HE 35-36' }), created_at: now, created_by: adminId },
+    { id: relSwRackId, tenant_id: tenantId, source_asset_id: assetSwId, target_asset_id: assetRackId, relation_type: 'member_of', properties: JSON.stringify({ rack_units: 1, power_watts: 150, position: 'HE 40' }), created_at: now, created_by: adminId },
     // Network connections — with bandwidth/VLAN properties
-    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetFwId, target_asset_id: assetSwId, relation_type: 'connected_to', properties: JSON.stringify({ bandwidth_mbps: 10000, latency_ms: 0.5, vlan: 100 }), created_at: now, created_by: adminId },
-    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetLbId, target_asset_id: assetSwId, relation_type: 'connected_to', properties: JSON.stringify({ bandwidth_mbps: 10000, latency_ms: 0.3, vlan: 200 }), created_at: now, created_by: adminId },
+    { id: relFwSwId, tenant_id: tenantId, source_asset_id: assetFwId, target_asset_id: assetSwId, relation_type: 'connected_to', properties: JSON.stringify({ bandwidth_mbps: 10000, latency_ms: 0.5, vlan: 100 }), created_at: now, created_by: adminId },
+    { id: relLbSwId, tenant_id: tenantId, source_asset_id: assetLbId, target_asset_id: assetSwId, relation_type: 'connected_to', properties: JSON.stringify({ bandwidth_mbps: 10000, latency_ms: 0.3, vlan: 200 }), created_at: now, created_by: adminId },
     // Backup relation — with schedule properties
     { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetNasId, target_asset_id: assetMysqlId, relation_type: 'backup_of', properties: JSON.stringify({ schedule: '0 2 * * *', retention_days: 30, backup_type: 'incremental' }), created_at: now, created_by: adminId },
   ]);
@@ -2000,7 +2021,7 @@ async function doSeed(): Promise<void> {
   const assetPduId = uuidv4();
 
   await db.insert(assets).values([
-    { id: assetMailGwId, tenant_id: tenantId, asset_type: 'server_virtual', name: 'mail-gw-01', display_name: 'Mail Gateway 01', status: 'active', ip_address: '10.0.5.210', location: 'ESXi Host 01', sla_tier: 'gold', environment: 'production', owner_group_id: opsGroupId, customer_id: null, attributes: '{"vcpu": 4, "ram_gb": 8, "os": "Ubuntu 22.04 LTS", "software": "Postfix + SpamAssassin"}', created_at: now, updated_at: now, created_by: adminId },
+    { id: assetMailGwId, tenant_id: tenantId, asset_type: 'server_virtual', name: 'mail-gw-01', display_name: 'Mail Gateway 01', status: 'active', ip_address: '10.0.5.220', location: 'ESXi Host 01', sla_tier: 'gold', environment: 'production', owner_group_id: opsGroupId, customer_id: null, attributes: '{"vcpu": 4, "ram_gb": 8, "os": "Ubuntu 22.04 LTS", "software": "Postfix + SpamAssassin"}', created_at: now, updated_at: now, created_by: adminId },
     { id: assetAdControllerId, tenant_id: tenantId, asset_type: 'server_virtual', name: 'ad-dc-01', display_name: 'Active Directory Controller', status: 'active', ip_address: '10.0.1.5', location: 'ESXi Host 02', sla_tier: 'platinum', environment: 'production', owner_group_id: opsGroupId, customer_id: null, attributes: '{"vcpu": 4, "ram_gb": 16, "os": "Windows Server 2022", "role": "Primary DC"}', created_at: now, updated_at: now, created_by: adminId },
     { id: assetSanId, tenant_id: tenantId, asset_type: 'storage', name: 'san-primary-01', display_name: 'Primary SAN Storage', status: 'active', ip_address: '10.0.10.1', location: 'RZ Frankfurt, Rack 02, HE 1-4', sla_tier: 'platinum', environment: 'production', owner_group_id: opsGroupId, customer_id: null, attributes: '{"vendor": "NetApp FAS8200", "capacity_tb": 100, "protocol": "iSCSI/NFS"}', created_at: now, updated_at: now, created_by: adminId },
     { id: assetBackupSrvId, tenant_id: tenantId, asset_type: 'server_physical', name: 'backup-srv-01', display_name: 'Backup Server 01', status: 'active', ip_address: '10.0.10.20', location: 'RZ Frankfurt, Rack 02, HE 10-12', sla_tier: 'gold', environment: 'production', owner_group_id: opsGroupId, customer_id: null, attributes: '{"vendor": "HPE ProLiant DL380", "software": "Veeam Backup & Replication 12", "storage_tb": 50}', created_at: now, updated_at: now, created_by: adminId },
@@ -2013,12 +2034,12 @@ async function doSeed(): Promise<void> {
     { id: assetErpId, tenant_id: tenantId, asset_type: 'application', name: 'erp-sap-prod', display_name: 'SAP ERP Production', status: 'active', ip_address: '10.0.4.10', location: 'ESXi Host 01', sla_tier: 'platinum', environment: 'production', owner_group_id: devGroupId, customer_id: customerBankId, attributes: '{"version": "SAP S/4HANA 2023", "modules": ["FI", "CO", "MM", "SD"]}', created_at: now, updated_at: now, created_by: adminId },
     { id: assetCrmId, tenant_id: tenantId, asset_type: 'application', name: 'crm-salesforce', display_name: 'Salesforce CRM', status: 'active', ip_address: null, location: 'Cloud (SaaS)', sla_tier: 'silver', environment: 'production', owner_group_id: devGroupId, customer_id: null, attributes: '{"edition": "Enterprise", "users": 85, "integrations": ["ERP", "Email"]}', created_at: now, updated_at: now, created_by: adminId },
     { id: assetJiraId, tenant_id: tenantId, asset_type: 'application', name: 'jira-cloud', display_name: 'Jira Cloud', status: 'active', ip_address: null, location: 'Cloud (SaaS)', sla_tier: 'silver', environment: 'production', owner_group_id: devGroupId, customer_id: null, attributes: '{"edition": "Premium", "projects": 12}', created_at: now, updated_at: now, created_by: managerId },
-    { id: assetGitlabId, tenant_id: tenantId, asset_type: 'application', name: 'gitlab-prod', display_name: 'GitLab CE', status: 'active', ip_address: '10.0.5.210', location: 'ESXi Host 02', sla_tier: 'gold', environment: 'production', owner_group_id: devGroupId, customer_id: null, attributes: '{"version": "16.8", "runners": 4, "repos": 67}', created_at: now, updated_at: now, created_by: adminId },
-    { id: assetPrometheusId, tenant_id: tenantId, asset_type: 'application', name: 'prometheus-prod', display_name: 'Prometheus Monitoring', status: 'active', ip_address: '10.0.5.210', location: 'ESXi Host 02', sla_tier: 'gold', environment: 'production', owner_group_id: opsGroupId, customer_id: null, attributes: '{"version": "2.49", "targets": 142, "retention_days": 30}', created_at: now, updated_at: now, created_by: adminId },
+    { id: assetGitlabId, tenant_id: tenantId, asset_type: 'application', name: 'gitlab-prod', display_name: 'GitLab CE', status: 'active', ip_address: '10.0.5.220', location: 'ESXi Host 02', sla_tier: 'gold', environment: 'production', owner_group_id: devGroupId, customer_id: null, attributes: '{"version": "16.8", "runners": 4, "repos": 67}', created_at: now, updated_at: now, created_by: adminId },
+    { id: assetPrometheusId, tenant_id: tenantId, asset_type: 'application', name: 'prometheus-prod', display_name: 'Prometheus Monitoring', status: 'active', ip_address: '10.0.5.220', location: 'ESXi Host 02', sla_tier: 'gold', environment: 'production', owner_group_id: opsGroupId, customer_id: null, attributes: '{"version": "2.49", "targets": 142, "retention_days": 30}', created_at: now, updated_at: now, created_by: adminId },
     { id: assetK8sClusterId, tenant_id: tenantId, asset_type: 'container_platform', name: 'k8s-prod-01', display_name: 'Kubernetes Production Cluster', status: 'active', ip_address: '10.0.6.1', location: 'RZ Frankfurt', sla_tier: 'platinum', environment: 'production', owner_group_id: opsGroupId, customer_id: null, attributes: '{"version": "1.29", "nodes": 6, "pods": 87, "distribution": "RKE2"}', created_at: now, updated_at: now, created_by: adminId },
     { id: assetRedisId, tenant_id: tenantId, asset_type: 'database', name: 'redis-cache-01', display_name: 'Redis Cache Cluster', status: 'active', ip_address: '10.0.3.20', location: 'ESXi Host 01', sla_tier: 'gold', environment: 'production', owner_group_id: devGroupId, customer_id: null, attributes: '{"version": "7.2", "mode": "cluster", "nodes": 3, "memory_gb": 32}', created_at: now, updated_at: now, created_by: adminId },
     { id: assetElasticId, tenant_id: tenantId, asset_type: 'database', name: 'elastic-prod-01', display_name: 'Elasticsearch Cluster', status: 'active', ip_address: '10.0.3.30', location: 'ESXi Host 02', sla_tier: 'silver', environment: 'production', owner_group_id: devGroupId, customer_id: null, attributes: '{"version": "8.12", "nodes": 3, "indices": 45, "size_gb": 120}', created_at: now, updated_at: now, created_by: adminId },
-    { id: assetCiCdId, tenant_id: tenantId, asset_type: 'application', name: 'jenkins-prod', display_name: 'Jenkins CI/CD', status: 'active', ip_address: '10.0.5.210', location: 'ESXi Host 02', sla_tier: 'silver', environment: 'production', owner_group_id: devGroupId, customer_id: null, attributes: '{"version": "2.440", "agents": 8, "pipelines": 34}', created_at: now, updated_at: now, created_by: managerId },
+    { id: assetCiCdId, tenant_id: tenantId, asset_type: 'application', name: 'jenkins-prod', display_name: 'Jenkins CI/CD', status: 'active', ip_address: '10.0.5.220', location: 'ESXi Host 02', sla_tier: 'silver', environment: 'production', owner_group_id: devGroupId, customer_id: null, attributes: '{"version": "2.440", "agents": 8, "pipelines": 34}', created_at: now, updated_at: now, created_by: managerId },
     { id: assetDnsId, tenant_id: tenantId, asset_type: 'server_virtual', name: 'dns-ns-01', display_name: 'DNS Server 01', status: 'active', ip_address: '10.0.1.2', location: 'ESXi Host 01', sla_tier: 'platinum', environment: 'production', owner_group_id: opsGroupId, customer_id: null, attributes: '{"os": "Ubuntu 22.04", "software": "BIND 9.18", "zones": 23}', created_at: now, updated_at: now, created_by: adminId },
     { id: assetProxyId, tenant_id: tenantId, asset_type: 'server_virtual', name: 'proxy-squid-01', display_name: 'Web Proxy', status: 'active', ip_address: '10.0.1.3', location: 'ESXi Host 02', sla_tier: 'silver', environment: 'production', owner_group_id: opsGroupId, customer_id: null, attributes: '{"os": "Ubuntu 22.04", "software": "Squid 5.7", "users": 200}', created_at: now, updated_at: now, created_by: adminId },
     { id: assetTestVmId, tenant_id: tenantId, asset_type: 'server_virtual', name: 'test-vm-01', display_name: 'Test VM 01', status: 'active', ip_address: '10.0.100.10', location: 'ESXi Host 02', sla_tier: 'none', environment: 'test', owner_group_id: devGroupId, customer_id: null, attributes: '{"vcpu": 2, "ram_gb": 4, "os": "Ubuntu 22.04"}', created_at: now, updated_at: now, created_by: agentId },
@@ -2030,6 +2051,8 @@ async function doSeed(): Promise<void> {
   logger.info('  ✓ Extended Assets: 26 additional assets');
 
   // Extended Asset Relations (REQ-3.2a: with structured properties)
+  const relUpsRackId = uuidv4();
+  const relPduRackId = uuidv4();
   await db.insert(assetRelations).values([
     { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetMailGwId, target_asset_id: assetEsxi01Id, relation_type: 'runs_on', properties: JSON.stringify({ cpu_cores: 2, ram_gb: 8, storage_gb: 100 }), created_at: now, created_by: adminId },
     { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetAdControllerId, target_asset_id: assetEsxi02Id, relation_type: 'runs_on', properties: JSON.stringify({ cpu_cores: 4, ram_gb: 16, storage_gb: 200 }), created_at: now, created_by: adminId },
@@ -2045,8 +2068,8 @@ async function doSeed(): Promise<void> {
     { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetCiCdId, target_asset_id: assetGitlabId, relation_type: 'depends_on', properties: JSON.stringify({ dependency_type: 'hard', priority: 'high' }), created_at: now, created_by: adminId },
     { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetPrometheusId, target_asset_id: assetK8sClusterId, relation_type: 'runs_on', properties: JSON.stringify({ cpu_cores: 4, ram_gb: 16, storage_gb: 500 }), created_at: now, created_by: adminId },
     { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetBackupSrvId, target_asset_id: assetSanId, relation_type: 'depends_on', properties: JSON.stringify({ dependency_type: 'hard', priority: 'critical' }), created_at: now, created_by: adminId },
-    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetUpsId, target_asset_id: assetRackId, relation_type: 'member_of', properties: '{}', created_at: now, created_by: adminId },
-    { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetPduId, target_asset_id: assetRackId, relation_type: 'member_of', properties: '{}', created_at: now, created_by: adminId },
+    { id: relUpsRackId, tenant_id: tenantId, source_asset_id: assetUpsId, target_asset_id: assetRackId, relation_type: 'member_of', properties: JSON.stringify({ rack_units: 3, power_watts: 200, position: 'HE 42-44' }), created_at: now, created_by: adminId },
+    { id: relPduRackId, tenant_id: tenantId, source_asset_id: assetPduId, target_asset_id: assetRackId, relation_type: 'member_of', properties: JSON.stringify({ rack_units: 0, power_watts: 50, position: 'Seitenschiene' }), created_at: now, created_by: adminId },
     { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetVpnGwId, target_asset_id: assetFwId, relation_type: 'connected_to', properties: JSON.stringify({ bandwidth_mbps: 1000, latency_ms: 2, vlan: 50 }), created_at: now, created_by: adminId },
     { id: uuidv4(), tenant_id: tenantId, source_asset_id: assetFileServerId, target_asset_id: assetSanId, relation_type: 'depends_on', properties: '{}', created_at: now, created_by: adminId },
   ]);
@@ -2686,11 +2709,12 @@ async function doSeed(): Promise<void> {
       total: string;
       allocated: string;
       reserved: string;
+      source_relation_id: string | null;
       created_at: string;
       updated_at: string;
     }> = [];
 
-    const addCap = (assetId: string, slug: string, dir: string, total: string, allocated: string, reserved: string) => {
+    const addCap = (assetId: string, slug: string, dir: string, total: string, allocated: string, reserved: string, sourceRelId?: string) => {
       const ct = capBySlug(slug);
       if (ct) {
         capacityInserts.push({
@@ -2702,36 +2726,70 @@ async function doSeed(): Promise<void> {
           total,
           allocated,
           reserved,
+          source_relation_id: sourceRelId ?? null,
           created_at: daysAgo(30),
           updated_at: now,
         });
       }
     };
 
-    // ESXi Host 01 — provides compute
-    addCap(assetEsxi01Id, 'cpu_cores', 'provides', '64', '48', '8');
-    addCap(assetEsxi01Id, 'ram_gb', 'provides', '512', '384', '64');
-    addCap(assetEsxi01Id, 'storage_gb', 'provides', '4000', '3200', '400');
+    // ESXi Host 01 — provides compute (allocated = sum of consumers: Web01 4+Db01 8=12 CPU, 16+32=48 RAM, 200+500=700 Storage)
+    addCap(assetEsxi01Id, 'cpu_cores', 'provides', '64', '12', '8');
+    addCap(assetEsxi01Id, 'ram_gb', 'provides', '512', '48', '64');
+    addCap(assetEsxi01Id, 'storage_gb', 'provides', '4000', '700', '400');
 
-    // ESXi Host 02 — provides compute
-    addCap(assetEsxi02Id, 'cpu_cores', 'provides', '64', '36', '12');
-    addCap(assetEsxi02Id, 'ram_gb', 'provides', '512', '280', '64');
+    // ESXi Host 02 — provides compute (allocated = Web02: 4 CPU, 16 RAM, 200 Storage)
+    addCap(assetEsxi02Id, 'cpu_cores', 'provides', '64', '4', '12');
+    addCap(assetEsxi02Id, 'ram_gb', 'provides', '512', '16', '64');
 
     // SAN — provides storage
-    addCap(assetSanId, 'storage_gb', 'provides', '102400', '78000', '10000');
-    addCap(assetSanId, 'iops', 'provides', '100000', '65000', '15000');
+    addCap(assetSanId, 'storage_gb', 'provides', '102400', '0', '10000');
+    addCap(assetSanId, 'iops', 'provides', '100000', '0', '15000');
 
-    // Rack — provides rack units and power
-    addCap(assetRackId, 'rack_units', 'provides', '42', '35', '3');
-    addCap(assetRackId, 'power_watts', 'provides', '10000', '7500', '1000');
+    // Rack — provides rack units and power (allocated = ESXi01 2U + ESXi02 2U + Switch 1U + UPS 3U = 8U; 800+800+150+200+50=2000W)
+    addCap(assetRackId, 'rack_units', 'provides', '42', '8', '0');
+    addCap(assetRackId, 'power_watts', 'provides', '10000', '2000', '0');
 
-    // Core Switch — provides ports and bandwidth
-    addCap(assetSwId, 'ports', 'provides', '48', '38', '4');
-    addCap(assetSwId, 'bandwidth_mbps', 'provides', '10000', '6500', '1500');
+    // Core Switch — provides ports and bandwidth (allocated = FW 10000 + LB 10000 = 20000 bandwidth)
+    addCap(assetSwId, 'ports', 'provides', '48', '0', '4');
+    addCap(assetSwId, 'bandwidth_mbps', 'provides', '10000', '20000', '1500');
 
-    // Web01 VM — consumes compute
-    addCap(assetWeb01Id, 'cpu_cores', 'consumes', '4', '4', '0');
-    addCap(assetWeb01Id, 'ram_gb', 'consumes', '16', '16', '0');
+    // Web01 VM — consumes compute (linked to runs_on relation)
+    addCap(assetWeb01Id, 'cpu_cores', 'consumes', '4', '4', '0', relWeb01Esxi01Id);
+    addCap(assetWeb01Id, 'ram_gb', 'consumes', '16', '16', '0', relWeb01Esxi01Id);
+    addCap(assetWeb01Id, 'storage_gb', 'consumes', '200', '200', '0', relWeb01Esxi01Id);
+
+    // Web02 VM — consumes compute (linked to runs_on relation)
+    addCap(assetWeb02Id, 'cpu_cores', 'consumes', '4', '4', '0', relWeb02Esxi02Id);
+    addCap(assetWeb02Id, 'ram_gb', 'consumes', '16', '16', '0', relWeb02Esxi02Id);
+    addCap(assetWeb02Id, 'storage_gb', 'consumes', '200', '200', '0', relWeb02Esxi02Id);
+
+    // DB01 VM — consumes compute (linked to runs_on relation)
+    addCap(assetDb01Id, 'cpu_cores', 'consumes', '8', '8', '0', relDb01Esxi01Id);
+    addCap(assetDb01Id, 'ram_gb', 'consumes', '32', '32', '0', relDb01Esxi01Id);
+    addCap(assetDb01Id, 'storage_gb', 'consumes', '500', '500', '0', relDb01Esxi01Id);
+
+    // MySQL — consumes from DB01 (linked to runs_on relation)
+    addCap(assetMysqlId, 'cpu_cores', 'consumes', '4', '4', '0', relMysqlDb01Id);
+    addCap(assetMysqlId, 'ram_gb', 'consumes', '16', '16', '0', relMysqlDb01Id);
+    addCap(assetMysqlId, 'storage_gb', 'consumes', '100', '100', '0', relMysqlDb01Id);
+
+    // Firewall — consumes bandwidth from switch (linked to connected_to)
+    addCap(assetFwId, 'bandwidth_mbps', 'consumes', '10000', '10000', '0', relFwSwId);
+
+    // Load Balancer — consumes bandwidth from switch (linked to connected_to)
+    addCap(assetLbId, 'bandwidth_mbps', 'consumes', '10000', '10000', '0', relLbSwId);
+
+    // Rack member consumption — ESXi hosts and switch consume rack units and power
+    addCap(assetEsxi01Id, 'rack_units', 'consumes', '2', '2', '0', relEsxi01RackId);
+    addCap(assetEsxi01Id, 'power_watts', 'consumes', '800', '800', '0', relEsxi01RackId);
+    addCap(assetEsxi02Id, 'rack_units', 'consumes', '2', '2', '0', relEsxi02RackId);
+    addCap(assetEsxi02Id, 'power_watts', 'consumes', '800', '800', '0', relEsxi02RackId);
+    addCap(assetSwId, 'rack_units', 'consumes', '1', '1', '0', relSwRackId);
+    addCap(assetSwId, 'power_watts', 'consumes', '150', '150', '0', relSwRackId);
+    addCap(assetUpsId, 'rack_units', 'consumes', '3', '3', '0', relUpsRackId);
+    addCap(assetUpsId, 'power_watts', 'consumes', '200', '200', '0', relUpsRackId);
+    addCap(assetPduId, 'power_watts', 'consumes', '50', '50', '0', relPduRackId);
 
     if (capacityInserts.length > 0) {
       await db.insert(assetCapacities).values(capacityInserts);
@@ -2942,7 +3000,7 @@ async function doSeed(): Promise<void> {
 
   await db.insert(assets).values([
     { id: assetWafId, tenant_id: tenantId, asset_type: 'network_firewall', name: 'waf-web-01', display_name: 'Web Application Firewall', status: 'active', ip_address: '10.0.0.15', location: 'DMZ Rack 02', environment: 'production', attributes: JSON.stringify({ vendor: 'F5', model: 'BIG-IP ASM', firmware: '17.1.0', function: 'WAF', protected_services: ['web-srv-01', 'web-srv-02', 'erp.internal'] }), created_at: daysAgo(200), updated_at: daysAgo(5), created_by: adminId },
-    { id: assetSiemId, tenant_id: tenantId, asset_type: 'application', name: 'siem-splunk-01', display_name: 'Splunk SIEM', status: 'active', ip_address: '10.0.5.210', location: 'Serverraum A, Rack 03', environment: 'production', attributes: JSON.stringify({ vendor: 'Splunk', version: '9.2.0', function: 'SIEM', daily_ingestion_gb: 50, retention_days: 365, agents: 42 }), created_at: daysAgo(300), updated_at: daysAgo(2), created_by: adminId },
+    { id: assetSiemId, tenant_id: tenantId, asset_type: 'application', name: 'siem-splunk-01', display_name: 'Splunk SIEM', status: 'active', ip_address: '10.0.5.220', location: 'Serverraum A, Rack 03', environment: 'production', attributes: JSON.stringify({ vendor: 'Splunk', version: '9.2.0', function: 'SIEM', daily_ingestion_gb: 50, retention_days: 365, agents: 42 }), created_at: daysAgo(300), updated_at: daysAgo(2), created_by: adminId },
     { id: assetIdsId, tenant_id: tenantId, asset_type: 'network_firewall', name: 'ids-snort-01', display_name: 'Snort IDS/IPS', status: 'active', ip_address: '10.0.0.16', location: 'DMZ Rack 02', environment: 'production', attributes: JSON.stringify({ vendor: 'Snort', version: '3.1.72', function: 'IDS/IPS', mode: 'inline', rules_updated: daysAgo(1) }), created_at: daysAgo(180), updated_at: daysAgo(1), created_by: adminId },
     { id: assetDesktop01Id, tenant_id: tenantId, asset_type: 'workstation', name: 'ws-buchhaltung-01', display_name: 'Arbeitsplatz Buchhaltung 1', status: 'active', ip_address: '10.0.10.101', location: 'Büro EG, Platz 1', environment: 'production', attributes: JSON.stringify({ manufacturer: 'Dell', model: 'OptiPlex 7090', os: 'Windows 11 Pro', cpu: 'Intel i7-11700', ram_gb: 32, disk_gb: 512 }), created_at: daysAgo(400), updated_at: daysAgo(30), created_by: agentId },
     { id: assetDesktop02Id, tenant_id: tenantId, asset_type: 'workstation', name: 'ws-empfang-01', display_name: 'Arbeitsplatz Empfang', status: 'active', ip_address: '10.0.10.102', location: 'Empfang', environment: 'production', attributes: JSON.stringify({ manufacturer: 'HP', model: 'ProDesk 400 G9', os: 'Windows 11 Pro', cpu: 'Intel i5-12500', ram_gb: 16, disk_gb: 256 }), created_at: daysAgo(350), updated_at: daysAgo(60), created_by: agentId },
@@ -3045,11 +3103,22 @@ export async function seedEvoTypes(): Promise<void> {
 
     if (existingRelTypes.length === 0) {
       // REQ-3.2a: Relation types with properties_schema
+      const evoRelTypeCapMappings: Record<string, string> = {
+        runs_on: JSON.stringify([
+          { property_key: 'cpu_cores', capacity_type_slug: 'cpu_cores' },
+          { property_key: 'ram_gb', capacity_type_slug: 'ram_gb' },
+          { property_key: 'storage_gb', capacity_type_slug: 'storage_gb' },
+        ]),
+        connected_to: JSON.stringify([
+          { property_key: 'bandwidth_mbps', capacity_type_slug: 'bandwidth_mbps' },
+        ]),
+      };
+
       const evoRelTypeSchemaLookup: Record<string, string> = {
         runs_on: JSON.stringify([
-          { key: 'cpu_cores', label: { de: 'CPU-Kerne', en: 'CPU Cores' }, type: 'number', required: false, sort_order: 0 },
-          { key: 'ram_gb', label: { de: 'RAM (GB)', en: 'RAM (GB)' }, type: 'number', required: false, sort_order: 1 },
-          { key: 'storage_gb', label: { de: 'Speicher (GB)', en: 'Storage (GB)' }, type: 'number', required: false, sort_order: 2 },
+          { key: 'cpu_cores', label: { de: 'CPU-Kerne', en: 'CPU Cores' }, type: 'number', required: true, sort_order: 0 },
+          { key: 'ram_gb', label: { de: 'RAM (GB)', en: 'RAM (GB)' }, type: 'number', required: true, sort_order: 1 },
+          { key: 'storage_gb', label: { de: 'Speicher (GB)', en: 'Storage (GB)' }, type: 'number', required: true, sort_order: 2 },
         ]),
         connected_to: JSON.stringify([
           { key: 'bandwidth_mbps', label: { de: 'Bandbreite (Mbps)', en: 'Bandwidth (Mbps)' }, type: 'number', required: false, sort_order: 0 },
@@ -3095,6 +3164,7 @@ export async function seedEvoTypes(): Promise<void> {
         source_types: '[]',
         target_types: '[]',
         properties_schema: evoRelTypeSchemaLookup[rt.slug] ?? '[]',
+        capacity_mappings: evoRelTypeCapMappings[rt.slug] ?? '[]',
         is_system: 1,
         is_active: 1,
         created_at: seedNow,

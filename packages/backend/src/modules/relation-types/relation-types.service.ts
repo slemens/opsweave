@@ -62,6 +62,7 @@ export async function createRelationType(
       source_types: JSON.stringify(data.source_types ?? []),
       target_types: JSON.stringify(data.target_types ?? []),
       properties_schema: JSON.stringify(data.properties_schema ?? []),
+      capacity_mappings: JSON.stringify(data.capacity_mappings ?? []),
       is_system: 0,
       is_active: 1,
       color: data.color ?? null,
@@ -100,6 +101,7 @@ export async function updateRelationType(
   if (data.source_types !== undefined) updateData.source_types = JSON.stringify(data.source_types);
   if (data.target_types !== undefined) updateData.target_types = JSON.stringify(data.target_types);
   if (data.properties_schema !== undefined) updateData.properties_schema = JSON.stringify(data.properties_schema);
+  if (data.capacity_mappings !== undefined) updateData.capacity_mappings = JSON.stringify(data.capacity_mappings);
   if (data.is_active !== undefined) updateData.is_active = data.is_active ? 1 : 0;
   if (data.color !== undefined) updateData.color = data.color;
 
@@ -150,5 +152,6 @@ function parseRelationType(row: Record<string, unknown>) {
     source_types: typeof row.source_types === 'string' ? JSON.parse(row.source_types as string) : row.source_types,
     target_types: typeof row.target_types === 'string' ? JSON.parse(row.target_types as string) : row.target_types,
     properties_schema: typeof row.properties_schema === 'string' ? JSON.parse(row.properties_schema as string) : row.properties_schema,
+    capacity_mappings: typeof row.capacity_mappings === 'string' ? JSON.parse(row.capacity_mappings as string) : (row.capacity_mappings ?? []),
   };
 }

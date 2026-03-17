@@ -11,6 +11,7 @@ import { apiClient } from '@/api/client';
 
 export interface CapacityType {
   id: string;
+  slug?: string;
   name: string;
   unit: string;
   description?: string | null;
@@ -22,23 +23,25 @@ export interface AssetCapacity {
   asset_id: string;
   capacity_type_id: string;
   capacity_type: CapacityType;
-  direction: 'provides' | 'requires';
+  direction: 'provides' | 'consumes';
   total: number;
   allocated: number;
   reserved: number;
   available: number;
+  source_relation_id: string | null;
 }
 
 export interface CapacityUtilizationEntry {
   id: string;
   capacity_type_id: string;
   capacity_type: CapacityType;
-  direction: 'provides' | 'requires';
+  direction: 'provides' | 'consumes';
   total: number;
   allocated: number;
   reserved: number;
   available: number;
   utilization_pct: number;
+  source_relation_id?: string | null;
 }
 
 /** @deprecated Use CapacityUtilizationEntry[] — API returns flat array */
@@ -51,6 +54,15 @@ export interface AssetCapacityUtilization {
 // Query Keys
 // ---------------------------------------------------------------------------
 
+export interface CapacityConsumer {
+  assetId: string;
+  assetName: string;
+  assetType: string;
+  relationType: string;
+  consumed: number | null;
+  unit: string;
+}
+
 export const capacityKeys = {
   all: ['capacity'] as const,
   types: () => [...capacityKeys.all, 'types'] as const,
@@ -58,6 +70,8 @@ export const capacityKeys = {
     [...capacityKeys.all, 'asset', assetId] as const,
   assetUtilization: (assetId: string) =>
     [...capacityKeys.all, 'utilization', assetId] as const,
+  consumers: (assetId: string, capacityTypeId: string) =>
+    [...capacityKeys.all, 'consumers', assetId, capacityTypeId] as const,
 };
 
 // ---------------------------------------------------------------------------
@@ -89,7 +103,7 @@ export function useSetAssetCapacity() {
     mutationFn: ({ assetId, ...data }: {
       assetId: string;
       capacity_type_id: string;
-      direction: 'provides' | 'requires';
+      direction: 'provides' | 'consumes';
       total: number;
       allocated?: number;
       reserved?: number;
@@ -110,6 +124,18 @@ export function useDeleteAssetCapacity() {
       void queryClient.invalidateQueries({ queryKey: capacityKeys.assetUtilization(vars.assetId) });
       void queryClient.invalidateQueries({ queryKey: capacityKeys.assetCapacities(vars.assetId) });
     },
+  });
+}
+
+export function useCapacityConsumers(assetId: string, capacityTypeId: string) {
+  return useQuery({
+    queryKey: capacityKeys.consumers(assetId, capacityTypeId),
+    queryFn: async () => {
+      return apiClient.get<CapacityConsumer[]>(
+        `/capacity/assets/${assetId}/consumers/${capacityTypeId}`,
+      );
+    },
+    enabled: !!assetId && !!capacityTypeId,
   });
 }
 

@@ -22,6 +22,7 @@ import { NotFoundError, ConflictError, LicenseLimitError } from '../../lib/error
 import { slaEngine } from '../../lib/sla-engine.js';
 import { COMMUNITY_LIMITS } from '@opsweave/shared';
 import type { AssetFilterParams, CreateAssetInput, UpdateAssetInput } from '@opsweave/shared';
+import { syncCapacityFromRelation, cleanupCapacityForDeletedRelation } from '../capacity/capacity.service.js';
 
 // ─── DB Helper ────────────────────────────────────────────
 
@@ -647,6 +648,12 @@ export async function createAssetRelation(
     }),
   });
 
+  // Capacity-Relation sync: auto-create consumes entries from relation properties
+  await syncCapacityFromRelation(
+    tenantId, id, data.source_asset_id, data.target_asset_id,
+    data.relation_type, data.properties ?? {}, userId,
+  );
+
   return {
     id,
     tenant_id: tenantId,
@@ -727,6 +734,14 @@ export async function updateAssetRelation(
       .update(assetRelations)
       .set(updateData)
       .where(and(eq(assetRelations.tenant_id, tenantId), eq(assetRelations.id, relationId)));
+
+    // Capacity-Relation sync: re-sync consumes entries when properties change
+    if (data.properties !== undefined) {
+      await syncCapacityFromRelation(
+        tenantId, relationId, existing.source_asset_id, existing.target_asset_id,
+        existing.relation_type, data.properties, userId,
+      );
+    }
   }
 
   const [updated] = await d
@@ -798,6 +813,9 @@ export async function deleteAssetRelation(
   if (!existing) {
     throw new NotFoundError('Relation not found');
   }
+
+  // Capacity-Relation cleanup: remove consumes entries linked to this relation
+  await cleanupCapacityForDeletedRelation(tenantId, relationId, existing.target_asset_id, userId);
 
   // REQ-3.3b: Record deletion in relation history
   await d.insert(assetRelationHistory).values({

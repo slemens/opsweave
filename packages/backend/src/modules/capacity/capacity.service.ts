@@ -2,9 +2,9 @@ import { eq, and, count } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 
 import { getDb, type TypedDb } from '../../config/database.js';
-import { capacityTypes, assetCapacities, assetCapacityHistory, assets } from '../../db/schema/index.js';
+import { capacityTypes, assetCapacities, assetCapacityHistory, assets, assetRelations, relationTypes } from '../../db/schema/index.js';
 import { NotFoundError, ConflictError } from '../../lib/errors.js';
-import type { CreateCapacityTypeInput, SetAssetCapacityInput } from '@opsweave/shared';
+import type { CreateCapacityTypeInput, SetAssetCapacityInput, CapacityMapping } from '@opsweave/shared';
 
 function db(): TypedDb {
   return getDb() as TypedDb;
@@ -154,6 +154,7 @@ export async function getAssetCapacities(
       total: assetCapacities.total,
       allocated: assetCapacities.allocated,
       reserved: assetCapacities.reserved,
+      source_relation_id: assetCapacities.source_relation_id,
       created_at: assetCapacities.created_at,
       updated_at: assetCapacities.updated_at,
       // Join capacity type info
@@ -217,6 +218,9 @@ export async function setAssetCapacity(
     // Update existing entry
     entryId = existing.id;
 
+    const newAllocated = data.allocated !== undefined ? data.allocated : (parseFloat(existing.allocated) || 0);
+    const newReserved = data.reserved !== undefined ? data.reserved : (parseFloat(existing.reserved) || 0);
+
     // REQ-3.3b: Record capacity change in history
     await d.insert(assetCapacityHistory).values({
       id: uuidv4(),
@@ -226,7 +230,7 @@ export async function setAssetCapacity(
       old_total: Math.round(parseFloat(existing.total) || 0),
       old_allocated: Math.round(parseFloat(existing.allocated) || 0),
       new_total: Math.round(data.total),
-      new_allocated: Math.round(parseFloat(existing.allocated) || 0),
+      new_allocated: Math.round(newAllocated),
       changed_by: userId ?? null,
       changed_at: now,
       reason: null,
@@ -236,6 +240,8 @@ export async function setAssetCapacity(
       .update(assetCapacities)
       .set({
         total: String(data.total),
+        allocated: String(newAllocated),
+        reserved: String(newReserved),
         updated_at: now,
       })
       .where(eq(assetCapacities.id, existing.id));
@@ -249,8 +255,8 @@ export async function setAssetCapacity(
       tenant_id: tenantId,
       direction: data.direction,
       total: String(data.total),
-      allocated: '0',
-      reserved: '0',
+      allocated: String(data.allocated ?? 0),
+      reserved: String(data.reserved ?? 0),
       created_at: now,
       updated_at: now,
     });
@@ -282,6 +288,7 @@ export async function setAssetCapacity(
       total: assetCapacities.total,
       allocated: assetCapacities.allocated,
       reserved: assetCapacities.reserved,
+      source_relation_id: assetCapacities.source_relation_id,
       created_at: assetCapacities.created_at,
       updated_at: assetCapacities.updated_at,
       type_slug: capacityTypes.slug,
@@ -340,6 +347,7 @@ export async function getCapacityUtilization(
       total: assetCapacities.total,
       allocated: assetCapacities.allocated,
       reserved: assetCapacities.reserved,
+      source_relation_id: assetCapacities.source_relation_id,
       type_slug: capacityTypes.slug,
       type_name: capacityTypes.name,
       type_unit: capacityTypes.unit,
@@ -377,6 +385,7 @@ export async function getCapacityUtilization(
       reserved,
       available,
       utilization_pct: utilizationPercent,
+      source_relation_id: row.source_relation_id,
     };
   });
 }
@@ -799,6 +808,432 @@ export async function getOverprovisionedAssets(
   }
 
   return Array.from(assetMap.values());
+}
+
+// ── Capacity Consumers (Drill-Down) ─────────────────────────
+
+/**
+ * Get all assets that consume a specific capacity type from a provider asset.
+ * Finds related assets (via asset_relations in both directions) and checks
+ * if they have a 'consumes' entry for the same capacity type.
+ * Assets without explicit consumes entries are still shown (consumed = null).
+ */
+export interface CapacityConsumer {
+  assetId: string;
+  assetName: string;
+  assetType: string;
+  relationType: string;
+  consumed: number | null;
+  unit: string;
+}
+
+export async function getCapacityConsumers(
+  tenantId: string,
+  providerAssetId: string,
+  capacityTypeId: string,
+): Promise<CapacityConsumer[]> {
+  const d = db();
+
+  // Find all assets related to the provider in BOTH directions:
+  // - source→target=provider (e.g. VM "runs_on" Host, Firewall "connected_to" Switch)
+  // - source=provider→target (e.g. provider "feeds" consumer)
+  // Exclude structural relations like "member_of" that don't imply capacity consumption
+  const structuralRelations = ['part_of', 'documented_by'];
+
+  const incomingRows = await d
+    .select({
+      relatedAssetId: assetRelations.source_asset_id,
+      relationType: assetRelations.relation_type,
+    })
+    .from(assetRelations)
+    .where(and(
+      eq(assetRelations.tenant_id, tenantId),
+      eq(assetRelations.target_asset_id, providerAssetId),
+    ));
+
+  const outgoingRows = await d
+    .select({
+      relatedAssetId: assetRelations.target_asset_id,
+      relationType: assetRelations.relation_type,
+    })
+    .from(assetRelations)
+    .where(and(
+      eq(assetRelations.tenant_id, tenantId),
+      eq(assetRelations.source_asset_id, providerAssetId),
+    ));
+
+  const relatedMap = new Map<string, string>();
+  for (const r of [...incomingRows, ...outgoingRows]) {
+    if (!structuralRelations.includes(r.relationType)) {
+      relatedMap.set(r.relatedAssetId, r.relationType);
+    }
+  }
+
+  if (relatedMap.size === 0) return [];
+
+  // Get capacity type info for unit
+  const [capType] = await d
+    .select({ unit: capacityTypes.unit })
+    .from(capacityTypes)
+    .where(eq(capacityTypes.id, capacityTypeId))
+    .limit(1);
+
+  const unit = capType?.unit ?? '';
+
+  // For each related asset: get asset info + optional consumes entry
+  const consumers: CapacityConsumer[] = [];
+
+  for (const [relatedId, relationType] of relatedMap) {
+    // Get asset info
+    const [asset] = await d
+      .select({
+        displayName: assets.display_name,
+        assetType: assets.asset_type,
+      })
+      .from(assets)
+      .where(and(eq(assets.id, relatedId), eq(assets.tenant_id, tenantId)))
+      .limit(1);
+
+    if (!asset) continue;
+
+    // Check for explicit consumes entry
+    const [cap] = await d
+      .select({ total: assetCapacities.total })
+      .from(assetCapacities)
+      .where(and(
+        eq(assetCapacities.tenant_id, tenantId),
+        eq(assetCapacities.asset_id, relatedId),
+        eq(assetCapacities.capacity_type_id, capacityTypeId),
+        eq(assetCapacities.direction, 'consumes'),
+      ))
+      .limit(1);
+
+    consumers.push({
+      assetId: relatedId,
+      assetName: asset.displayName,
+      assetType: asset.assetType,
+      relationType,
+      consumed: cap ? (parseFloat(cap.total) || 0) : null,
+      unit,
+    });
+  }
+
+  // Sort: tracked consumers first (by consumed desc), then untracked alphabetically
+  consumers.sort((a, b) => {
+    if (a.consumed !== null && b.consumed !== null) return b.consumed - a.consumed;
+    if (a.consumed !== null) return -1;
+    if (b.consumed !== null) return 1;
+    return a.assetName.localeCompare(b.assetName);
+  });
+
+  return consumers;
+}
+
+// ── Capacity-Relation Sync ───────────────────────────────────
+
+/**
+ * Sync capacity consumes entries from a relation's properties.
+ * Called after relation create/update.
+ * Reads capacity_mappings from the relation type and upserts consumes entries
+ * on the source asset with source_relation_id set.
+ */
+export async function syncCapacityFromRelation(
+  tenantId: string,
+  relationId: string,
+  sourceAssetId: string,
+  targetAssetId: string,
+  relationType: string,
+  properties: Record<string, unknown>,
+  userId?: string,
+): Promise<void> {
+  const d = db();
+
+  // Get capacity_mappings from relation type
+  const [relType] = await d
+    .select({ capacity_mappings: relationTypes.capacity_mappings })
+    .from(relationTypes)
+    .where(and(eq(relationTypes.tenant_id, tenantId), eq(relationTypes.slug, relationType)))
+    .limit(1);
+
+  if (!relType) return;
+
+  let mappings: CapacityMapping[] = [];
+  try {
+    const parsed = JSON.parse(relType.capacity_mappings);
+    if (Array.isArray(parsed)) mappings = parsed;
+  } catch { /* empty */ }
+
+  if (mappings.length === 0) return;
+
+  const now = new Date().toISOString();
+
+  // Get all capacity types for this tenant (keyed by slug)
+  const allCapTypes = await d
+    .select({ id: capacityTypes.id, slug: capacityTypes.slug })
+    .from(capacityTypes)
+    .where(eq(capacityTypes.tenant_id, tenantId));
+
+  const capBySlug = new Map(allCapTypes.map((ct) => [ct.slug, ct.id]));
+
+  for (const mapping of mappings) {
+    const value = properties[mapping.property_key];
+    if (value === undefined || value === null || value === '') continue;
+
+    const capTypeId = capBySlug.get(mapping.capacity_type_slug);
+    if (!capTypeId) continue;
+
+    const numValue = Number(value);
+    if (isNaN(numValue) || numValue < 0) continue;
+
+    // Check if a consumes entry already exists for this relation
+    const [existing] = await d
+      .select()
+      .from(assetCapacities)
+      .where(and(
+        eq(assetCapacities.tenant_id, tenantId),
+        eq(assetCapacities.asset_id, sourceAssetId),
+        eq(assetCapacities.capacity_type_id, capTypeId),
+        eq(assetCapacities.direction, 'consumes'),
+        eq(assetCapacities.source_relation_id, relationId),
+      ))
+      .limit(1);
+
+    if (existing) {
+      const oldTotal = parseFloat(existing.total) || 0;
+      if (oldTotal !== numValue) {
+        // Record history
+        await d.insert(assetCapacityHistory).values({
+          id: uuidv4(),
+          asset_id: sourceAssetId,
+          capacity_type_id: capTypeId,
+          tenant_id: tenantId,
+          old_total: Math.round(oldTotal),
+          old_allocated: Math.round(parseFloat(existing.allocated) || 0),
+          new_total: Math.round(numValue),
+          new_allocated: Math.round(parseFloat(existing.allocated) || 0),
+          changed_by: userId ?? null,
+          changed_at: now,
+          reason: 'relation_sync',
+        });
+
+        await d
+          .update(assetCapacities)
+          .set({ total: String(numValue), updated_at: now })
+          .where(eq(assetCapacities.id, existing.id));
+      }
+    } else {
+      // Need to handle unique constraint: (asset_id, capacity_type_id, direction)
+      // If a manual consumes entry exists without source_relation_id, we create alongside it
+      // by using a different approach — we use the unique combo WITH source_relation_id
+      // But the DB unique constraint is on (asset_id, capacity_type_id, direction) without source_relation_id
+      // So we check if there's already a consumes entry for this type
+      const [existingManual] = await d
+        .select()
+        .from(assetCapacities)
+        .where(and(
+          eq(assetCapacities.tenant_id, tenantId),
+          eq(assetCapacities.asset_id, sourceAssetId),
+          eq(assetCapacities.capacity_type_id, capTypeId),
+          eq(assetCapacities.direction, 'consumes'),
+        ))
+        .limit(1);
+
+      if (existingManual) {
+        // Update existing entry to be relation-linked
+        const oldTotal = parseFloat(existingManual.total) || 0;
+        await d.insert(assetCapacityHistory).values({
+          id: uuidv4(),
+          asset_id: sourceAssetId,
+          capacity_type_id: capTypeId,
+          tenant_id: tenantId,
+          old_total: Math.round(oldTotal),
+          old_allocated: Math.round(parseFloat(existingManual.allocated) || 0),
+          new_total: Math.round(numValue),
+          new_allocated: Math.round(parseFloat(existingManual.allocated) || 0),
+          changed_by: userId ?? null,
+          changed_at: now,
+          reason: 'relation_sync',
+        });
+
+        await d
+          .update(assetCapacities)
+          .set({
+            total: String(numValue),
+            source_relation_id: relationId,
+            updated_at: now,
+          })
+          .where(eq(assetCapacities.id, existingManual.id));
+      } else {
+        // Insert new consumes entry
+        await d.insert(assetCapacities).values({
+          id: uuidv4(),
+          asset_id: sourceAssetId,
+          capacity_type_id: capTypeId,
+          tenant_id: tenantId,
+          direction: 'consumes',
+          total: String(numValue),
+          allocated: String(numValue),
+          reserved: '0',
+          source_relation_id: relationId,
+          created_at: now,
+          updated_at: now,
+        });
+
+        await d.insert(assetCapacityHistory).values({
+          id: uuidv4(),
+          asset_id: sourceAssetId,
+          capacity_type_id: capTypeId,
+          tenant_id: tenantId,
+          old_total: null,
+          old_allocated: null,
+          new_total: Math.round(numValue),
+          new_allocated: Math.round(numValue),
+          changed_by: userId ?? null,
+          changed_at: now,
+          reason: 'relation_sync',
+        });
+      }
+    }
+  }
+
+  // Recalculate provider's allocated values
+  await recalculateProviderAllocated(tenantId, targetAssetId, userId);
+}
+
+/**
+ * Recalculate the `allocated` field on a provider asset's `provides` entries.
+ * Sums all `consumes` entries from related assets for each capacity type.
+ */
+export async function recalculateProviderAllocated(
+  tenantId: string,
+  providerAssetId: string,
+  userId?: string,
+  capacityTypeId?: string,
+): Promise<void> {
+  const d = db();
+  const now = new Date().toISOString();
+
+  // Get all 'provides' entries for this provider
+  const providerEntries = await d
+    .select()
+    .from(assetCapacities)
+    .where(and(
+      eq(assetCapacities.tenant_id, tenantId),
+      eq(assetCapacities.asset_id, providerAssetId),
+      eq(assetCapacities.direction, 'provides'),
+      ...(capacityTypeId ? [eq(assetCapacities.capacity_type_id, capacityTypeId)] : []),
+    ));
+
+  if (providerEntries.length === 0) return;
+
+  // Find all assets that have a relation pointing TO this provider (source → target=provider)
+  const consumerRelations = await d
+    .select({
+      source_asset_id: assetRelations.source_asset_id,
+    })
+    .from(assetRelations)
+    .where(and(
+      eq(assetRelations.tenant_id, tenantId),
+      eq(assetRelations.target_asset_id, providerAssetId),
+    ));
+
+  const consumerAssetIds = consumerRelations.map((r) => r.source_asset_id);
+
+  for (const provEntry of providerEntries) {
+    // Sum all consumes entries for this capacity type from related assets
+    let totalConsumed = 0;
+
+    if (consumerAssetIds.length > 0) {
+      for (const consumerId of consumerAssetIds) {
+        const [cap] = await d
+          .select({ total: assetCapacities.total })
+          .from(assetCapacities)
+          .where(and(
+            eq(assetCapacities.tenant_id, tenantId),
+            eq(assetCapacities.asset_id, consumerId),
+            eq(assetCapacities.capacity_type_id, provEntry.capacity_type_id),
+            eq(assetCapacities.direction, 'consumes'),
+          ))
+          .limit(1);
+
+        if (cap) {
+          totalConsumed += parseFloat(cap.total) || 0;
+        }
+      }
+    }
+
+    const oldAllocated = parseFloat(provEntry.allocated) || 0;
+    if (oldAllocated !== totalConsumed) {
+      await d.insert(assetCapacityHistory).values({
+        id: uuidv4(),
+        asset_id: providerAssetId,
+        capacity_type_id: provEntry.capacity_type_id,
+        tenant_id: tenantId,
+        old_total: Math.round(parseFloat(provEntry.total) || 0),
+        old_allocated: Math.round(oldAllocated),
+        new_total: Math.round(parseFloat(provEntry.total) || 0),
+        new_allocated: Math.round(totalConsumed),
+        changed_by: userId ?? null,
+        changed_at: now,
+        reason: 'auto_recalculated',
+      });
+
+      await d
+        .update(assetCapacities)
+        .set({ allocated: String(totalConsumed), updated_at: now })
+        .where(eq(assetCapacities.id, provEntry.id));
+    }
+  }
+}
+
+/**
+ * Cleanup capacity entries linked to a deleted relation.
+ * Removes all consumes entries with the given source_relation_id
+ * and recalculates the provider's allocated values.
+ */
+export async function cleanupCapacityForDeletedRelation(
+  tenantId: string,
+  relationId: string,
+  targetAssetId: string,
+  userId?: string,
+): Promise<void> {
+  const d = db();
+  const now = new Date().toISOString();
+
+  // Find all capacity entries linked to this relation
+  const linkedEntries = await d
+    .select()
+    .from(assetCapacities)
+    .where(and(
+      eq(assetCapacities.tenant_id, tenantId),
+      eq(assetCapacities.source_relation_id, relationId),
+    ));
+
+  for (const entry of linkedEntries) {
+    // Record deletion in history
+    await d.insert(assetCapacityHistory).values({
+      id: uuidv4(),
+      asset_id: entry.asset_id,
+      capacity_type_id: entry.capacity_type_id,
+      tenant_id: tenantId,
+      old_total: Math.round(parseFloat(entry.total) || 0),
+      old_allocated: Math.round(parseFloat(entry.allocated) || 0),
+      new_total: null,
+      new_allocated: null,
+      changed_by: userId ?? null,
+      changed_at: now,
+      reason: 'relation_deleted',
+    });
+
+    await d
+      .delete(assetCapacities)
+      .where(eq(assetCapacities.id, entry.id));
+  }
+
+  // Recalculate provider allocated
+  if (linkedEntries.length > 0) {
+    await recalculateProviderAllocated(tenantId, targetAssetId, userId);
+  }
 }
 
 // ── Helpers ──────────────────────────────────────────────────

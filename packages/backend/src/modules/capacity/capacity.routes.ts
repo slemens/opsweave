@@ -17,6 +17,7 @@ import {
   setAssetCapacity,
   deleteAssetCapacity,
   getCapacityUtilization,
+  getCapacityConsumers,
   getUtilizationOverview,
   findCompatibleHosts,
   checkMigrationFeasibility,
@@ -42,5 +43,6 @@ capacityRouter.get('/assets/:id', validateParams(idParamSchema), getAssetCapacit
 capacityRouter.post('/assets/:id', requireRole('admin'), validateParams(idParamSchema), validate(setAssetCapacitySchema), setAssetCapacity);
 capacityRouter.delete('/assets/:id/:cid', requireRole('admin'), deleteAssetCapacity);
 capacityRouter.get('/assets/:id/utilization', validateParams(idParamSchema), getCapacityUtilization);
+capacityRouter.get('/assets/:id/consumers/:capacityTypeId', getCapacityConsumers);
 
 export { capacityRouter };

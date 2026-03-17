@@ -113,7 +113,10 @@
     "edit_properties": "Eigenschaften bearbeiten",
     "no_properties": "Keine Eigenschaften",
     "edit_properties_success": "Eigenschaften erfolgreich aktualisiert",
-    "edit_properties_error": "Fehler beim Aktualisieren der Eigenschaften"
+    "edit_properties_error": "Fehler beim Aktualisieren der Eigenschaften",
+    "capacity_available": "{{available}} von {{total}} {{unit}} verfügbar",
+    "capacity_warning": "Warnung: Angeforderter Wert übersteigt verfügbare Kapazität",
+    "capacity_mapped": "Wird als Kapazitätsverbrauch erfasst"
   },
   "fields": {
     "name": "Technischer Name",
@@ -184,6 +187,7 @@
     "title": "Kapazität",
     "provides": "Stellt bereit",
     "requires": "Benötigt",
+    "consumes": "Verbraucht",
     "total": "Gesamt",
     "allocated": "Zugewiesen",
     "reserved": "Reserviert",
@@ -200,6 +204,9 @@
     "edit_error": "Fehler beim Aktualisieren der Kapazität",
     "delete_error": "Fehler beim Entfernen der Kapazität",
     "confirm_delete": "Möchten Sie diesen Kapazitätseintrag wirklich entfernen?",
+    "auto_calculated": "Auto-berechnet aus Verbrauchern",
+    "auto_synced": "Automatisch aus Relation synchronisiert",
+    "linked_to_relation": "Verknüpft mit Relation",
     "form": {
       "type": "Kapazitätstyp",
       "direction": "Richtung",
@@ -241,7 +248,25 @@
     "type": "Typ",
     "unit": "Einheit",
     "all_types": "Alle Typen",
-    "filter_utilization": "Auslastung filtern"
+    "filter_utilization": "Auslastung filtern",
+    "show_consumers": "Verbraucher anzeigen",
+    "no_consumers": "Keine Verbraucher gefunden",
+    "relation": "Beziehung",
+    "tracked_consumption": "Erfasster Verbrauch",
+    "untracked_consumption": "{{amount}} {{unit}} nicht zugeordnet (manuelle Zuweisungen o.ä.)",
+    "untracked": "nicht erfasst"
+  },
+  "capacity_detail": {
+    "total_capacity": "Gesamtkapazität",
+    "overall_utilization": "Gesamtauslastung",
+    "consumers_title": "Verbraucher",
+    "share": "Anteil",
+    "critical": "Kritisch",
+    "warning": "Warnung",
+    "healthy": "Gesund",
+    "reserved_note": "{{amount}} {{unit}} reserviert",
+    "view_asset": "Asset anzeigen",
+    "capacity_types_count": "Kapazitätstypen"
   },
   "dynamic_fields": {
     "no_attributes": "Keine typspezifischen Attribute definiert",

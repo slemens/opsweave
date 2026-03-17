@@ -218,6 +218,15 @@ export function AssetDetailPage() {
     return map;
   }, [relationTypesData]);
 
+  // Capacity mappings per relation type (property_key → capacity_type_slug)
+  const relTypeCapacityMap = useMemo(() => {
+    const map = new Map<string, Array<{ property_key: string; capacity_type_slug: string }>>();
+    for (const rt of relationTypesData ?? []) {
+      if (rt.capacity_mappings?.length > 0) map.set(rt.slug, rt.capacity_mappings);
+    }
+    return map;
+  }, [relationTypesData]);
+
   // ── Temporal filter state ────────────────────────────────
   const [viewContext, setViewContext] = useState<'all' | 'operations' | 'security' | 'compliance' | 'architecture'>('all');
   const [temporalAsOf, setTemporalAsOf] = useState<string>('');
@@ -273,6 +282,13 @@ export function AssetDetailPage() {
   const [relDirection, setRelDirection] = useState<'outgoing' | 'incoming'>('outgoing');
   const [relProperties, setRelProperties] = useState<Record<string, unknown>>({});
 
+  // Fetch target asset's capacity for availability hints in the relation dialog
+  const relTargetAssetId = relDirection === 'outgoing' ? relTarget : id ?? '';
+  const hasCapacityMappings = relTypeCapacityMap.has(relType) && !!relTargetAssetId;
+  const { data: targetCapacityData } = useAssetCapacityUtilization(
+    hasCapacityMappings ? relTargetAssetId : '',
+  );
+
   // ── Edit Properties Dialog (REQ-3.2a) ──────────────────────
   const [editPropsOpen, setEditPropsOpen] = useState(false);
   const [editingRelation, setEditingRelation] = useState<AssetRelationWithDetails | null>(null);
@@ -295,7 +311,7 @@ export function AssetDetailPage() {
   const [capacityDialogOpen, setCapacityDialogOpen] = useState(false);
   const [editingCapacityId, setEditingCapacityId] = useState<string | null>(null);
   const [capTypeId, setCapTypeId] = useState('');
-  const [capDirection, setCapDirection] = useState<'provides' | 'requires'>('provides');
+  const [capDirection, setCapDirection] = useState<'provides' | 'consumes'>('provides');
   const [capTotal, setCapTotal] = useState(0);
   const [capAllocated, setCapAllocated] = useState(0);
   const [capReserved, setCapReserved] = useState(0);
@@ -550,7 +566,7 @@ export function AssetDetailPage() {
   const classificationsData = assetClassifications ?? [];
   const capacityData = capacityUtilization ?? [];
   const providesCapacity = capacityData.filter((c) => c.direction === 'provides');
-  const requiresCapacity = capacityData.filter((c) => c.direction === 'requires');
+  const consumesCapacity = capacityData.filter((c) => c.direction === 'consumes');
   const tenantAssignments = tenantAssignmentsData ?? [];
   const relationHistory = relationHistoryData ?? [];
   const capacityHistory = capacityHistoryData ?? [];
@@ -1093,7 +1109,14 @@ export function AssetDetailPage() {
                                   </div>
                                   <Progress value={pct} variant={variant} height={6} />
                                   <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                                    <span>{t('capacity.allocated')}: {cap.allocated}</span>
+                                    <span>
+                                      {t('capacity.allocated')}: {cap.allocated}
+                                      {cap.allocated > 0 && (
+                                        <span className="ml-1 text-blue-500 dark:text-blue-400" title={t('capacity.auto_calculated')}>
+                                          (auto)
+                                        </span>
+                                      )}
+                                    </span>
                                     <span>{t('capacity.reserved')}: {cap.reserved}</span>
                                     <span>{t('capacity.available')}: {cap.available}</span>
                                     <span>{t('capacity.total')}: {cap.total}</span>
@@ -1104,21 +1127,28 @@ export function AssetDetailPage() {
                           </div>
                         </div>
                       )}
-                      {requiresCapacity.length > 0 && (
+                      {consumesCapacity.length > 0 && (
                         <div>
                           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                            {t('capacity.requires')}
+                            {t('capacity.consumes')}
                           </p>
                           <div className="space-y-4">
-                            {requiresCapacity.map((cap, idx) => {
+                            {consumesCapacity.map((cap, idx) => {
                               const pct = cap.utilization_pct;
                               const variant = pct > 90 ? 'danger' : pct > 70 ? 'warning' : 'success';
+                              const isAutoSynced = !!cap.source_relation_id;
                               return (
-                                <div key={`requires-${idx}`} className="space-y-1.5">
+                                <div key={`consumes-${idx}`} className="space-y-1.5">
                                   <div className="flex items-center justify-between text-sm">
                                     <span className="font-medium">
                                       {cap.capacity_type.name}
                                       <span className="text-muted-foreground ml-1 text-xs">({cap.capacity_type.unit})</span>
+                                      {isAutoSynced && (
+                                        <Badge variant="outline" className="ml-2 text-[10px] px-1.5 py-0 text-blue-500 border-blue-500/30">
+                                          <Link2 className="h-2.5 w-2.5 mr-0.5" />
+                                          {t('capacity.auto_synced')}
+                                        </Badge>
+                                      )}
                                     </span>
                                     <div className="flex items-center gap-1.5">
                                       <span className={cn(
@@ -1136,15 +1166,17 @@ export function AssetDetailPage() {
                                       >
                                         <Edit className="h-3 w-3" />
                                       </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                                        onClick={() => setDeleteCapacityId(cap.id)}
-                                        aria-label={t('capacity.delete')}
-                                      >
-                                        <Trash2 className="h-3 w-3" />
-                                      </Button>
+                                      {!isAutoSynced && (
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                                          onClick={() => setDeleteCapacityId(cap.id)}
+                                          aria-label={t('capacity.delete')}
+                                        >
+                                          <Trash2 className="h-3 w-3" />
+                                        </Button>
+                                      )}
                                     </div>
                                   </div>
                                   <Progress value={pct} variant={variant} height={6} />
@@ -1680,6 +1712,31 @@ export function AssetDetailPage() {
                     values={relProperties}
                     onChange={setRelProperties}
                   />
+                  {/* Capacity availability hints for mapped properties */}
+                  {hasCapacityMappings && targetCapacityData && (() => {
+                    const mappings = relTypeCapacityMap.get(relType) ?? [];
+                    const providesCaps = (targetCapacityData ?? []).filter((c) => c.direction === 'provides');
+                    const hints = mappings.map((m) => {
+                      const capTypeSlug = m.capacity_type_slug;
+                      const provCap = providesCaps.find((c) => c.capacity_type?.slug === capTypeSlug);
+                      if (!provCap) return null;
+                      const available = Math.max(0, provCap.total - provCap.allocated - provCap.reserved);
+                      const requested = Number(relProperties[m.property_key]) || 0;
+                      const exceeds = requested > 0 && requested > available;
+                      return { key: m.property_key, slug: capTypeSlug, available, total: provCap.total, unit: provCap.capacity_type?.unit ?? '', exceeds };
+                    }).filter(Boolean);
+                    if (hints.length === 0) return null;
+                    return (
+                      <div className="mt-2 space-y-1">
+                        {hints.map((h) => h && (
+                          <div key={h.key} className={cn('text-xs', h.exceeds ? 'text-destructive' : 'text-muted-foreground')}>
+                            {h.exceeds && <AlertCircle className="inline h-3 w-3 mr-1" />}
+                            {t('relations.capacity_available', { available: h.available, total: h.total, unit: h.unit })}
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             )}
@@ -1854,7 +1911,7 @@ export function AssetDetailPage() {
               <Label>{t('capacity.form.direction')}</Label>
               <Select
                 value={capDirection}
-                onValueChange={(v) => setCapDirection(v as 'provides' | 'requires')}
+                onValueChange={(v) => setCapDirection(v as 'provides' | 'consumes')}
                 disabled={!!editingCapacityId}
               >
                 <SelectTrigger>
@@ -1862,7 +1919,7 @@ export function AssetDetailPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="provides">{t('capacity.provides')}</SelectItem>
-                  <SelectItem value="requires">{t('capacity.requires')}</SelectItem>
+                  <SelectItem value="consumes">{t('capacity.consumes')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>

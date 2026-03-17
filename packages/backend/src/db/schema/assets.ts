@@ -56,6 +56,7 @@ export const relationTypes = sqliteTable(
     is_system: integer('is_system').notNull().default(0),
     is_active: integer('is_active').notNull().default(1),
     color: text('color'),
+    capacity_mappings: text('capacity_mappings').notNull().default('[]'),
     created_at: text('created_at').notNull(),
   },
   (t) => [
@@ -171,6 +172,7 @@ export const assetCapacities = sqliteTable(
     total: text('total').notNull().default('0'),
     allocated: text('allocated').notNull().default('0'),
     reserved: text('reserved').notNull().default('0'),
+    source_relation_id: text('source_relation_id'),
     created_at: text('created_at').notNull(),
     updated_at: text('updated_at').notNull(),
   },
@@ -178,6 +180,7 @@ export const assetCapacities = sqliteTable(
     unique('uq_asset_cap').on(t.asset_id, t.capacity_type_id, t.direction),
     index('idx_acap_tenant').on(t.tenant_id),
     index('idx_acap_asset').on(t.asset_id),
+    index('idx_acap_source_rel').on(t.source_relation_id),
   ],
 );
 

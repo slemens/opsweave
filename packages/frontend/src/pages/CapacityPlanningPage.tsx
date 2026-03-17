@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   XCircle,
   Server,
+  ExternalLink,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -154,47 +155,46 @@ function UtilizationCard({ entry }: { entry: UtilizationOverviewEntry }) {
   const { t } = useTranslation('cmdb');
 
   return (
-    <Card className="overflow-hidden">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <Link
-            to={`/assets/${entry.assetId}`}
-            className="text-sm font-semibold hover:underline truncate"
-          >
-            {entry.assetName}
-          </Link>
-          <Badge variant="outline" className="ml-2 shrink-0 text-xs">
-            {t(`types.${entry.assetType}`, entry.assetType)}
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-3 pt-0">
-        {entry.capacities.map((cap) => (
-          <div key={cap.capacityTypeId} className="space-y-1">
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-medium">
-                {cap.type} ({cap.unit})
-              </span>
-              <span className={cn('font-semibold', utilizationColor(cap.utilizationPct))}>
-                {cap.utilizationPct.toFixed(1)}%
-              </span>
-            </div>
-            <Progress
-              value={Math.min(cap.utilizationPct, 100)}
-              className={cn('h-2', utilizationBarColor(cap.utilizationPct))}
-            />
-            <div className="flex justify-between text-[11px] text-muted-foreground">
-              <span>
-                {t('capacity.allocated')}: {cap.allocated} / {cap.total}
-              </span>
-              <span>
-                {t('capacity_planning.available')}: {cap.available}
-              </span>
-            </div>
+    <Link to={`/capacity-planning/${entry.assetId}`} className="block group">
+      <Card className="overflow-hidden transition-colors group-hover:border-primary/40">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-semibold truncate group-hover:underline">
+              {entry.assetName}
+            </span>
+            <Badge variant="outline" className="ml-2 shrink-0 text-xs">
+              {t(`types.${entry.assetType}`, entry.assetType)}
+            </Badge>
           </div>
-        ))}
-      </CardContent>
-    </Card>
+        </CardHeader>
+        <CardContent className="space-y-3 pt-0">
+          {entry.capacities.map((cap) => (
+            <div key={cap.capacityTypeId} className="space-y-1">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-medium">
+                  {cap.type} ({cap.unit})
+                </span>
+                <span className={cn('font-semibold', utilizationColor(cap.utilizationPct))}>
+                  {cap.utilizationPct.toFixed(1)}%
+                </span>
+              </div>
+              <Progress
+                value={Math.min(cap.utilizationPct, 100)}
+                className={cn('h-2', utilizationBarColor(cap.utilizationPct))}
+              />
+              <div className="flex justify-between text-[11px] text-muted-foreground">
+                <span>
+                  {t('capacity.allocated')}: {cap.allocated} / {cap.total}
+                </span>
+                <span>
+                  {t('capacity_planning.available')}: {cap.available}
+                </span>
+              </div>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    </Link>
   );
 }
 

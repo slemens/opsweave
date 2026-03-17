@@ -162,6 +162,7 @@ CREATE TABLE IF NOT EXISTS relation_types (
   source_types TEXT NOT NULL DEFAULT '[]',
   target_types TEXT NOT NULL DEFAULT '[]',
   properties_schema TEXT NOT NULL DEFAULT '[]',
+  capacity_mappings TEXT NOT NULL DEFAULT '[]',
   is_system INTEGER NOT NULL DEFAULT 0,
   is_active INTEGER NOT NULL DEFAULT 1,
   color TEXT,
@@ -226,6 +227,7 @@ CREATE TABLE IF NOT EXISTS asset_capacities (
   total REAL NOT NULL DEFAULT 0,
   allocated REAL NOT NULL DEFAULT 0,
   reserved REAL NOT NULL DEFAULT 0,
+  source_relation_id TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   UNIQUE(asset_id, capacity_type_id, direction)
@@ -771,6 +773,7 @@ CREATE INDEX IF NOT EXISTS idx_asset_classifications_tenant ON asset_classificat
 CREATE INDEX IF NOT EXISTS idx_capacity_types_tenant ON capacity_types(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_asset_capacities_asset ON asset_capacities(asset_id);
 CREATE INDEX IF NOT EXISTS idx_asset_capacities_tenant ON asset_capacities(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_asset_capacities_source_rel ON asset_capacities(source_relation_id);
 CREATE INDEX IF NOT EXISTS idx_asset_relations_temporal ON asset_relations(tenant_id, valid_from, valid_until);
 
 -- projects (Evo-2C: Project Structures)
@@ -1018,6 +1021,8 @@ export const EVO_MIGRATIONS_SQL = [
   `ALTER TABLE sla_definitions ADD COLUMN contract_reference TEXT`,
   `ALTER TABLE sla_definitions ADD COLUMN valid_from TEXT`,
   `ALTER TABLE sla_definitions ADD COLUMN valid_until TEXT`,
+  `ALTER TABLE relation_types ADD COLUMN capacity_mappings TEXT NOT NULL DEFAULT '[]'`,
+  `ALTER TABLE asset_capacities ADD COLUMN source_relation_id TEXT`,
 ];
 
 // CLI entry point: only runs when executed directly (not when imported)

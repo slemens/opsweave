@@ -165,6 +165,7 @@ export interface RelationTypeDefinition {
   source_types: string[];
   target_types: string[];
   properties_schema: AttributeDefinition[];
+  capacity_mappings: CapacityMapping[];
   is_system: number;
   is_active: number;
   color: string | null;
@@ -218,15 +219,21 @@ export interface CapacityType {
   created_at: string;
 }
 
+export interface CapacityMapping {
+  property_key: string;
+  capacity_type_slug: string;
+}
+
 export interface AssetCapacity {
   id: string;
   asset_id: string;
   capacity_type_id: string;
   tenant_id: string;
-  direction: 'provides' | 'requires';
+  direction: 'provides' | 'consumes';
   total: number;
   allocated: number;
   reserved: number;
+  source_relation_id: string | null;
   created_at: string;
   updated_at: string;
 }

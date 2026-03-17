@@ -119,6 +119,19 @@ export async function getCapacityUtilization(
   sendSuccess(res, utilization);
 }
 
+/**
+ * GET /api/v1/capacity/assets/:id/consumers/:capacityTypeId
+ */
+export async function getCapacityConsumers(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const tenantId = requireTenantId(req);
+  const { id, capacityTypeId } = req.params as { id: string; capacityTypeId: string };
+  const consumers = await capacityService.getCapacityConsumers(tenantId, id, capacityTypeId);
+  sendSuccess(res, consumers);
+}
+
 // ── Capacity Planning (REQ-3.4a / REQ-3.4b) ─────────────────
 
 /**
