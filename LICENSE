@@ -1,0 +1,83 @@
+OpsWeave — End-User License Agreement (EULA)
+
+Copyright (c) 2026 Sebastian Lemens. All rights reserved.
+
+
+1. GRANT OF LICENSE
+
+   OpsWeave (the "Software") is licensed, not sold. Subject to this agreement
+   and a valid commercial license acquired from the Licensor (Sebastian Lemens,
+   private licensor; a company may be established at a later date and succeed
+   as Licensor), the Licensee is granted a non-exclusive, non-transferable,
+   non-sublicensable right to install and operate the Software for internal
+   business purposes, within the limits of the purchased license tier
+   (Starter, Team, Business, or Enterprise).
+
+
+2. RESTRICTIONS
+
+   The Licensee shall not:
+
+   (a) distribute, sublicense, rent, lease, or otherwise make the Software
+       available to any third party;
+   (b) reverse engineer, decompile, or disassemble the Software, except to
+       the extent expressly permitted by applicable mandatory law;
+   (c) remove or alter any copyright, trademark, or proprietary notices
+       contained in the Software;
+   (d) use the Software beyond the entitlements of the purchased tier.
+
+
+3. SOURCE CODE ACCESS
+
+   Source code is not distributed with the Software. Audit-grade source code
+   review may be granted to Licensees under a separate Non-Disclosure
+   Agreement on a case-by-case basis.
+
+
+4. TELEMETRY AND DATA COLLECTION
+
+   The Software may transmit anonymous operational telemetry to the Licensor,
+   limited to: instance UUID, software version, database type, and aggregate
+   counts of assets, users, and tickets. No personal data, tenant names,
+   IP addresses, or business content is collected. Telemetry can be disabled
+   by setting the environment variable OPSWEAVE_TELEMETRY=false or by
+   disabling the corresponding in-app setting. A detailed privacy policy is
+   available at https://opsweave.de/datenschutz.
+
+
+5. NO WARRANTY
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+   OR IMPLIED. THE LICENSOR DISCLAIMS ALL WARRANTIES, INCLUDING WITHOUT
+   LIMITATION THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+   PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
+
+
+6. LIMITATION OF LIABILITY
+
+   TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE LICENSOR SHALL
+   NOT BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL,
+   OR EXEMPLARY DAMAGES ARISING FROM OR IN CONNECTION WITH THE USE OF OR
+   INABILITY TO USE THE SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+   SUCH DAMAGES.
+
+
+7. TERMINATION
+
+   This license terminates automatically upon any material breach. Upon
+   termination, the Licensee shall immediately cease all use of the
+   Software and destroy all copies in its possession or control.
+
+
+8. GOVERNING LAW AND JURISDICTION
+
+   This agreement is governed by the laws of the Federal Republic of Germany.
+   Exclusive place of jurisdiction for all disputes arising from or in
+   connection with this agreement is Idar-Oberstein, Germany.
+
+
+9. CONTACT
+
+   Sebastian Lemens
+   E-Mail:  sebastian@opsweave.de
+   Web:     https://opsweave.de

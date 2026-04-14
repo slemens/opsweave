@@ -1,0 +1,28 @@
+# OpsWeave — Single-Container Setup (SQLite, embedded queue)
+# ─────────────────────────────────────────────────────────
+# Quick Start:
+#   1. cp .env.example .env
+#   2. Edit .env (admin password, license key, ...)
+#   3. docker compose up -d
+#   4. open http://localhost:8080  →  admin@opsweave.local / changeme
+#
+# Production deployment uses PostgreSQL + Redis instead — see docs.opsweave.de
+services:
+  opsweave:
+    image: ghcr.io/slemens/opsweave:latest
+    container_name: opsweave
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    volumes:
+      - opsweave-data:/data
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/api/v1/system/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  opsweave-data:
