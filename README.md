@@ -6,10 +6,10 @@
   <h1>OpsWeave</h1>
 
   <p><strong>IT Service Management that takes your CMDB seriously.</strong></p>
-  <p>OpsWeave connects every ticket, every SLA, and every compliance control to the underlying asset — so when something breaks at 3 AM, the path from alert to impact to mitigation is one link, not ten.</p>
+  <p>OpsWeave links tickets, SLAs and compliance to your assets — find the right lever the moment something breaks.</p>
 
   <p>
-    <a href="https://github.com/users/slemens/packages/container/package/opsweave"><img src="https://img.shields.io/badge/version-0.9.0-2563eb?style=for-the-badge" alt="Version" /></a>
+    <a href="https://github.com/users/slemens/packages/container/package/opsweave"><img src="https://img.shields.io/badge/version-0.9.1-2563eb?style=for-the-badge" alt="Version" /></a>
     <a href="https://demo.opsweave.de"><img src="https://img.shields.io/badge/live%20demo-opsweave.de-22c55e?style=for-the-badge" alt="Demo" /></a>
     <a href="https://docs.opsweave.de"><img src="https://img.shields.io/badge/docs-opsweave.de-f59e0b?style=for-the-badge" alt="Docs" /></a>
   </p>
