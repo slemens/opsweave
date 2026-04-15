@@ -1,12 +1,12 @@
 <div align="center">
-  <img src="assets/screenshots/dashboard.png" alt="OpsWeave Dashboard" width="100%" />
+  <img src="assets/screenshots/dashboard.png" alt="OpsWeave Dashboard with CMDB topology, ticket board, and SLA status" width="100%" />
 
   <br /><br />
 
   <h1>OpsWeave</h1>
 
-  <p><strong>The IT Service Management platform that gets out of your way.</strong></p>
-  <p><sub>Asset-centric · ITIL-conformant · Multi-tenant · Docker-native</sub></p>
+  <p><strong>IT Service Management that takes your CMDB seriously.</strong></p>
+  <p>OpsWeave connects every ticket, every SLA, and every compliance control to the underlying asset — so when something breaks at 3 AM, the path from alert to impact to mitigation is one link, not ten.</p>
 
   <p>
     <a href="https://github.com/users/slemens/packages/container/package/opsweave"><img src="https://img.shields.io/badge/version-0.9.0-2563eb?style=for-the-badge" alt="Version" /></a>
@@ -24,26 +24,20 @@
 
 ---
 
-OpsWeave is a modern ITSM platform built around a CMDB-first architecture. Every ticket, SLA,
-contract, and compliance control resolves to an asset — so when something breaks at 3 AM,
-the path from alert to impact to mitigation is one link, not ten.
-
 ## Why teams pick OpsWeave
 
-- 🎯 **A CMDB you actually maintain** — DAG visualization with relations, dependencies, and impact paths
-- ⚡ **30-second deploy** — `docker compose up` and you're done; SQLite single-container or full PostgreSQL stack
-- 🌍 **Bilingual from day one** — German primary, English complete, no translation gaps
-- 📋 **1.369 compliance controls bundled** — ISO 27001, BSI C5, NIS2, DSGVO out of the box
-- 🤝 **Multi-tenant by design** — strict row-level isolation, MSP-ready
-- 🤖 **AI assist included** — bring your own OpenAI / Anthropic key
-- 🔐 **Self-hosted** — your data stays on your infrastructure
+- **CMDB-first with DAG** — asset relations, dependencies, and impact paths visible
+- **Full ITIL suite** — Incident, Problem, Change, Service Request with SLA engine and auto-escalation
+- **1,369 compliance controls bundled** — ISO 27001, BSI C5, NIS2, GDPR out of the box
+- **Multi-tenant by design** — strict row-level isolation, MSP-ready
+- **Self-hosted in the EU** — your data on your infrastructure, no US-cloud risk
 
 ## Quick start
 
 ```bash
 git clone https://github.com/slemens/opsweave.git
 cd opsweave/examples
-cp .env.example .env       # set your secrets
+cp .env.example .env
 docker compose up -d
 ```
 
@@ -74,25 +68,9 @@ For production setups (PostgreSQL + Redis multi-container) see [docs.opsweave.de
       <p align="center"><sub><b>Compliance Matrix</b> — ISO 27001, BSI C5, NIS2 framework mapping</sub></p>
     </td>
   </tr>
-  <tr>
-    <td colspan="2">
-      <a href="assets/screenshots/portal.png"><img src="assets/screenshots/portal.png" alt="Customer Portal" /></a>
-      <p align="center"><sub><b>Customer Portal</b> — End-customer self-service with tenant-aware visibility</sub></p>
-    </td>
-  </tr>
 </table>
 
-→ More screenshots and live walkthroughs at [demo.opsweave.de](https://demo.opsweave.de).
-
-## Built with
-
-- **Backend:** Node.js, TypeScript, Express, Drizzle ORM
-- **Frontend:** React 18, Vite, TailwindCSS, shadcn/ui, React Flow
-- **Database:** PostgreSQL 16 or SQLite 3 (single-container)
-- **Queue:** BullMQ + Redis (production) or better-queue (single-container)
-- **Realtime:** Socket.IO
-- **Container:** Docker, Docker Compose
-- **i18n:** react-i18next
+→ Live walkthrough at [demo.opsweave.de](https://demo.opsweave.de).
 
 ## Pricing
 
@@ -100,17 +78,19 @@ For production setups (PostgreSQL + Redis multi-container) see [docs.opsweave.de
 |---|---:|---:|---:|---|---:|
 | **Starter** | 50 | 5 | 3 | Local | Free |
 | **Team** | 250 | 15 | 10 | Local | €49/mo |
-| **Business** | 1.000 | 50 | ∞ | + OIDC | €149/mo |
+| **Business** | 1,000 | 50 | ∞ | + OIDC | €149/mo |
 | **Enterprise** | ∞ | ∞ | ∞ | + SAML/OIDC | Contact |
 
 → Full details on [opsweave.de/pricing.html](https://opsweave.de/pricing.html)
 
+## Source code
+
+Source code is not distributed with the binary. Audit-grade source code review is available on request under a separate Non-Disclosure Agreement — contact [sebastian@opsweave.de](mailto:sebastian@opsweave.de).
+
 ## Telemetry
 
-OpsWeave transmits anonymous operational telemetry (instance UUID, version, DB type, aggregate
-counts of assets, users, tickets). No personal data, tenant names, or business content is collected.
-Disable with `OPSWEAVE_TELEMETRY=false`.
+OpsWeave transmits anonymous operational telemetry (instance UUID, version, DB type, aggregate counts of assets, users, tickets). No personal data, tenant names, or business content is collected. Disable with `OPSWEAVE_TELEMETRY=false`.
 
 ## License
 
-Copyright © 2026 Sebastian Lemens · see [LICENSE](LICENSE) · commercial license required for tiers above Starter · audit-grade source review available on request.
+Copyright © 2026 Sebastian Lemens · see [LICENSE](LICENSE) · commercial license required for tiers above Starter.
